@@ -1,6 +1,5 @@
 # Clearwing VM
-[![Release](https://jitpack.io/v/com.thelogicmaster/clearwing-vm.svg)]
-(https://jitpack.io/#com.thelogicmaster/clearwing-vm)
+[![Release](https://jitpack.io/v/com.thelogicmaster/clearwing-vm.svg)](https://jitpack.io/#com.thelogicmaster/clearwing-vm)
 
 ## About
 This is a fork of the CodenameOne Parpar VM that produces portable C and C++ and implements more of the Java

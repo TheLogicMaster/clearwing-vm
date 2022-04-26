@@ -921,6 +921,10 @@ JAVA_DOUBLE java_lang_Math_asin___double_R_double(CODENAME_ONE_THREAD_STATE, JAV
     return asin(a);
 }
 
+JAVA_DOUBLE java_lang_Math_acos___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return acos(a);
+}
+
 JAVA_DOUBLE java_lang_Math_atan2___double_double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a, JAVA_DOUBLE b) {
     return atan2(a, b);
 }

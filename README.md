@@ -29,6 +29,8 @@ on it.
 - Include native source files from dependency JARs
 - Constructor reflection
 - Example Gradle project
+- Proper Unicode support (Character.isLetterOrDigit(), for instance)
+- Fix Date formatting
 
 ## Notes
 - Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)

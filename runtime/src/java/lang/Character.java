@@ -298,7 +298,8 @@ public final class Character implements Comparable<Character>{
     }
 
     public static boolean isLetterOrDigit(char ch) {
-        return isLetterOrDigit((int) ch);
+        return isLetter(ch) || isDigit(ch);
+//        return isLetterOrDigit((int) ch);
     }
 
     public static boolean isLetterOrDigit(int codePoint) {
@@ -316,7 +317,10 @@ public final class Character implements Comparable<Character>{
     }
     
     public static boolean isLetter(char ch) {
-        return isLetter((int) ch);
+        // Todo: Proper implementation
+        return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+
+//        return isLetter((int) ch);
     }
 
     public static boolean isLetter(int codePoint) {
@@ -402,7 +406,10 @@ public final class Character implements Comparable<Character>{
      * Determines if the specified character is a digit.
      */
     public static boolean isDigit(char ch){
-        return isDigit((int) ch);
+        // Todo: Proper implementation
+        return ch >= '0' && ch <= '9';
+
+//        return isDigit((int) ch);
     }
 
     /**

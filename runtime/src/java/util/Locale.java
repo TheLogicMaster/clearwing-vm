@@ -126,10 +126,20 @@ public class Locale {
     
     private String language;
     private String country;
+    private String variant;
+
+    public Locale(String a) {
+        this(a, "");
+    }
     
     public Locale(String language, String locale) {
+        this(language, locale, "");
+    }
+
+    public Locale(String language, String locale, String variant) {
         this.language = language;
         this.country = locale;
+        this.variant = variant;
     }
     
     public Locale() {
@@ -146,14 +156,7 @@ public class Locale {
         if (country == null) {
             country = "US";
         }
-    }
-
-    public Locale(String a) {
-        throw new UnsupportedOperationException();
-    }
-
-    public Locale(String a, String b, String c) {
-        throw new UnsupportedOperationException();
+        variant = "";
     }
 
     public static Locale getDefault() {
@@ -176,10 +179,15 @@ public class Locale {
     }
 
     public String getVariant() {
-        return null;
+        return variant;
     }
 
     private static native String getOSLanguage();
+
+    @Override
+    public String toString () {
+        return "Locale{" + "language='" + language + '\'' + ", country='" + country + '\'' + ", variant='" + variant + '\'' + '}';
+    }
 
     public enum Category {
 

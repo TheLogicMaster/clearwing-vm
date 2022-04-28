@@ -1,2 +1,4 @@
 include 'runtime'
 include 'transpiler'
+include 'jnigen'
+

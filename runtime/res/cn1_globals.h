@@ -62,6 +62,16 @@ typedef struct JavaObjectPrototype*              JAVA_OBJECT;
 
 typedef JAVA_OBJECT       JAVA_ARRAY_OBJECT;
 
+#define jboolean JAVA_BOOLEAN
+#define jchar JAVA_CHAR
+#define jbyte JAVA_BYTE
+#define jshort JAVA_SHORT
+#define jint JAVA_INT
+#define jlong JAVA_LONG
+#define jfloat JAVA_FLOAT
+#define jdouble JAVA_DOUBLE
+#define jobject JAVA_OBJECT
+
 #define cn1_array_1_id_JAVA_BOOLEAN (cn1_array_start_offset + 1)
 #define cn1_array_2_id_JAVA_BOOLEAN (cn1_array_start_offset + 2)
 #define cn1_array_3_id_JAVA_BOOLEAN (cn1_array_start_offset + 3)

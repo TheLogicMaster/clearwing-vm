@@ -1020,6 +1020,16 @@ JAVA_BOOLEAN java_lang_Class_isEnum___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_
     return (clz->enumValueOfFp != 0);
 }
 
+JAVA_OBJECT java_lang_Class_getEnumConstants___R_java_lang_Object_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
+    struct clazz* clz = (struct clazz*)cls;
+    if (!java_lang_Class_isEnum___R_boolean(threadStateData, cls))
+        return JAVA_NULL;
+    for (int i = 0; i < clz->fieldCount; i++)
+        if (!strcmp(clz->fields[i].name, "_VALUES"))
+            return ((JAVA_OBJECT (*)(struct ThreadLocalData *)) clz->fields[i].getter)(threadStateData);
+    return JAVA_NULL;
+}
+
 JAVA_OBJECT java_lang_Class_newInstanceImpl___R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
     newInstanceFunctionPointer f = clz->newInstanceFp;

@@ -339,6 +339,8 @@ public final class Class<T> implements java.lang.reflect.Type {
      */
     public native boolean isEnum();
 
+    public native Object[] getEnumConstants();
+
     /**
      * replacement for Class.isAnonymousClass()
      */
@@ -392,10 +394,6 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public native Class<?> getSuperclass();
-
-    Object[] getEnumConstants() {
-        return null;
-    }
 
     public int getModifiers() {
         return 0;

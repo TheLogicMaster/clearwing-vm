@@ -359,7 +359,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     }
 
     public String replace(CharSequence a, CharSequence b) {
-        return Pattern.compile(a.toString()).matcher(this).replaceAll(b.toString());
+        return Pattern.compile(a.toString(), Pattern.LITERAL).matcher(this).replaceAll(b.toString());
     }
 
     /**

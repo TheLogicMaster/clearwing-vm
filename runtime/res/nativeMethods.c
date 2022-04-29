@@ -221,33 +221,6 @@ JAVA_INT java_lang_String_hashCode___R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJEC
     return hash;
 }
 
-JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_INT len) {
-    enteringNativeAllocations();
-    struct clazz* clz = (struct clazz*)cls;
-    if (clz->arrayClass == 0) {
-        JAVA_OBJECT ex = __NEW_java_lang_RuntimeException(CN1_THREAD_STATE_PASS_SINGLE_ARG);
-        java_lang_RuntimeException___INIT_____java_lang_String(CN1_THREAD_STATE_PASS_ARG ex, newStringFromCString(CN1_THREAD_STATE_PASS_ARG "Attempt to create array with reflection, but the component class has no registered array class"));
-        finishedNativeAllocations();
-        throwException(threadStateData, ex);
-        return NULL;
-    }
-    JAVA_OBJECT out = allocArray(CN1_THREAD_STATE_PASS_ARG len, clz->arrayClass, sizeof(JAVA_OBJECT), 1);
-    finishedNativeAllocations();
-    return out;
-}
-
-JAVA_VOID java_lang_reflect_Array_set___java_lang_Object_int_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT __cn1Arg1, JAVA_INT __cn1Arg2, JAVA_OBJECT __cn1Arg3) {
-
-}
-
-JAVA_OBJECT java_lang_reflect_Array_get___java_lang_Object_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT __cn1Arg1, JAVA_INT __cn1Arg2) {
-    return NULL;
-}
-
-JAVA_INT java_lang_reflect_Array_getLength___java_lang_Object_R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT __cn1Arg1) {
-    return 0;
-}
-
 JAVA_OBJECT java_lang_String_bytesToChars___byte_1ARRAY_int_int_java_lang_String_R_char_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT b, JAVA_INT off, JAVA_INT len, JAVA_OBJECT encoding) {
     enteringNativeAllocations();
     JAVA_ARRAY_BYTE* sourceData = (JAVA_ARRAY_BYTE*)((JAVA_ARRAY)b)->data;
@@ -997,7 +970,7 @@ JAVA_BOOLEAN java_lang_Class_isSynthetic___R_boolean(CODENAME_ONE_THREAD_STATE, 
 
 JAVA_BOOLEAN java_lang_Class_isPrimitive___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
-    return clz->primitiveType;
+    return clz->primitiveType && clz->dimensions == 0;
 }
 
 JAVA_BOOLEAN java_lang_Class_isAnonymousClass___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
@@ -1056,6 +1029,74 @@ JAVA_OBJECT java_lang_Class_newInstanceImpl___R_java_lang_Object(CODENAME_ONE_TH
 JAVA_OBJECT java_lang_Class_getSuperclass___R_java_lang_Class(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  cls) {
     struct clazz* clz = (struct clazz*)cls;
     return (JAVA_OBJECT)clz->baseClass;
+}
+
+JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_INT len) {
+    enteringNativeAllocations();
+    struct clazz* clz = (struct clazz*)cls;
+    if (clz->arrayClass == 0) {
+        JAVA_OBJECT ex = __NEW_java_lang_RuntimeException(CN1_THREAD_STATE_PASS_SINGLE_ARG);
+        java_lang_RuntimeException___INIT_____java_lang_String(CN1_THREAD_STATE_PASS_ARG ex, newStringFromCString(CN1_THREAD_STATE_PASS_ARG "Attempt to create array with reflection, but the component class has no registered array class"));
+        finishedNativeAllocations();
+        throwException(threadStateData, ex);
+        return NULL;
+    }
+    JAVA_OBJECT out = allocArray(CN1_THREAD_STATE_PASS_ARG len, clz->arrayClass, sizeof(JAVA_OBJECT), 1);
+    finishedNativeAllocations();
+    return out;
+}
+
+// Todo: Primitive arrays should really be using the primitive classes for arrayType
+JAVA_VOID java_lang_reflect_Array_set___java_lang_Object_int_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT arrayObj, JAVA_INT index, JAVA_OBJECT value) {
+    JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
+    struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
+
+    if (arrayType == &class__java_lang_Byte)
+        ((JAVA_ARRAY_BYTE *)array->data)[index] = (JAVA_ARRAY_BYTE)((struct obj__java_lang_Byte *)value)->java_lang_Byte_value;
+    else if (arrayType == &class__java_lang_Character)
+        ((JAVA_ARRAY_CHAR *)array->data)[index] = ((struct obj__java_lang_Character *)value)->java_lang_Character_value;
+    else if (arrayType == &class__java_lang_Short)
+        ((JAVA_ARRAY_SHORT *)array->data)[index] = (JAVA_ARRAY_SHORT)((struct obj__java_lang_Short *)value)->java_lang_Short_value;
+    else if (arrayType == &class__java_lang_Integer)
+        ((JAVA_ARRAY_INT *)array->data)[index] = ((struct obj__java_lang_Integer *)value)->java_lang_Integer_value;
+    else if (arrayType == &class__java_lang_Long)
+        ((JAVA_ARRAY_LONG *)array->data)[index] = ((struct obj__java_lang_Long *)value)->java_lang_Long_value;
+    else if (arrayType == &class__java_lang_Boolean)
+        ((JAVA_ARRAY_BOOLEAN *)array->data)[index] = (JAVA_ARRAY_BOOLEAN)((struct obj__java_lang_Boolean *)value)->java_lang_Boolean_value;
+    else if (arrayType == &class__java_lang_Float)
+        ((JAVA_ARRAY_FLOAT *)array->data)[index] = ((struct obj__java_lang_Float *)value)->java_lang_Float_value;
+    else if (arrayType == &class__java_lang_Double)
+        ((JAVA_ARRAY_DOUBLE *)array->data)[index] = ((struct obj__java_lang_Double *)value)->java_lang_Double_value;
+    else
+        ((JAVA_ARRAY_OBJECT *)array->data)[index] = value;
+}
+
+JAVA_OBJECT java_lang_reflect_Array_get___java_lang_Object_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT arrayObj, JAVA_INT index) {
+    JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
+    struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
+
+    if (arrayType == &class__java_lang_Byte)
+        return java_lang_Byte_valueOf___byte_R_java_lang_Byte(threadStateData, ((JAVA_ARRAY_BYTE *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Character)
+        return java_lang_Character_valueOf___char_R_java_lang_Character(threadStateData, ((JAVA_ARRAY_CHAR *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Short)
+        return java_lang_Short_valueOf___short_R_java_lang_Short(threadStateData, ((JAVA_ARRAY_SHORT *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Integer)
+        return java_lang_Integer_valueOf___int_R_java_lang_Integer(threadStateData, ((JAVA_ARRAY_INT *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Long)
+        return java_lang_Long_valueOf___long_R_java_lang_Long(threadStateData, ((JAVA_ARRAY_LONG *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Boolean)
+        return java_lang_Boolean_valueOf___boolean_R_java_lang_Boolean(threadStateData, ((JAVA_ARRAY_BOOLEAN *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Float)
+        return java_lang_Float_valueOf___float_R_java_lang_Float(threadStateData, ((JAVA_ARRAY_FLOAT *)array->data)[index]);
+    else if (arrayType == &class__java_lang_Double)
+        return java_lang_Double_valueOf___double_R_java_lang_Double(threadStateData, ((JAVA_ARRAY_DOUBLE *)array->data)[index]);
+    else
+        return ((JAVA_ARRAY_OBJECT *)array->data)[index];
+}
+
+JAVA_INT java_lang_reflect_Array_getLength___java_lang_Object_R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT array) {
+    return ((JAVA_ARRAY)array)->length;
 }
 
 JAVA_OBJECT java_lang_reflect_Field_get___java_lang_Object_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT fieldObj, JAVA_OBJECT object) {

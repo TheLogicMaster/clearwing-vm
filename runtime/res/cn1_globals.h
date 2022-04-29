@@ -48,7 +48,7 @@ typedef int64_t            JAVA_LONG;
 typedef float              JAVA_FLOAT;
 typedef double             JAVA_DOUBLE;
 
-typedef char              JAVA_ARRAY_BYTE;
+typedef signed char       JAVA_ARRAY_BYTE;
 typedef char              JAVA_ARRAY_BOOLEAN;
 typedef unsigned short    JAVA_ARRAY_CHAR;
 typedef short             JAVA_ARRAY_SHORT;

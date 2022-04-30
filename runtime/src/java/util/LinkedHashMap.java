@@ -547,8 +547,8 @@ public class LinkedHashMap<K, V> extends HashMap<K, V> implements Map<K, V> {
      */
     @Override
     public Collection<V> values() {
-        if (valuesCollection == null) {
-            valuesCollection = new AbstractCollection<V>() {
+        if (values == null) {
+            values = new AbstractCollection<V>() {
                 @Override
                 public boolean contains(Object object) {
                     return containsValue(object);
@@ -570,7 +570,7 @@ public class LinkedHashMap<K, V> extends HashMap<K, V> implements Map<K, V> {
                 }
             };
         }
-        return valuesCollection;
+        return values;
     }
 
     /**

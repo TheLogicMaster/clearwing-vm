@@ -926,10 +926,10 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
 
         @Override
         public Collection<V> values() {
-            if (valuesCollection == null) {
-                valuesCollection = new SubMapValuesCollection<K, V>(this);
+            if (values == null) {
+                values = new SubMapValuesCollection<K, V>(this);
             }
-            return valuesCollection;
+            return values;
         }
 
         public int size() {
@@ -3018,11 +3018,11 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
         }
         
         public Collection<V> values() {
-            if(valuesCollection==null) {
+            if(values==null) {
                 if (!this.toEnd && !this.fromStart){
-                    valuesCollection = super.values();
+                    values = super.values();
                 } else {
-                    Map.Entry<K, V> startEntry;
+                    Entry<K, V> startEntry;
                     if (loInclusive){
                         startEntry = fromStart ? m.ceilingEntry(this.lo) : theSmallestEntry();
                     } else {
@@ -3030,12 +3030,12 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
                     }
                     if (startEntry == null){
                         K key = m.isEmpty() ? this.lo : m.firstKey();
-                        valuesCollection = new SubMapValuesCollection<K, V>(
+                        values = new SubMapValuesCollection<K, V>(
                                 new SubMap<K, V>(key, true, this.m, key, true));
-                        return valuesCollection;
+                        return values;
                     }
                     // for submap, the lastKey is always exclusive, so should take care
-                    Map.Entry<K, V> lastEntry;
+                    Entry<K, V> lastEntry;
                     lastEntry = toEnd ? m.ceilingEntry(this.hi) : null;
                     if (lastEntry != null) {
                         if (hiInclusive && lastEntry.getKey().equals(this.hi)) {
@@ -3046,11 +3046,11 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
                     K startK = startEntry == null ? null: startEntry.getKey();
                     K lastK = lastEntry == null ? null: lastEntry.getKey();
                     // submap always exclude the highest entry
-                    valuesCollection = new SubMapValuesCollection<K, V>(
+                    values = new SubMapValuesCollection<K, V>(
                                 new SubMap<K, V>(startK, true, this.m, lastK, lastK == null ? false :toEnd));
                 }
             }
-            return valuesCollection;
+            return values;
         }
     }
     
@@ -3583,13 +3583,13 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
         }
         
         public Collection<V> values() {
-            if(valuesCollection==null) {            
+            if(values==null) {
                 if (fromStart || toEnd){
-                    return valuesCollection = new DescendingSubMapValuesCollection<K, V>(this);
+                    return values = new DescendingSubMapValuesCollection<K, V>(this);
                 }
-                valuesCollection = super.values();
+                values = super.values();
             }
-            return valuesCollection;
+            return values;
         }
         static class DescendingSubMapValuesCollection<K, V> extends AbstractCollection<V> {
             DescendingSubMap<K, V> subMap;
@@ -5223,8 +5223,8 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
      */
     @Override
     public Collection<V> values() {
-        if (valuesCollection == null) {
-            valuesCollection = new AbstractCollection<V>() {
+        if (values == null) {
+            values = new AbstractCollection<V>() {
                 @Override
                 public boolean contains(Object object) {
                     return containsValue(object);
@@ -5246,7 +5246,7 @@ public class TreeMap<K, V> extends AbstractMap<K, V> implements
                 }
             };
         }
-        return valuesCollection;
+        return values;
     }    
 
     /**

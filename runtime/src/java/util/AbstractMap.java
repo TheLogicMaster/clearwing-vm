@@ -30,7 +30,7 @@ public abstract class AbstractMap<K, V> implements Map<K, V> {
     // Lazily initialized key set.
     Set<K> keySet;
 
-    Collection<V> valuesCollection;
+    Collection<V> values;
 
     /**
      * An immutable key-value mapping.
@@ -640,8 +640,8 @@ public abstract class AbstractMap<K, V> implements Map<K, V> {
      * @return a collection of the values contained in this map.
      */
     public Collection<V> values() {
-        if (valuesCollection == null) {
-            valuesCollection = new AbstractCollection<V>() {
+        if (values == null) {
+            values = new AbstractCollection<V>() {
                 @Override
                 public int size() {
                     return AbstractMap.this.size();
@@ -673,6 +673,6 @@ public abstract class AbstractMap<K, V> implements Map<K, V> {
                 }
             };
         }
-        return valuesCollection;
+        return values;
     }
 }

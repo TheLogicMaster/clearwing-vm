@@ -2031,7 +2031,6 @@ JAVA_OBJECT java_lang_StringBuilder_append___char_R_java_lang_StringBuilder(CODE
 }
 
 JAVA_VOID java_lang_String_getChars___int_int_char_1ARRAY_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject, JAVA_INT __cn1Arg1, JAVA_INT __cn1Arg2, JAVA_OBJECT __cn1Arg3, JAVA_INT __cn1Arg4) {
-
     JAVA_INT offset = get_field_java_lang_String_offset(__cn1ThisObject);
     JAVA_ARRAY srcArr = (JAVA_ARRAY)get_field_java_lang_String_value(__cn1ThisObject);
     JAVA_ARRAY_CHAR* src = (JAVA_ARRAY_CHAR*)srcArr->data;
@@ -2056,7 +2055,7 @@ JAVA_INT java_util_zip_Inflater_inflateBytes___long_byte_1ARRAY_int_int_R_int(CO
     JAVA_ARRAY buf = (JAVA_ARRAY)((struct obj__java_util_zip_Inflater*)__cn1ThisObject)->java_util_zip_Inflater_buf;
     stream->next_in = buf->data;
     stream->avail_in = buf->length;
-    inflate(stream, Z_FINISH);
+    return inflate(stream, Z_FINISH);
 }
 
 JAVA_INT java_util_zip_Inflater_getAdler___long_R_int(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
@@ -2075,13 +2074,13 @@ JAVA_VOID java_util_zip_Inflater_end___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG
 
 JAVA_INT java_util_zip_CRC32_update___int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_INT crc, JAVA_INT b) {
     unsigned char byte = b;
-    crc32(crc, &byte, 1);
+    return (JAVA_INT)crc32(crc, &byte, 1);
 }
 
 JAVA_INT java_util_zip_CRC32_updateBytes___int_byte_1ARRAY_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_INT crc, JAVA_OBJECT b, JAVA_INT off, JAVA_INT len) {
-    crc32(crc, (unsigned char *)((JAVA_ARRAY)b)->data + off, len);
+    return (JAVA_INT)crc32(crc, (unsigned char *)((JAVA_ARRAY)b)->data + off, len);
 }
 
 JAVA_INT java_util_zip_CRC32_updateByteBuffer___int_java_nio_ByteBuffer_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_INT crc, JAVA_OBJECT buffer, JAVA_INT off, JAVA_INT len) {
-    crc32(crc, (unsigned char*)((struct obj__java_nio_ByteBuffer*)buffer)->java_nio_Buffer_address + off, len);
+    return (JAVA_INT)crc32(crc, (unsigned char*)((struct obj__java_nio_ByteBuffer*)buffer)->java_nio_Buffer_address + off, len);
 }

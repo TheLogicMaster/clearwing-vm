@@ -19,7 +19,7 @@ on it.
 - Incremental compilation, if possible, to cut down on compilation times (Something like rsync to only copy changed files into dist)
 - Switch wrapper buffers to use memory directly since it's always aligned, rather than the super inefficient byte by byte implementation (Profile using BufferUtilsTest)
 - Ensure code licensing is all good (Probably noting modifications to comply with GPLv2)
-- Remove any unnecessary java.util.concurrent stuff
+- Remove any unnecessary java.util.concurrent stuff (If not supporting Threads)
 - Replace any class stubs with generic equivalents
 - Enable NPE checks, possibly enhance the feature further
 - VSCode debugging testing/instructions
@@ -31,10 +31,11 @@ on it.
 - Example Gradle project
 - Proper Unicode support (Character.isLetterOrDigit(), for instance)
 - Fix Date formatting
+- Make main Thread catch exceptions like other Threads and fix UncaughtExceptionHandler
 
 ## Notes
 - Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)
-- Exceptions thrown without a try-catch block are ignored (Maybe adding try-catch block in thread init code, in addition to main function)
+- Exceptions thrown without a try-catch block on the main Thread are ignored
 - JDK-8 is required for compiling the Transpiler project
 - Classes referenced with reflection must be included in the JSON config file
 - Only supports up to 3D arrays
@@ -43,3 +44,4 @@ on it.
 ## Bugs Fixed
 - For exceptions, local variable restoreTo* must be volatile, presumably as a result of setjmp
 - Parameter evaluation order isn't specified in C, so POPs in member setters must be evaluated outside
+- JAVA_ARRAY_BYTE must be explicitly `unsigned char`, since it's compiler specific behavior otherwise

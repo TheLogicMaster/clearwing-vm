@@ -55,6 +55,9 @@ public class Thread implements java.lang.Runnable{
     private int priority = NORM_PRIORITY;
     private long nativeThreadId;
     private static int activeThreads = 0;
+
+    private volatile UncaughtExceptionHandler uncaughtExceptionHandler;
+    private static volatile UncaughtExceptionHandler defaultUncaughtExceptionHandler;
     
     /**
      * Allocates a new Thread object.
@@ -172,7 +175,12 @@ public class Thread implements java.lang.Runnable{
         try {
             target.run();
         } catch(Throwable t) {
-            t.printStackTrace();
+            if (uncaughtExceptionHandler != null)
+                uncaughtExceptionHandler.uncaughtException(this, t);
+            else if (defaultUncaughtExceptionHandler != null)
+                defaultUncaughtExceptionHandler.uncaughtException(this, t);
+            else
+                t.printStackTrace();
         }
         activeThreads--;
         alive = false;
@@ -247,9 +255,30 @@ public class Thread implements java.lang.Runnable{
         } catch(InterruptedException i) {}
     }
 
+    public void setUncaughtExceptionHandler(UncaughtExceptionHandler handler) {
+        uncaughtExceptionHandler = handler;
+    }
+
+    public static void setDefaultUncaughtExceptionHandler(UncaughtExceptionHandler handler) {
+        defaultUncaughtExceptionHandler = handler;
+    }
+
+    public UncaughtExceptionHandler getUncaughtExceptionHandler () {
+        return uncaughtExceptionHandler;
+    }
+
+    public static UncaughtExceptionHandler getDefaultUncaughtExceptionHandler () {
+        return defaultUncaughtExceptionHandler;
+    }
+
     protected void finalize() {
         releaseThreadNativeResources(nativeThreadId);
     }
     
     private static native void releaseThreadNativeResources(long nativeThreadId);
+
+    public interface UncaughtExceptionHandler {
+
+        void uncaughtException(Thread t, Throwable e);
+    }
 }

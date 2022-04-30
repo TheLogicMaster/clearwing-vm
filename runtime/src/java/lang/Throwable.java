@@ -23,6 +23,7 @@
 
 package java.lang;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /**
@@ -103,12 +104,28 @@ public class Throwable{
             cause.printStackTrace();
         }
     }
-    
+
+    public void printStackTrace(PrintStream s) {
+        s.println(stack);
+        if (cause != null) {
+            s.println("Caused by ");
+            cause.printStackTrace(s);
+        }
+        if (message != null) {
+            s.print("Message: ");
+            s.println(message);
+        }
+    }
+
     public void printStackTrace(PrintWriter s) {
         s.println(stack);
         if (cause != null) {
             s.println("Caused by ");
             cause.printStackTrace(s);
+        }
+        if (message != null) {
+            s.print("Message: ");
+            s.println(message);
         }
     }
     
@@ -153,7 +170,4 @@ public class Throwable{
     public String getLocalizedMessage() {
         return message;
     }
-    
-    
-
 }

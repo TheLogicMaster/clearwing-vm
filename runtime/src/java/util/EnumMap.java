@@ -754,57 +754,57 @@ public class EnumMap<K extends Enum<K>, V> extends AbstractMap<K, V>
 
 	private static final long serialVersionUID = 458661240069192865L;
 
-	/**
-	 * Save the state of the <tt>EnumMap</tt> instance to a stream (i.e.,
-	 * serialize it).
-	 *
-	 * @serialData The <i>size</i> of the enum map (the number of key-value
-	 *             mappings) is emitted (int), followed by the key (Object)
-	 *             and value (Object) for each key-value mapping represented
-	 *             by the enum map.
-	 */
-	private void writeObject(java.io.ObjectOutputStream s)
-		throws java.io.IOException
-	{
-		// Write out the key type and any hidden stuff
-		s.defaultWriteObject();
+//	/**
+//	 * Save the state of the <tt>EnumMap</tt> instance to a stream (i.e.,
+//	 * serialize it).
+//	 *
+//	 * @serialData The <i>size</i> of the enum map (the number of key-value
+//	 *             mappings) is emitted (int), followed by the key (Object)
+//	 *             and value (Object) for each key-value mapping represented
+//	 *             by the enum map.
+//	 */
+//	private void writeObject(java.io.ObjectOutputStream s)
+//		throws java.io.IOException
+//	{
+//		// Write out the key type and any hidden stuff
+//		s.defaultWriteObject();
+//
+//		// Write out size (number of Mappings)
+//		s.writeInt(size);
+//
+//		// Write out keys and values (alternating)
+//		int entriesToBeWritten = size;
+//		for (int i = 0; entriesToBeWritten > 0; i++) {
+//			if (null != vals[i]) {
+//				s.writeObject(keyUniverse[i]);
+//				s.writeObject(unmaskNull(vals[i]));
+//				entriesToBeWritten--;
+//			}
+//		}
+//	}
 
-		// Write out size (number of Mappings)
-		s.writeInt(size);
-
-		// Write out keys and values (alternating)
-		int entriesToBeWritten = size;
-		for (int i = 0; entriesToBeWritten > 0; i++) {
-			if (null != vals[i]) {
-				s.writeObject(keyUniverse[i]);
-				s.writeObject(unmaskNull(vals[i]));
-				entriesToBeWritten--;
-			}
-		}
-	}
-
-	/**
-	 * Reconstitute the <tt>EnumMap</tt> instance from a stream (i.e.,
-	 * deserialize it).
-	 */
-	@SuppressWarnings("unchecked")
-	private void readObject(java.io.ObjectInputStream s)
-		throws java.io.IOException, ClassNotFoundException
-	{
-		// Read in the key type and any hidden stuff
-		s.defaultReadObject();
-
-		keyUniverse = getKeyUniverse(keyType);
-		vals = new Object[keyUniverse.length];
-
-		// Read in size (number of Mappings)
-		int size = s.readInt();
-
-		// Read the keys and values, and put the mappings in the HashMap
-		for (int i = 0; i < size; i++) {
-			K key = (K) s.readObject();
-			V value = (V) s.readObject();
-			put(key, value);
-		}
-	}
+//	/**
+//	 * Reconstitute the <tt>EnumMap</tt> instance from a stream (i.e.,
+//	 * deserialize it).
+//	 */
+//	@SuppressWarnings("unchecked")
+//	private void readObject(java.io.ObjectInputStream s)
+//		throws java.io.IOException, ClassNotFoundException
+//	{
+//		// Read in the key type and any hidden stuff
+//		s.defaultReadObject();
+//
+//		keyUniverse = getKeyUniverse(keyType);
+//		vals = new Object[keyUniverse.length];
+//
+//		// Read in size (number of Mappings)
+//		int size = s.readInt();
+//
+//		// Read the keys and values, and put the mappings in the HashMap
+//		for (int i = 0; i < size; i++) {
+//			K key = (K) s.readObject();
+//			V value = (V) s.readObject();
+//			put(key, value);
+//		}
+//	}
 }

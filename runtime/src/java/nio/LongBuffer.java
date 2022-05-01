@@ -256,9 +256,7 @@ public abstract class LongBuffer extends Buffer implements Comparable<LongBuffer
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static LongBuffer allocate (int capacity) {
-		if (capacity < 0)
-			throw new IllegalArgumentException();
-		return new HeapLongBuffer(capacity, capacity);
+		return ByteBuffer.allocate(capacity * 8).asLongBuffer();
 	}
 
 	/**

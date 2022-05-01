@@ -256,9 +256,7 @@ public abstract class FloatBuffer extends Buffer implements Comparable<FloatBuff
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static FloatBuffer allocate (int capacity) {
-		if (capacity < 0)
-			throw new IllegalArgumentException();
-		return new HeapFloatBuffer(capacity, capacity);
+		return ByteBuffer.allocate(capacity * 4).asFloatBuffer();
 	}
 
 	/**

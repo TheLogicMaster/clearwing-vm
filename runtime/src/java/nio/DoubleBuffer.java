@@ -256,9 +256,7 @@ public abstract class DoubleBuffer extends Buffer implements Comparable<DoubleBu
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static DoubleBuffer allocate (int capacity) {
-		if (capacity < 0)
-			throw new IllegalArgumentException();
-		return new HeapDoubleBuffer(capacity, capacity);
+		return ByteBuffer.allocate(capacity * 8).asDoubleBuffer();
 	}
 
 	/**

@@ -467,7 +467,11 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
     
     public native Class getComponentType();
-    
+
+    public Class[] getInterfaces() {
+        return new Class[0];
+    }
+
     public java.lang.reflect.Type[] getGenericInterfaces() {
         throw new UnsupportedOperationException("Class.getGenericInterfaces() not supported on this platform");
     }

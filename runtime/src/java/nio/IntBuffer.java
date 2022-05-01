@@ -256,9 +256,7 @@ public abstract class IntBuffer extends Buffer implements Comparable<IntBuffer> 
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static IntBuffer allocate (int capacity) {
-		if (capacity < 0)
-			throw new IllegalArgumentException();
-		return new HeapIntBuffer(capacity, capacity);
+		return ByteBuffer.allocate(capacity * 4).asIntBuffer();
 	}
 
 	/**

@@ -28,8 +28,6 @@
 package java.nio;
 
 import java.io.IOException;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
 /**
  * A char buffer.
@@ -290,7 +288,7 @@ public abstract class CharBuffer extends Buffer implements Comparable<CharBuffer
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static CharBuffer allocate (int capacity) {
-		return ByteBuffer.allocate(capacity).asCharBuffer();
+		return ByteBuffer.allocate(capacity * 2).asCharBuffer();
 	}
 
 	/**
@@ -1186,8 +1184,8 @@ public abstract class CharBuffer extends Buffer implements Comparable<CharBuffer
 	 */
 	public abstract ByteOrder order ();
 
-	public IntStream chars () {
-		return StreamSupport.intStream(() -> new CharBufferSpliterator(this), Buffer.SPLITERATOR_CHARACTERISTICS, false);
-	}
+//	public IntStream chars () {
+//		return StreamSupport.intStream(() -> new CharBufferSpliterator(this), Buffer.SPLITERATOR_CHARACTERISTICS, false);
+//	}
 
 }

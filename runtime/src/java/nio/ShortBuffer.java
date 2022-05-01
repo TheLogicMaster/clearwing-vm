@@ -256,9 +256,7 @@ public abstract class ShortBuffer extends Buffer implements Comparable<ShortBuff
 	 * @throws IllegalArgumentException If the <tt>capacity</tt> is a negative integer
 	 */
 	public static ShortBuffer allocate (int capacity) {
-		if (capacity < 0)
-			throw new IllegalArgumentException();
-		return new HeapShortBuffer(capacity, capacity);
+		return ByteBuffer.allocate(capacity * 2).asShortBuffer();
 	}
 
 	/**

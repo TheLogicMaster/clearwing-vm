@@ -30,9 +30,9 @@
 package java.math;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
+//import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.io.StreamCorruptedException;
+//import java.io.StreamCorruptedException;
 
 /**
  * Immutable objects which encapsulate the context settings which
@@ -307,24 +307,24 @@ public final class MathContext implements Serializable {
 
     // Private methods
 
-    /**
-     * Reconstitute the {@code MathContext} instance from a stream (that is,
-     * deserialize it).
-     *
-     * @param s the stream being read.
-     */
-    private void readObject(ObjectInputStream s)
-        throws IOException, ClassNotFoundException {
-        s.defaultReadObject();     // read in all fields
-        // validate possibly bad fields
-        if (precision < MIN_DIGITS) {
-            String message = "MathContext: invalid digits in stream";
-            throw new StreamCorruptedException(message);
-        }
-        if (roundingMode == null) {
-            String message = "MathContext: null roundingMode in stream";
-            throw new StreamCorruptedException(message);
-        }
-    }
+//    /**
+//     * Reconstitute the {@code MathContext} instance from a stream (that is,
+//     * deserialize it).
+//     *
+//     * @param s the stream being read.
+//     */
+//    private void readObject(ObjectInputStream s)
+//        throws IOException, ClassNotFoundException {
+//        s.defaultReadObject();     // read in all fields
+//        // validate possibly bad fields
+//        if (precision < MIN_DIGITS) {
+//            String message = "MathContext: invalid digits in stream";
+//            throw new StreamCorruptedException(message);
+//        }
+//        if (roundingMode == null) {
+//            String message = "MathContext: null roundingMode in stream";
+//            throw new StreamCorruptedException(message);
+//        }
+//    }
 
 }

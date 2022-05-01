@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2007, Oracle and/or its affiliates. All rights reserved.
+ *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,31 +22,30 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
+ *
  */
 
-package java.io;
+// -- This file was mechanically generated: Do not edit! -- //
+
+package java.nio;
+
 
 /**
- * Indicates that one or more deserialized objects failed validation
- * tests.  The argument should provide the reason for the failure.
+ * Unchecked exception thrown when an attempt is made to reset a buffer
+ * when its mark is not defined.
  *
- * @see ObjectInputValidation
- * @since JDK1.1
- *
- * @author  unascribed
- * @since   JDK1.1
+ * @since 1.4
  */
-public class InvalidObjectException extends ObjectStreamException {
 
-    private static final long serialVersionUID = 3233174318281839583L;
+public class InvalidMarkException
+    extends IllegalStateException
+{
+
+    private static final long serialVersionUID = 1698329710438510774L;
 
     /**
-     * Constructs an <code>InvalidObjectException</code>.
-     * @param reason Detailed message explaining the reason for the failure.
-     *
-     * @see ObjectInputValidation
+     * Constructs an instance of this class.
      */
-    public InvalidObjectException (String reason) {
-        super(reason);
-    }
+    public InvalidMarkException () { }
+
 }

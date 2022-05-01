@@ -70,8 +70,9 @@ class ByteBufferAsShortBufferL                  // package-private
 	}
 
 	public ShortBuffer asReadOnlyBuffer () {
+		throw new UnsupportedOperationException();
 
-		return new ByteBufferAsShortBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+//		return new ByteBufferAsShortBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

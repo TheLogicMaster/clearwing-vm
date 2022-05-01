@@ -70,8 +70,9 @@ class ByteBufferAsIntBufferL                  // package-private
 	}
 
 	public IntBuffer asReadOnlyBuffer () {
+		throw new UnsupportedOperationException();
 
-		return new ByteBufferAsIntBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+//		return new ByteBufferAsIntBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

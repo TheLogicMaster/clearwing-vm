@@ -30,9 +30,9 @@
 package java.math;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamField;
+//import java.io.ObjectInputStream;
+//import java.io.ObjectOutputStream;
+//import java.io.ObjectStreamField;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -4455,110 +4455,110 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     /** use serialVersionUID from JDK 1.1. for interoperability */
     private static final long serialVersionUID = -8287574255936472291L;
 
-    /**
-     * Serializable fields for BigInteger.
-     *
-     * @serialField signum  int
-     *              signum of this BigInteger.
-     * @serialField magnitude int[]
-     *              magnitude array of this BigInteger.
-     * @serialField bitCount  int
-     *              number of bits in this BigInteger
-     * @serialField bitLength int
-     *              the number of bits in the minimal two's-complement
-     *              representation of this BigInteger
-     * @serialField lowestSetBit int
-     *              lowest set bit in the twos complement representation
-     */
-    private static final ObjectStreamField[] serialPersistentFields = {
-        new ObjectStreamField("signum", Integer.TYPE),
-        new ObjectStreamField("magnitude", byte[].class),
-        new ObjectStreamField("bitCount", Integer.TYPE),
-        new ObjectStreamField("bitLength", Integer.TYPE),
-        new ObjectStreamField("firstNonzeroByteNum", Integer.TYPE),
-        new ObjectStreamField("lowestSetBit", Integer.TYPE)
-        };
+//    /**
+//     * Serializable fields for BigInteger.
+//     *
+//     * @serialField signum  int
+//     *              signum of this BigInteger.
+//     * @serialField magnitude int[]
+//     *              magnitude array of this BigInteger.
+//     * @serialField bitCount  int
+//     *              number of bits in this BigInteger
+//     * @serialField bitLength int
+//     *              the number of bits in the minimal two's-complement
+//     *              representation of this BigInteger
+//     * @serialField lowestSetBit int
+//     *              lowest set bit in the twos complement representation
+//     */
+//    private static final ObjectStreamField[] serialPersistentFields = {
+//        new ObjectStreamField("signum", Integer.TYPE),
+//        new ObjectStreamField("magnitude", byte[].class),
+//        new ObjectStreamField("bitCount", Integer.TYPE),
+//        new ObjectStreamField("bitLength", Integer.TYPE),
+//        new ObjectStreamField("firstNonzeroByteNum", Integer.TYPE),
+//        new ObjectStreamField("lowestSetBit", Integer.TYPE)
+//        };
 
-    /**
-     * Reconstitute the {@code BigInteger} instance from a stream (that is,
-     * deserialize it). The magnitude is read in as an array of bytes
-     * for historical reasons, but it is converted to an array of ints
-     * and the byte array is discarded.
-     * Note:
-     * The current convention is to initialize the cache fields, bitCount,
-     * bitLength and lowestSetBit, to 0 rather than some other marker value.
-     * Therefore, no explicit action to set these fields needs to be taken in
-     * readObject because those fields already have a 0 value be default since
-     * defaultReadObject is not being used.
-     */
-    private void readObject(ObjectInputStream s)
-        throws IOException, ClassNotFoundException {
-        /*
-         * In order to maintain compatibility with previous serialized forms,
-         * the magnitude of a BigInteger is serialized as an array of bytes.
-         * The magnitude field is used as a temporary store for the byte array
-         * that is deserialized. The cached computation fields should be
-         * transient but are serialized for compatibility reasons.
-         */
-
-        // prepare to read the alternate persistent fields
-        ObjectInputStream.GetField fields = s.readFields();
-
-        // Read the alternate persistent fields that we care about
-        int sign = fields.get("signum", -2);
-        byte[] magnitude = (byte[])fields.get("magnitude", null);
-
-        // Validate signum
-        if (sign < -1 || sign > 1) {
-            String message = "BigInteger: Invalid signum value";
-            if (fields.defaulted("signum"))
-                message = "BigInteger: Signum not present in stream";
-            throw new java.io.StreamCorruptedException(message);
-        }
-        int[] mag = stripLeadingZeroBytes(magnitude);
-        if ((mag.length == 0) != (sign == 0)) {
-            String message = "BigInteger: signum-magnitude mismatch";
-            if (fields.defaulted("magnitude"))
-                message = "BigInteger: Magnitude not present in stream";
-            throw new java.io.StreamCorruptedException(message);
-        }
-
-        this.signum = sign;
-        this.mag = mag;
-
-        // Calculate mag field from magnitude and discard magnitude
-        if (mag.length >= MAX_MAG_LENGTH) {
-            try {
-                checkRange();
-            } catch (ArithmeticException e) {
-                throw new java.io.StreamCorruptedException("BigInteger: Out of the supported range");
-            }
-        }
-    }
-
-    /**
-     * Save the {@code BigInteger} instance to a stream.
-     * The magnitude of a BigInteger is serialized as a byte array for
-     * historical reasons.
-     *
-     * @serialData two necessary fields are written as well as obsolete
-     *             fields for compatibility with older versions.
-     */
-    private void writeObject(ObjectOutputStream s) throws IOException {
-        // set the values of the Serializable fields
-        ObjectOutputStream.PutField fields = s.putFields();
-        fields.put("signum", signum);
-        fields.put("magnitude", magSerializedForm());
-        // The values written for cached fields are compatible with older
-        // versions, but are ignored in readObject so don't otherwise matter.
-        fields.put("bitCount", -1);
-        fields.put("bitLength", -1);
-        fields.put("lowestSetBit", -2);
-        fields.put("firstNonzeroByteNum", -2);
-
-        // save them
-        s.writeFields();
-}
+//    /**
+//     * Reconstitute the {@code BigInteger} instance from a stream (that is,
+//     * deserialize it). The magnitude is read in as an array of bytes
+//     * for historical reasons, but it is converted to an array of ints
+//     * and the byte array is discarded.
+//     * Note:
+//     * The current convention is to initialize the cache fields, bitCount,
+//     * bitLength and lowestSetBit, to 0 rather than some other marker value.
+//     * Therefore, no explicit action to set these fields needs to be taken in
+//     * readObject because those fields already have a 0 value be default since
+//     * defaultReadObject is not being used.
+//     */
+//    private void readObject(ObjectInputStream s)
+//        throws IOException, ClassNotFoundException {
+//        /*
+//         * In order to maintain compatibility with previous serialized forms,
+//         * the magnitude of a BigInteger is serialized as an array of bytes.
+//         * The magnitude field is used as a temporary store for the byte array
+//         * that is deserialized. The cached computation fields should be
+//         * transient but are serialized for compatibility reasons.
+//         */
+//
+//        // prepare to read the alternate persistent fields
+//        ObjectInputStream.GetField fields = s.readFields();
+//
+//        // Read the alternate persistent fields that we care about
+//        int sign = fields.get("signum", -2);
+//        byte[] magnitude = (byte[])fields.get("magnitude", null);
+//
+//        // Validate signum
+//        if (sign < -1 || sign > 1) {
+//            String message = "BigInteger: Invalid signum value";
+//            if (fields.defaulted("signum"))
+//                message = "BigInteger: Signum not present in stream";
+//            throw new java.io.StreamCorruptedException(message);
+//        }
+//        int[] mag = stripLeadingZeroBytes(magnitude);
+//        if ((mag.length == 0) != (sign == 0)) {
+//            String message = "BigInteger: signum-magnitude mismatch";
+//            if (fields.defaulted("magnitude"))
+//                message = "BigInteger: Magnitude not present in stream";
+//            throw new java.io.StreamCorruptedException(message);
+//        }
+//
+//        this.signum = sign;
+//        this.mag = mag;
+//
+//        // Calculate mag field from magnitude and discard magnitude
+//        if (mag.length >= MAX_MAG_LENGTH) {
+//            try {
+//                checkRange();
+//            } catch (ArithmeticException e) {
+//                throw new java.io.StreamCorruptedException("BigInteger: Out of the supported range");
+//            }
+//        }
+//    }
+//
+//    /**
+//     * Save the {@code BigInteger} instance to a stream.
+//     * The magnitude of a BigInteger is serialized as a byte array for
+//     * historical reasons.
+//     *
+//     * @serialData two necessary fields are written as well as obsolete
+//     *             fields for compatibility with older versions.
+//     */
+//    private void writeObject(ObjectOutputStream s) throws IOException {
+//        // set the values of the Serializable fields
+//        ObjectOutputStream.PutField fields = s.putFields();
+//        fields.put("signum", signum);
+//        fields.put("magnitude", magSerializedForm());
+//        // The values written for cached fields are compatible with older
+//        // versions, but are ignored in readObject so don't otherwise matter.
+//        fields.put("bitCount", -1);
+//        fields.put("bitLength", -1);
+//        fields.put("lowestSetBit", -2);
+//        fields.put("firstNonzeroByteNum", -2);
+//
+//        // save them
+//        s.writeFields();
+//}
 
     /**
      * Returns the mag array as an array of bytes.

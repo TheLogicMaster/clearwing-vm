@@ -183,14 +183,14 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             return getState() != 0;
         }
 
-        /**
-         * Reconstitutes the instance from a stream (that is, deserializes it).
-         */
-        private void readObject(java.io.ObjectInputStream s)
-            throws java.io.IOException, ClassNotFoundException {
-            s.defaultReadObject();
-            setState(0); // reset to unlocked state
-        }
+//        /**
+//         * Reconstitutes the instance from a stream (that is, deserializes it).
+//         */
+//        private void readObject(java.io.ObjectInputStream s)
+//            throws java.io.IOException, ClassNotFoundException {
+//            s.defaultReadObject();
+//            setState(0); // reset to unlocked state
+//        }
     }
 
     /**

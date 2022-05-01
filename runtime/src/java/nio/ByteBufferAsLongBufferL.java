@@ -70,8 +70,9 @@ class ByteBufferAsLongBufferL                  // package-private
 	}
 
 	public LongBuffer asReadOnlyBuffer () {
+		throw new UnsupportedOperationException();
 
-		return new ByteBufferAsLongBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+//		return new ByteBufferAsLongBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

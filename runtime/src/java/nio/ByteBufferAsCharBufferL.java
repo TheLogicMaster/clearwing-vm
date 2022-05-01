@@ -70,8 +70,9 @@ class ByteBufferAsCharBufferL                  // package-private
 	}
 
 	public CharBuffer asReadOnlyBuffer () {
+		throw new UnsupportedOperationException();
 
-		return new ByteBufferAsCharBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+//		return new ByteBufferAsCharBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

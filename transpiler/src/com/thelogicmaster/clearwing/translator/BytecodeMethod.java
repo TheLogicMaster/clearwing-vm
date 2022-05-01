@@ -277,9 +277,8 @@ public class BytecodeMethod implements SignatureSet {
     // [ddyer 4/2017] avoid creating a lot of temporary objects. 
     // more than 3x faster than the old way.
     public boolean isMethodUsed(BytecodeMethod bm0) {
-        // Todo: Ensure that desired methods aren't optimized away after all essential classes are implemented
-//        if (ByteCodeClass.nonOptimized.contains(clsName))
-//            return true;
+        if (ByteCodeClass.nonOptimized.contains(clsName))
+            return true;
 
     	SignatureSet bm = (SignatureSet)bm0;
         if(usedSigs == null) {

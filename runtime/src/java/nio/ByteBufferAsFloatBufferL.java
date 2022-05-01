@@ -70,8 +70,8 @@ class ByteBufferAsFloatBufferL                  // package-private
 	}
 
 	public FloatBuffer asReadOnlyBuffer () {
-
-		return new ByteBufferAsFloatBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+		throw new UnsupportedOperationException();
+//		return new ByteBufferAsFloatBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

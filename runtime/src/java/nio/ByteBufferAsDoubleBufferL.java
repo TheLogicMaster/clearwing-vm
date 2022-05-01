@@ -70,8 +70,8 @@ class ByteBufferAsDoubleBufferL                  // package-private
 	}
 
 	public DoubleBuffer asReadOnlyBuffer () {
-
-		return new ByteBufferAsDoubleBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+		throw new UnsupportedOperationException();
+//		return new ByteBufferAsDoubleBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 
 	}
 

@@ -11,7 +11,7 @@ on it.
 - Basic File I/O
 - Buffers (Only direct buffers and ByteBuffer wrappers are supported for now)
 - System language/locale
-- Field and Method Reflection
+- Field, Method, and Constructor Reflection
 
 ## Todo
 - Internal VM logging
@@ -27,7 +27,6 @@ on it.
 - Debug server
 - Don't optimize out methods needed for reflection
 - Include native source files from dependency JARs
-- Constructor reflection
 - Example Gradle project
 - Proper Unicode support (Character.isLetterOrDigit(), for instance)
 - Fix Date formatting

@@ -25,7 +25,6 @@ on it.
 - VSCode debugging testing/instructions
 - Organize natives better, probably port C native function implementations to C++
 - Debug server
-- Don't optimize out methods needed for reflection
 - Include native source files from dependency JARs
 - Example Gradle project
 - Proper Unicode support (Character.isLetterOrDigit(), for instance)

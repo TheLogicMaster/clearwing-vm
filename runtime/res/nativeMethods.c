@@ -23,6 +23,7 @@
 #include "java_lang_StringToReal.h"
 #include "java_lang_System.h"
 #include "java_util_zip_Inflater.h"
+#include "java_util_zip_Deflater.h"
 #include "java_lang_reflect_Field.h"
 #include "java_lang_reflect_Method.h"
 #include "java_lang_Class.h"
@@ -2074,6 +2075,39 @@ JAVA_VOID java_util_zip_Inflater_reset___long(CODENAME_ONE_THREAD_STATE, JAVA_LO
 JAVA_VOID java_util_zip_Inflater_end___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
     z_streamp stream = (z_streamp)address;
     inflateEnd(stream);
+    free(stream);
+}
+
+JAVA_LONG java_util_zip_Deflater_init___int_int_boolean_R_long(CODENAME_ONE_THREAD_STATE, JAVA_INT level, JAVA_INT strategy, JAVA_BOOLEAN nowrap) {
+    z_streamp stream = (z_streamp)calloc(sizeof(z_stream), 1);
+    deflateInit(stream, level);
+    return (JAVA_LONG)stream;
+}
+
+JAVA_INT java_util_zip_Deflater_deflateBytes___long_byte_1ARRAY_int_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject, JAVA_LONG address, JAVA_OBJECT b, JAVA_INT off, JAVA_INT len, JAVA_INT flush) {
+    struct obj__java_util_zip_Deflater *deflater = (struct obj__java_util_zip_Deflater *)__cn1ThisObject;
+    if (deflater->java_util_zip_Deflater_finish)
+        deflater->java_util_zip_Deflater_finished = JAVA_TRUE;
+    z_streamp stream = (z_streamp)address;
+    stream->next_out = ((JAVA_ARRAY)b)->data;
+    stream->avail_out = len;
+    JAVA_ARRAY buf = (JAVA_ARRAY)((struct obj__java_util_zip_Deflater*)__cn1ThisObject)->java_util_zip_Deflater_buf;
+    stream->next_in = buf->data;
+    stream->avail_in = buf->length;
+    return deflate(stream, Z_FINISH);
+}
+
+JAVA_INT java_util_zip_Deflater_getAdler___long_R_int(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
+    return (JAVA_INT)((z_streamp)address)->adler;
+}
+
+JAVA_VOID java_util_zip_Deflater_reset___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
+    deflateReset((z_streamp)address);
+}
+
+JAVA_VOID java_util_zip_Deflater_end___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
+    z_streamp stream = (z_streamp)address;
+    deflateEnd(stream);
     free(stream);
 }
 

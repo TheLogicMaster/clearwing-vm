@@ -23,13 +23,22 @@
 
 package java.lang.reflect;
 
+import java.lang.annotation.Annotation;
+
 /**
  *
  * @author shannah
  */
 public class Constructor {
+
+    private Method method;
+
+    public Constructor (Method method) {
+        this.method = method;
+    }
+
     public String getName() {
-        return null;
+        return getDeclaringClass().getName();
     }
 
     public boolean isAccessible() {
@@ -40,15 +49,35 @@ public class Constructor {
 
     }
 
-    public Class<?> getDeclaringClass() {
-        return null;
+    public int getModifiers() {
+        return method.getModifiers();
     }
 
-    public Object newInstance(Object ... initargs) {
-        return null;
+    public boolean isVarArgs() {
+        return method.isVarArgs();
     }
+
+    public Class<?> getDeclaringClass() {
+        return method.getDeclaringClass();
+    }
+
+    public Annotation[] getDeclaredAnnotations() {
+        return method.getDeclaredAnnotations();
+    }
+
+    public boolean isAnnotationPresent(Class<?> annotation) {
+        return method.isAnnotationPresent(annotation);
+    }
+
+    public Object newInstance(Object ... initargs) throws IllegalAccessException {
+        Object o = nativeCreate(getDeclaringClass());
+        method.invoke(o, initargs);
+        return o;
+    }
+
+    private native static Object nativeCreate(Class clazz);
 
     public Class<?>[] getParameterTypes() {
-        return null;
+        return method.getParameterTypes();
     }
 }

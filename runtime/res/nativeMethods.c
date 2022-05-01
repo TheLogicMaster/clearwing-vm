@@ -992,7 +992,7 @@ JAVA_OBJECT java_lang_Class_getDeclaredFields___R_java_lang_reflect_Field_1ARRAY
     return (JAVA_OBJECT)fields;
 }
 
-JAVA_OBJECT java_lang_Class_getDeclaredMethods___R_java_lang_reflect_Method_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
+JAVA_OBJECT java_lang_Class_getNativeMethods___R_java_lang_reflect_Method_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
     JAVA_OBJECT methods = __NEW_ARRAY_java_lang_reflect_Method(threadStateData, clz->methodCount);
     JAVA_ARRAY array = (JAVA_ARRAY)methods;
@@ -1039,6 +1039,11 @@ JAVA_OBJECT java_lang_Class_newInstanceImpl___R_java_lang_Object(CODENAME_ONE_TH
 JAVA_OBJECT java_lang_Class_getSuperclass___R_java_lang_Class(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  cls) {
     struct clazz* clz = (struct clazz*)cls;
     return (JAVA_OBJECT)clz->baseClass;
+}
+
+JAVA_OBJECT java_lang_reflect_Constructor_nativeCreate___java_lang_Class_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
+    struct clazz* clz = (struct clazz*)cls;
+    return ((JAVA_OBJECT (*) (struct ThreadLocalData *))clz->newInstanceFp)(threadStateData);
 }
 
 JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_INT len) {

@@ -28,6 +28,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -350,21 +352,45 @@ public final class Class<T> implements java.lang.reflect.Type {
 
     // No concept of visibility in this implementation
     public Field[] getFields() {
-        Field[] declaredFields = getDeclaredFields();
-        if (getSuperclass() == null)
-            return declaredFields;
-        Field[] superFields = getSuperclass().getFields();
-        Field[] fields = Arrays.copyOf(declaredFields, declaredFields.length + superFields.length);
-        System.arraycopy(superFields, 0, fields, declaredFields.length, superFields.length);
-        return fields;
+        ArrayList<Field> fields = new ArrayList<>();
+        for (Field field: getDeclaredFields())
+            if ((field.getModifiers() & Modifier.PUBLIC) != 0)
+                fields.add(field);
+        if (getSuperclass() != null)
+            fields.addAll(Arrays.asList(getSuperclass().getFields()));
+        return fields.toArray(new Field[0]);
     }
 
-    public Constructor getDeclaredConstructor(Class<?> ... types) {
-        return null;
+    public Constructor getDeclaredConstructor(Class<?> ... types) throws NoSuchMethodException {
+        for (Constructor constructor: getDeclaredConstructors())
+            if (Arrays.equals(constructor.getParameterTypes(), types))
+                return constructor;
+        throw new NoSuchMethodException();
     }
 
-    public Constructor getConstructor(Class<?> ... types) {
-        return null;
+    public Constructor getConstructor(Class<?> ... types) throws NoSuchMethodException {
+        for (Constructor constructor: getConstructors())
+            if (Arrays.equals(constructor.getParameterTypes(), types))
+                return constructor;
+        throw new NoSuchMethodException();
+    }
+
+    public Constructor[] getDeclaredConstructors() {
+        ArrayList<Constructor> constructors = new ArrayList<>();
+        for (Method method: getNativeMethods())
+            if (method.getName().equals("__INIT__"))
+                constructors.add(new Constructor(method));
+        return constructors.toArray(new Constructor[0]);
+    }
+
+    public Constructor[] getConstructors() {
+        ArrayList<Constructor> constructors = new ArrayList<>();
+        for (Constructor constructor: getDeclaredConstructors())
+            if ((constructor.getModifiers() & Modifier.PUBLIC) != 0)
+                constructors.add(constructor);
+        if (getSuperclass() != null)
+            constructors.addAll(Arrays.asList(getSuperclass().getConstructors()));
+        return constructors.toArray(new Constructor[0]);
     }
 
     public Method getDeclaredMethod(String name, Class<?> ... types) throws NoSuchMethodException {
@@ -381,17 +407,25 @@ public final class Class<T> implements java.lang.reflect.Type {
         throw new NoSuchMethodException();
     }
 
-    public native Method[] getDeclaredMethods();
+    public Method[] getDeclaredMethods() {
+        ArrayList<Method> methods = new ArrayList<>();
+        for (Method method: getNativeMethods())
+            if (!method.getName().equals("__INIT__") && !method.getName().equals("__CLINIT__"))
+                methods.add(method);
+        return methods.toArray(new Method[0]);
+    }
 
     public Method[] getMethods() {
-        Method[] declaredMethods = getDeclaredMethods();
-        if (getSuperclass() == null)
-            return declaredMethods;
-        Method[] superMethods = getSuperclass().getMethods();
-        Method[] methods = Arrays.copyOf(declaredMethods, declaredMethods.length + superMethods.length);
-        System.arraycopy(superMethods, 0, methods, declaredMethods.length, superMethods.length);
-        return methods;
+        ArrayList<Method> methods = new ArrayList<>();
+        for (Method method: getDeclaredMethods())
+            if ((method.getModifiers() & Modifier.PUBLIC) != 0)
+                methods.add(method);
+        if (getSuperclass() != null)
+            methods.addAll(Arrays.asList(getSuperclass().getMethods()));
+        return methods.toArray(new Method[0]);
     }
+
+    public native Method[] getNativeMethods();
 
     public native Class<?> getSuperclass();
 

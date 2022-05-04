@@ -3,8 +3,8 @@
 
 ## About
 This is a fork of the CodenameOne Parpar VM that produces portable C and C++ and implements more of the Java
-runtime library. It was primarily created for the SwitchGDX Nintendo Switch LibGDX backend but doesn't depend
-on it.
+runtime library. It was primarily created for the [SwitchGDX](https://github.com/TheLogicMaster/switch-gdx) Nintendo Switch 
+LibGDX backend but doesn't depend on it. An example project is provided in the `example` directory.
 
 ## Features implemented
 - Regex (RegExodus)

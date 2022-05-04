@@ -107,13 +107,13 @@ public class FileWriter extends OutputStreamWriter {
         super(new FileOutputStream(file, append));
     }
 
-    /**
-     * Constructs a FileWriter object associated with a file descriptor.
-     *
-     * @param fd  FileDescriptor object to write to.
-     */
-    public FileWriter (FileDescriptor fd) {
-        super(new FileOutputStream(fd));
-    }
+//    /**
+//     * Constructs a FileWriter object associated with a file descriptor.
+//     *
+//     * @param fd  FileDescriptor object to write to.
+//     */
+//    public FileWriter (FileDescriptor fd) {
+//        super(new FileOutputStream(fd));
+//    }
 
 }

@@ -1358,11 +1358,11 @@ JAVA_OBJECT java_lang_Object_getClassImpl___R_java_lang_Class(CODENAME_ONE_THREA
 }
 
 JAVA_INT java_lang_Class_hashCode___R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT obj) {
-    return (JAVA_INT)(long)obj;
+    return (JAVA_INT)(JAVA_LONG)obj;
 }
 
 JAVA_INT java_lang_Object_hashCode___R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT obj) {
-    return (JAVA_INT)(long)obj;
+    return (JAVA_INT)(JAVA_LONG)obj;
 }
 
 struct ThreadLocalData** allThreads = 0;
@@ -1477,7 +1477,7 @@ void unlockThreadHeapMutex() {
 extern void flushReleaseQueue();
 long gcThreadId = -1;
 JAVA_VOID java_lang_System_gcLight__(CODENAME_ONE_THREAD_STATE) {
-    gcThreadId = (long)threadStateData->threadId;
+    gcThreadId = (JAVA_LONG)threadStateData->threadId;
     flushReleaseQueue();
 }
 
@@ -1616,7 +1616,7 @@ JAVA_VOID java_lang_Object_wait___long_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJEC
         struct timeval   tv;
         gettimeofday(&tv, NULL);
         struct timespec   ts;
-        ts.tv_sec = tv.tv_sec + (long)(timeout / 1000);
+        ts.tv_sec = tv.tv_sec + (JAVA_LONG)(timeout / 1000);
         ts.tv_nsec = tv.tv_usec * 1000 + (timeout % 1000) * 1000000 + nanos;
         if ( ts.tv_nsec > 1000000000 ){
             ts.tv_nsec -= 1000000000;
@@ -1728,7 +1728,7 @@ void* threadRunner(void *x)
     d->currentThreadObject = t;
 
     // NSLog(@"launching thread %d",(int)d->threadId);
-    java_lang_Thread_runImpl___long(d, t, (long)d); // pass the actual structure as threadid
+    java_lang_Thread_runImpl___long(d, t, (JAVA_LONG)d); // pass the actual structure as threadid
     // NSLog(@"terminate thread %d",(int)d->threadId);
 
     // we remove the thread here since this is the only place we can do this

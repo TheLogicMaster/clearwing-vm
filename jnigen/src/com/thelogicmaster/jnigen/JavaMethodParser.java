@@ -99,27 +99,27 @@ public interface JavaMethodParser {
 
 		public String getBufferCType () {
 			if (!this.isBuffer()) throw new RuntimeException("ArgumentType " + this + " is not a Buffer!");
-			if (this == Buffer) return "unsigned char*";
-			if (this == ByteBuffer) return "char*";
-			if (this == CharBuffer) return "unsigned short*";
-			if (this == ShortBuffer) return "short*";
-			if (this == IntBuffer) return "int*";
-			if (this == LongBuffer) return "long long*";
-			if (this == FloatBuffer) return "float*";
-			if (this == DoubleBuffer) return "double*";
+			if (this == Buffer) return "JAVA_ARRAY_BYTE*";
+			if (this == ByteBuffer) return "JAVA_ARRAY_BYTE*";
+			if (this == CharBuffer) return "JAVA_ARRAY_CHAR*";
+			if (this == ShortBuffer) return "JAVA_ARRAY_SHORT*";
+			if (this == IntBuffer) return "JAVA_ARRAY_INT*";
+			if (this == LongBuffer) return "JAVA_ARRAY_LONG*";
+			if (this == FloatBuffer) return "JAVA_ARRAY_FLOAT*";
+			if (this == DoubleBuffer) return "JAVA_ARRAY_DOUBLE*";
 			throw new RuntimeException("Unknown Buffer type " + this);
 		}
 
 		public String getArrayCType () {
 			if (!this.isPrimitiveArray()) throw new RuntimeException("ArgumentType " + this + " is not an Array!");
-			if (this == BooleanArray) return "bool*";
-			if (this == ByteArray) return "char*";
-			if (this == CharArray) return "unsigned short*";
-			if (this == ShortArray) return "short*";
-			if (this == IntegerArray) return "int*";
-			if (this == LongArray) return "long long*";
-			if (this == FloatArray) return "float*";
-			if (this == DoubleArray) return "double*";
+			if (this == BooleanArray) return "JAVA_ARRAY_BOOLEAN*";
+			if (this == ByteArray) return "JAVA_ARRAY_BYTE*";
+			if (this == CharArray) return "JAVA_ARRAY_CHAR*";
+			if (this == ShortArray) return "JAVA_ARRAY_SHORT*";
+			if (this == IntegerArray) return "JAVA_ARRAY_INT*";
+			if (this == LongArray) return "JAVA_ARRAY_LONG*";
+			if (this == FloatArray) return "JAVA_ARRAY_FLOAT*";
+			if (this == DoubleArray) return "JAVA_ARRAY_DOUBLE*";
 			throw new RuntimeException("Unknown Array type " + this);
 		}
 

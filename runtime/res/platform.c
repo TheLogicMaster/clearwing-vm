@@ -1,4 +1,5 @@
 #include "cn1_globals.h"
+#include <string.h>
 
 JAVA_OBJECT getOSLanguage(CODENAME_ONE_THREAD_STATE) {
     return fromNativeString(threadStateData, "en-US");

@@ -1,0 +1,108 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
+plugins {
+    id 'java'
+}
+
+group 'com.thelogicmaster'
+version '1.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+configurations {
+    transpiler {
+        transitive = false
+    }
+}
+
+dependencies {
+    // Use latest GitHub commit
+    implementation 'com.thelogicmaster.clearwing-vm:runtime:-SNAPSHOT'
+    transpiler 'com.thelogicmaster.clearwing-vm:transpiler:-SNAPSHOT'
+
+    // Use specified release
+//    implementation 'com.thelogicmaster.clearwing-vm:runtime:0.1'
+//    transpiler 'com.thelogicmaster.clearwing-vm:transpiler:0.1'
+}
+
+task transpile(dependsOn: 'build') {
+    doLast {
+        delete "$buildDir/transpiler_input"
+        delete "$buildDir/transpiler_output"
+        delete "$buildDir/dist"
+
+        copy {
+            from sourceSets.main.output
+            from { configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)} }
+            into "$buildDir/transpiler_input"
+            exclude "META-INF", "META-INF/**"
+            includeEmptyDirs = false
+        }
+
+        javaexec {
+            main = "-jar"
+            args = [
+                    "$configurations.transpiler.singleFile.absolutePath",
+                    "$buildDir/transpiler_input",
+                    "$buildDir/transpiler_output",
+                    "$projectDir/config.json",
+                    "com.thelogicmaster.example.Example"
+            ]
+        }
+
+        copy {
+            from ("$buildDir/transpiler_output") {
+                include "*.h"
+            }
+            into "$buildDir/dist/include"
+        }
+
+        copy {
+            from ("$buildDir/transpiler_output") {
+                include "*.c"
+                include "*.cpp"
+            }
+            into "$buildDir/dist/source"
+        }
+
+        copy {
+            from sourceSets.main.resources
+            into "$buildDir/dist"
+        }
+
+        exec {
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
+                commandLine 'cmd', '/c', "rsync -crh --delete --checksum --exclude 'cmake-build-debug' --exclude 'build' --exclude 'build-run' --exclude '.idea' dist/ ${project.name}"
+            } else {
+                commandLine 'bash', '-c', "rsync -crh --delete --checksum --exclude 'cmake-build-debug' --exclude 'build' --exclude 'build-run' --exclude '.idea' dist/ ${project.name}"
+            }
+            workingDir "$buildDir"
+        }
+    }
+}
+
+task run(dependsOn: 'transpile') {
+    doLast {
+        exec {
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
+                // Todo: Might not work
+                commandLine 'C:\\msys64\\msys2_shell.cmd', '-mingw64', '-where', "$buildDir/${project.name}", '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build-run -G \'MSYS Makefiles\' && cmake --build build-run || sleep 50000'
+            } else {
+                commandLine 'bash', '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build-run -G Ninja && cmake --build build-run'
+            }
+            workingDir "$buildDir/${project.name}"
+        }
+        exec {
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
+                commandLine 'cmd', '/c', 'build-run\\dist.exe'
+            } else {
+                commandLine 'bash', '-c', './build-run/dist'
+            }
+            workingDir "$buildDir/${project.name}"
+        }
+    }
+}

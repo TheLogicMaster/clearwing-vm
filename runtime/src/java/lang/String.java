@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Formatter;
 import java.util.IllegalFormatException;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -356,6 +357,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
 
     public String replaceAll(String a, String b) {
         return Pattern.compile(a).matcher(this).replaceAll(b);
+    }
+
+    public String replaceFirst(String a, String b) {
+        return Pattern.compile(a).matcher(this).replaceFirst(b);
     }
 
     public String replace(CharSequence a, CharSequence b) {
@@ -791,6 +796,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     
 //    public native java.lang.String toLowerCase();
 
+    public java.lang.String toLowerCase(Locale locale){
+        return toLowerCase();
+    }
+
     /**
      * This object (which is already a string!) is itself returned.
      */
@@ -920,6 +929,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
 
     public static String format(String format, Object... args) {
         return new Formatter().format(format, args).toString();
+    }
+
+    public static String format(Locale locale, String format, Object... args) {
+        return format(format, args);
     }
     
     public boolean contains(CharSequence seq) {

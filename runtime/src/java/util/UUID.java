@@ -378,9 +378,8 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
 
     /** Returns val represented by the specified number of hex digits. */
     private static String digits(long val, int digits) {
-        throw new UnsupportedOperationException();
-//        long hi = 1L << (digits * 4);
-//        return Long.toHexString(hi | (val & (hi - 1))).substring(1);
+        long hi = 1L << (digits * 4);
+        return Long.toHexString(hi | (val & (hi - 1))).substring(1);
     }
 
     /**

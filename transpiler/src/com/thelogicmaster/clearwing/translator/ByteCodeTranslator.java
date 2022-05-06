@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -205,9 +206,12 @@ public class ByteCodeTranslator {
         JSONObject config = new JSONObject(new String(Files.readAllBytes(Paths.get(args[2]))));
         JSONArray reflection = config.getJSONArray("nonOptimized");
         for (Object o: reflection) {
-            String name = ((String)o).replace('.', '_');
-            ByteCodeClass.addArrayType(name, 1);
-            ByteCodeClass.addNonOptimized(name);
+            Pattern pattern = Pattern.compile(((String)o).replace('.', '_').replace("*", ".+"));
+            for (ByteCodeClass clazz: Parser.getClasses())
+                if (pattern.matcher(clazz.getClsName()).matches()) {
+                    ByteCodeClass.addArrayType(clazz.getClsName(), 1);
+                    ByteCodeClass.addNonOptimized(clazz.getClsName());
+                }
         }
 
         Parser.writeOutput(dest);

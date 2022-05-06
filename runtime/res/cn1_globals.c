@@ -1306,12 +1306,17 @@ const char* toNativeString(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT o) {
      if(str->java_lang_String_nativeString != 0)
          return (const char*)str->java_lang_String_nativeString;
 
-    JAVA_ARRAY byteArray = (JAVA_ARRAY)java_lang_String_getBytes___java_lang_String_R_byte_1ARRAY(threadStateData, o, utf8String);
-    char *nativeStr = malloc(byteArray->length + 1);
-    memcpy(nativeStr, byteArray->data, byteArray->length + 1);
+     char *nativeStr;
+     if (str->java_lang_String_count == 0)
+         nativeStr = calloc(1, 1);
+     else {
+         JAVA_ARRAY byteArray = (JAVA_ARRAY) java_lang_String_getBytes___java_lang_String_R_byte_1ARRAY(threadStateData, o, utf8String);
+         nativeStr = malloc(byteArray->length + 1);
+         memcpy(nativeStr, byteArray->data, byteArray->length + 1);
+     }
 
-    str->java_lang_String_nativeString = (JAVA_LONG) nativeStr;
-    return nativeStr;
+     str->java_lang_String_nativeString = (JAVA_LONG) nativeStr;
+     return nativeStr;
 }
 
 JAVA_OBJECT __NEW_ARRAY_JAVA_BOOLEAN(CODENAME_ONE_THREAD_STATE, JAVA_INT size) {

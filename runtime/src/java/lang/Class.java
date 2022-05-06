@@ -489,4 +489,8 @@ public final class Class<T> implements java.lang.reflect.Type {
     public boolean isLocalClass() {
         return false;
     }
+
+    public Package getPackage() {
+        return null;
+    }
 }

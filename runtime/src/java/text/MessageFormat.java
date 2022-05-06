@@ -4,12 +4,14 @@ import java.util.Locale;
 
 public class MessageFormat extends Format {
 
+	private String pattern;
+
 	public MessageFormat(String pattern) {
-		throw new UnsupportedOperationException();
+		this(pattern, null);
 	}
 
 	public MessageFormat(String pattern, Locale locale) {
-		throw new UnsupportedOperationException();
+		this.pattern = pattern;
 	}
 
 	public void setLocale(Locale locale) {
@@ -21,7 +23,7 @@ public class MessageFormat extends Format {
 	}
 
 	public void applyPattern(String pattern) {
-
+		this.pattern = pattern;
 	}
 
 	public String toPattern() {
@@ -57,7 +59,7 @@ public class MessageFormat extends Format {
 	}
 
 	public static String format(String pattern, Object ... arguments) {
-		return null;
+		return pattern; // Todo: Actually format...
 	}
 
 	public String format(Object o) {

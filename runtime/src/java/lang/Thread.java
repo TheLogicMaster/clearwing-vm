@@ -51,10 +51,11 @@ public class Thread implements java.lang.Runnable{
 
     private Runnable target;
     private boolean alive;
-    private String name;
+    private String name = "Unnamed";
     private int priority = NORM_PRIORITY;
     private long nativeThreadId;
     private static int activeThreads = 0;
+    private boolean interrupted;
 
     private volatile UncaughtExceptionHandler uncaughtExceptionHandler;
     private static volatile UncaughtExceptionHandler defaultUncaughtExceptionHandler;
@@ -114,6 +115,10 @@ public class Thread implements java.lang.Runnable{
         return name; 
     }
 
+    public final void setName(String name) {
+        this.name = name;
+    }
+
     /**
      * Returns this thread's priority.
      */
@@ -124,8 +129,7 @@ public class Thread implements java.lang.Runnable{
     /**
      * Interrupts this thread. In an implementation conforming to the CLDC Specification, this operation is not required to cancel or clean up any pending I/O operations that the thread may be waiting for.
      */
-    public void interrupt(){
-    }
+    public native void interrupt();
 
     /**
      * Tests if this thread is alive. A thread is alive if it has been started and has not yet died.
@@ -135,11 +139,14 @@ public class Thread implements java.lang.Runnable{
     }
 
     public static boolean interrupted() {
-        return false;
+        Thread current = currentThread();
+        boolean interrupted = current.interrupted;
+        current.interrupted = false;
+        return interrupted;
     }
 
     public final boolean isInterrupted() {
-        return false;
+        return interrupted;
     }
 
     public final boolean isDaemon(){
@@ -253,6 +260,10 @@ public class Thread implements java.lang.Runnable{
         try {
             sleep(1); 
         } catch(InterruptedException i) {}
+    }
+
+    public ClassLoader getContextClassLoader() {
+        return ClassLoader.getSystemClassLoader();
     }
 
     public void setUncaughtExceptionHandler(UncaughtExceptionHandler handler) {

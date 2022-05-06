@@ -12,14 +12,17 @@ public class Formatter {
 	}
 
 	public Formatter format(String format, Object ... args) {
-		Matcher matcher = Pattern.compile("%s").matcher(format);
+		Matcher matcher = Pattern.compile("%.").matcher(format);
 		StringBuffer buffer = new StringBuffer();
-		System.out.println("Matches: " + matcher.matches());
 		int i = 0;
 		while (matcher.find()) {
+			if (matcher.group().equals("%%")) {
+				matcher.appendReplacement(buffer, "%%");
+				continue;
+			}
 			if (i >= args.length)
 				throw new IllegalFormatException();
-			matcher.appendReplacement(buffer, args[i++].toString());
+			matcher.appendReplacement(buffer, Matcher.quoteReplacement(args[i++].toString()));
 		}
 		matcher.appendTail(buffer);
 		formatted = buffer.toString();

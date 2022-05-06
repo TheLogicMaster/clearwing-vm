@@ -1,5 +1,3 @@
-// https://github.com/tommyettinger/RegExodus
-
 package java.util.regex;
 
 import regexodus.REFlags;
@@ -291,7 +289,7 @@ public class Pattern implements Serializable {
                 index = m.end();
             } else if (matchList.size() == limit - 1) { // last one
                 String match = input.subSequence(index,
-                        input.length()).toString();
+                    input.length()).toString();
                 matchList.add(match);
                 index = m.end();
             }

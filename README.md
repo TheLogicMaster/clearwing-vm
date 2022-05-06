@@ -26,10 +26,13 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Organize natives better, probably port C native function implementations to C++
 - Debug server
 - Include native source files from dependency JARs
-- Example Gradle project
 - Proper Unicode support (Character.isLetterOrDigit(), for instance)
 - Fix Date formatting
 - Make main Thread catch exceptions like other Threads and fix UncaughtExceptionHandler
+- Add internal types to non-optimized list internally
+- Object.clone()
+- Fix GZIP compression
+- Thread.interrupt()
 
 ## Notes
 - Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)

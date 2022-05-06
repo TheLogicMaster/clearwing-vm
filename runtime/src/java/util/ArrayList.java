@@ -25,7 +25,7 @@ package java.util;
  * 
  * @since 1.2
  */
-public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess {
+public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess, Cloneable {
 
     private static final long serialVersionUID = 8683452581122892189L;
 
@@ -588,6 +588,20 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAcce
     @Override
     public int size() {
         return size;
+    }
+
+    /**
+     * Returns a shallow copy of this <tt>ArrayList</tt> instance.  (The
+     * elements themselves are not copied.)
+     *
+     * @return a clone of this <tt>ArrayList</tt> instance
+     */
+    public Object clone() {
+        ArrayList<E> copy = new ArrayList<>(array.length);
+        System.arraycopy(array, 0, copy.array, 0, array.length);
+        copy.firstIndex = firstIndex;
+        copy.size = size;
+        return copy;
     }
 
     /**

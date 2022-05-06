@@ -907,6 +907,10 @@ JAVA_DOUBLE java_lang_Math_log___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA
     return log(a);
 }
 
+JAVA_DOUBLE java_lang_Math_hypot___double_double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a, JAVA_DOUBLE b) {
+    return hypot(a, b);
+}
+
 JAVA_BOOLEAN isClassNameEqual(const char * clsName, JAVA_ARRAY_CHAR* chrs, int length) {
     for(int i = 0 ; i < length ; i++) {
         if(clsName[i] != chrs[i]) return JAVA_FALSE;
@@ -1656,6 +1660,10 @@ JAVA_VOID java_lang_Object_notifyAll__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT ob
     pthread_cond_broadcast(&((struct CN1ThreadData*)obj->__codenameOneThreadData)->__codenameOneCondition);
 }
 
+JAVA_VOID java_lang_Thread_interrupt__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
+    // Todo: pthread_cond_signal
+}
+
 JAVA_VOID java_lang_Thread_setPriorityImpl___int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT t, JAVA_INT p) {
 }
 
@@ -1679,6 +1687,7 @@ JAVA_VOID java_lang_Thread_releaseThreadNativeResources___long(CODENAME_ONE_THRE
 JAVA_VOID java_lang_Thread_sleep___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG millis) {
     threadStateData->threadActive = JAVA_FALSE;
     usleep((JAVA_INT)(millis * 1000));
+    // Todo: Replace with pthread_cond_timedwait
     while(threadStateData->threadBlockedByGC) {
         usleep(1000);
     }

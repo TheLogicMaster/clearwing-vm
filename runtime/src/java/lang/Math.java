@@ -153,6 +153,8 @@ public final class Math {
 
 	public native static double log(double a);
 
+	public native static double hypot (double a, double b);
+
 	private static Random randomInst;
 	public static double random() {
 		if (randomInst == null)

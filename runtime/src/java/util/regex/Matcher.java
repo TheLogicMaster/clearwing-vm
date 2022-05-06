@@ -1,5 +1,3 @@
-// https://github.com/tommyettinger/RegExodus
-
 package java.util.regex;
 
 import regexodus.PerlSubstitution;
@@ -520,7 +518,11 @@ public class Matcher implements MatchResult {
      */
     public Matcher appendReplacement(StringBuffer sb, String replacement) {
         //Replacer rep = pattern.internal.replacer(replacement);
-        Replacer.replaceStep(matcher, new PerlSubstitution(replacement), Replacer.wrap(sb));
+
+        Replacer.StringBufferBuffer dest = Replacer.wrap(sb);
+        if (matcher.start() > 0) matcher.getGroup(-1 /*regexodus.MatchResult.PREFIX*/, dest);
+        new PerlSubstitution(replacement).appendSubstitution(matcher, dest);
+        matcher.setTarget(matcher, -2 /*regexodus.MatchResult.SUFFIX*/);
         return this;
     }
 

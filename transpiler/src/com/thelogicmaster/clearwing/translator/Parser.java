@@ -69,7 +69,11 @@ public class Parser extends ClassVisitor {
         
         classes.add(p.cls);
     }
-    
+
+    public static List<ByteCodeClass> getClasses () {
+        return classes;
+    }
+
     private static ByteCodeClass getClassByName(String name) {
         name = name.replace('/', '_').replace('$', '_');
         for(ByteCodeClass bc : classes) {

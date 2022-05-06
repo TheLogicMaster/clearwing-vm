@@ -1,3 +1,5 @@
+// This file is meant to be overridden
+
 #include "cn1_globals.h"
 #include <string.h>
 

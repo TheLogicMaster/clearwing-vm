@@ -63,10 +63,21 @@ public abstract class TimeZone{
         }
     }
 
-    private static native String getTimezoneId();
-    private static native int getTimezoneOffset(String name, int year, int month, int day, int timeOfDayMillis);
-    private static native int getTimezoneRawOffset(String name);
-    private static native boolean isTimezoneDST(String name, long millis);
+    private static String getTimezoneId() {
+        return "GMT";
+    }
+
+    private static int getTimezoneOffset(String name, int year, int month, int day, int timeOfDayMillis) {
+        return 0;
+    }
+
+    private static int getTimezoneRawOffset(String name) {
+        return 0;
+    }
+
+    private static boolean isTimezoneDST(String name, long millis) {
+        return false;
+    }
 
     private static long getJuly1() {
         long july1_2017 = 1498867200000l;

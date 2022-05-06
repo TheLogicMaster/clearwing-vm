@@ -49,6 +49,10 @@ public class Date implements Comparable<Date> {
          this.date = date;
     }
 
+    public boolean after(Date when) {
+        return getTime() > when.getTime();
+    }
+
     /**
      * Compares two dates for equality. The result is true if and only if the argument is not null and is a Date object that represents the same point in time, to the millisecond, as this object.
      * Thus, two Date objects are equal if and only if the getTime method returns the same long value for both.

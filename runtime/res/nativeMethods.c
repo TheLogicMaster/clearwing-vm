@@ -27,6 +27,7 @@
 #include "java_lang_reflect_Field.h"
 #include "java_lang_reflect_Method.h"
 #include "java_lang_Class.h"
+#include "java_lang_InterruptedException.h"
 
 #include <pthread.h>
 #include <unistd.h>
@@ -1420,6 +1421,9 @@ struct ThreadLocalData* getThreadLocalData() {
 
         i->thread = pthread_self();
 
+        pthread_mutex_init(&i->interruptMutex, NULL);
+        pthread_cond_init(&i->interruptCondition, NULL);
+
         if(!allThreads) {
             allThreads = malloc(NUMBER_OF_SUPPORTED_THREADS * sizeof(struct ThreadLocalData*));
             memset(allThreads, 0, NUMBER_OF_SUPPORTED_THREADS * sizeof(struct ThreadLocalData*));
@@ -1508,6 +1512,7 @@ JAVA_VOID java_lang_System_gcMarkSweep__(CODENAME_ONE_THREAD_STATE) {
 }
 
 JAVA_VOID java_lang_System_exit0___int(CODENAME_ONE_THREAD_STATE, JAVA_INT code) {
+    // Todo: Incorporate pthread cancellation
 #ifdef JOIN_ON_EXIT
     pthread_t self = pthread_self();
     for (int i = 0; i < NUMBER_OF_SUPPORTED_THREADS; i++) {
@@ -1610,6 +1615,8 @@ JAVA_VOID java_lang_Object_wait___long_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJEC
     ((struct CN1ThreadData*)obj->__codenameOneThreadData)->ownerThread = 0;
     ((struct CN1ThreadData*)obj->__codenameOneThreadData)->counter = 0;
 
+    threadStateData->waitingOn = obj;
+
     int errCode = 0;
     if(timeout == 0 && nanos == 0) {
         errCode = pthread_cond_wait(&((struct CN1ThreadData*)obj->__codenameOneThreadData)->__codenameOneCondition, &((struct CN1ThreadData*)obj->__codenameOneThreadData)->__codenameOneMutex);
@@ -1628,6 +1635,8 @@ JAVA_VOID java_lang_Object_wait___long_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJEC
         }
         pthread_cond_timedwait(&((struct CN1ThreadData*)obj->__codenameOneThreadData)->__codenameOneCondition, &((struct CN1ThreadData*)obj->__codenameOneThreadData)->__codenameOneMutex, &ts);
     }
+
+    threadStateData->waitingOn = NULL;
 
     while(threadStateData->threadBlockedByGC) {
         struct timeval   tv;
@@ -1648,6 +1657,13 @@ JAVA_VOID java_lang_Object_wait___long_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJEC
 
     threadStateData->threadActive = JAVA_TRUE;
     //NSLog(@"Waiting on mutex %i with timeout %i finished", (int)obj->__codenameOneMutex, (int)timeout);
+
+    struct obj__java_lang_Thread *thread = (struct obj__java_lang_Thread *)threadStateData->currentThreadObject;
+
+    if (thread->java_lang_Thread_interrupted) {
+        thread->java_lang_Thread_interrupted = JAVA_FALSE;
+        throwException(threadStateData, __NEW_INSTANCE_java_lang_InterruptedException(threadStateData));
+    }
 }
 
 JAVA_VOID java_lang_Object_notify__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT obj) {
@@ -1661,7 +1677,13 @@ JAVA_VOID java_lang_Object_notifyAll__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT ob
 }
 
 JAVA_VOID java_lang_Thread_interrupt__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
-    // Todo: pthread_cond_signal
+    struct obj__java_lang_Thread *thread = (struct obj__java_lang_Thread *)__cn1ThisObject;
+    thread->java_lang_Thread_interrupted = JAVA_TRUE;
+
+    struct ThreadLocalData *threadLocalData = (struct ThreadLocalData *)thread->java_lang_Thread_nativeThreadId;
+    pthread_cond_signal(&threadLocalData->interruptCondition);
+    if (threadLocalData->waitingOn)
+        pthread_cond_broadcast(&((struct CN1ThreadData*)threadLocalData->waitingOn->__codenameOneThreadData)->__codenameOneCondition);
 }
 
 JAVA_VOID java_lang_Thread_setPriorityImpl___int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT t, JAVA_INT p) {
@@ -1673,6 +1695,8 @@ JAVA_VOID java_lang_Thread_releaseThreadNativeResources___long(CODENAME_ONE_THRE
     if(nativeThreadStruct!=0)
     {
         struct ThreadLocalData *head = (struct ThreadLocalData *)nativeThreadStruct;
+        pthread_mutex_destroy(&head->interruptMutex);
+        pthread_cond_destroy(&head->interruptCondition);
         free(head->blocks);
         free(head->threadObjectStack);
         free(head->callStackClass);
@@ -1686,12 +1710,44 @@ JAVA_VOID java_lang_Thread_releaseThreadNativeResources___long(CODENAME_ONE_THRE
 
 JAVA_VOID java_lang_Thread_sleep___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG millis) {
     threadStateData->threadActive = JAVA_FALSE;
-    usleep((JAVA_INT)(millis * 1000));
-    // Todo: Replace with pthread_cond_timedwait
-    while(threadStateData->threadBlockedByGC) {
-        usleep(1000);
+
+    // Todo: Main thread isn't interruptable because it doesn't have a Thread
+    if (!threadStateData->currentThreadObject) {
+        usleep((JAVA_INT) (millis * 1000));
+        while (threadStateData->threadBlockedByGC)
+            usleep(1000);
+        threadStateData->threadActive = JAVA_TRUE;
+        return;
     }
+
+    // Todo: Extract to function
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct timespec ts;
+    ts.tv_sec = tv.tv_sec + (JAVA_LONG)(millis / 1000);
+    ts.tv_nsec = tv.tv_usec * 1000 + (millis % 1000) * 1000000;
+    if (ts.tv_nsec > 1000000000){
+        ts.tv_nsec -= 1000000000;
+        ts.tv_sec++;
+    }
+
+    struct obj__java_lang_Thread *thread = (struct obj__java_lang_Thread *)threadStateData->currentThreadObject;
+    int result = !thread->java_lang_Thread_interrupted;
+
+    if (!thread->java_lang_Thread_interrupted) {
+        pthread_mutex_lock(&threadStateData->interruptMutex);
+        result = pthread_cond_timedwait(&threadStateData->interruptCondition, &threadStateData->interruptMutex, &ts);
+        pthread_mutex_unlock(&threadStateData->interruptMutex);
+        while (threadStateData->threadBlockedByGC)
+            usleep(1000);
+    }
+
     threadStateData->threadActive = JAVA_TRUE;
+
+    if (result == 0) {
+        thread->java_lang_Thread_interrupted = JAVA_FALSE;
+        throwException(threadStateData, __NEW_INSTANCE_java_lang_InterruptedException(threadStateData));
+    }
 }
 
 JAVA_OBJECT java_lang_Thread_currentThread___R_java_lang_Thread(CODENAME_ONE_THREAD_STATE) {

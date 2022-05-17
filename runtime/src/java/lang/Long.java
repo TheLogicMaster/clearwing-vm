@@ -292,6 +292,27 @@ public final class Long extends Number implements Comparable<Long> {
 	}
 
 	/**
+	 * Returns the number of one-bits in the two's complement binary
+	 * representation of the specified {@code long} value.  This function is
+	 * sometimes referred to as the <i>population count</i>.
+	 *
+	 * @param i the value whose bits are to be counted
+	 * @return the number of one-bits in the two's complement binary
+	 *     representation of the specified {@code long} value.
+	 * @since 1.5
+	 */
+	public static int bitCount(long i) {
+		// HD, Figure 5-14
+		i = i - ((i >>> 1) & 0x5555555555555555L);
+		i = (i & 0x3333333333333333L) + ((i >>> 2) & 0x3333333333333333L);
+		i = (i + (i >>> 4)) & 0x0f0f0f0f0f0f0f0fL;
+		i = i + (i >>> 8);
+		i = i + (i >>> 16);
+		i = i + (i >>> 32);
+		return (int)i & 0x7f;
+	}
+
+	/**
 	 * Format a long (treated as unsigned) into a character buffer.
 	 * @param val the unsigned long to format
 	 * @param shift the log2 of the base to format in (4 for hex, 3 for octal, 1 for binary)

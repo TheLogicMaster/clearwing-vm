@@ -20,6 +20,7 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Switch wrapper buffers to use memory directly since it's always aligned, rather than the super inefficient byte by byte implementation (Profile using BufferUtilsTest)
 - Ensure code licensing is all good (Probably noting modifications to comply with GPLv2)
 - Remove any unnecessary java.util.concurrent stuff (If not supporting Threads)
+- Fix java.util.concurrent stuff (such as Atomic*) if fully supporting Threads
 - Replace any class stubs with generic equivalents
 - Enable NPE checks, possibly enhance the feature further
 - VSCode debugging testing/instructions
@@ -32,7 +33,7 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Add internal types to non-optimized list internally
 - Object.clone()
 - Fix GZIP compression
-- Thread.interrupt()
+- Fix try-catch/synchronized block nesting (See SwitchGDX ThreadTest)
 
 ## Notes
 - Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)

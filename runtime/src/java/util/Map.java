@@ -211,6 +211,46 @@ public interface Map<K,V> {
     public void putAll(Map<? extends K,? extends V> map);
 
     /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * This is equivalent to
+     *  <pre> {@code
+     * if (!map.containsKey(key))
+     *   return map.put(key, value);
+     * else
+     *   return map.get(key);
+     * }</pre>
+     *
+     * except that the action is performed atomically.
+     *
+     * @implNote This implementation intentionally re-abstracts the
+     * inappropriate default provided in {@code Map}.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param value value to be associated with the specified key
+     * @return the previous value associated with the specified key, or
+     *         {@code null} if there was no mapping for the key.
+     *         (A {@code null} return can also indicate that the map
+     *         previously associated {@code null} with the key,
+     *         if the implementation supports null values.)
+     * @throws UnsupportedOperationException if the {@code put} operation
+     *         is not supported by this map
+     * @throws ClassCastException if the class of the specified key or value
+     *         prevents it from being stored in this map
+     * @throws NullPointerException if the specified key or value is null,
+     *         and this map does not permit null keys or values
+     * @throws IllegalArgumentException if some property of the specified key
+     *         or value prevents it from being stored in this map
+     */
+    default V putIfAbsent (K key, V value) {
+        if (!containsKey(key) || get(key) == null) {
+            put(key, value);
+            return null;
+        }
+        return get(key);
+    }
+
+    /**
      * Removes a mapping with the specified key from this {@code Map}.
      * 
      * @param key
@@ -221,6 +261,33 @@ public interface Map<K,V> {
      *                if removing from this {@code Map} is not supported.
      */
     public V remove(Object key);
+
+    default boolean remove(Object key, Object value) {
+        Object curValue = get(key);
+        if (!Objects.equals(curValue, value) ||
+            (curValue == null && !containsKey(key))) {
+            return false;
+        }
+        remove(key);
+        return true;
+    }
+
+    default V replace (K key, V value) {
+        if (containsKey(key))
+            return put(key, value);
+        else
+            return null;
+    }
+
+    default boolean replace(K key, V oldValue, V newValue) {
+        Object curValue = get(key);
+        if (!Objects.equals(curValue, oldValue) ||
+            (curValue == null && !containsKey(key))) {
+            return false;
+        }
+        put(key, newValue);
+        return true;
+    }
 
     /**
      * Returns the number of mappings in this {@code Map}.

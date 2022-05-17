@@ -331,6 +331,12 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
         putAllImpl(map);
     }
 
+    public HashMap(HashMap<K, V> map) {
+        this(calculateCapacity(map.size()));
+        elementData = map.elementData;
+        elementCount = map.elementCount;
+    }
+
     /**
      * Removes all mappings from this hash map, leaving it empty.
      *

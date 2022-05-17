@@ -1736,7 +1736,7 @@ public class Arrays {
         return true;
     }
 
-    private static boolean deepEqualsElements(Object e1, Object e2) {
+    static boolean deepEqualsElements(Object e1, Object e2) {
         Class<?> cl1, cl2;
 
         if (e1 == e2) {

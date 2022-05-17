@@ -92,7 +92,7 @@ public abstract class Buffer {
 		return this;
 	}
 
-	public final Buffer clear() {
+	public Buffer clear() {
 		position = 0;
 		limit = capacity;
 		mark = -1;

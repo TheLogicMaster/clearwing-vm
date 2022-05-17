@@ -88,6 +88,11 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		throw new UnsupportedOperationException();
 	}
 
+	public ByteBuffer clear() {
+		super.clear();
+		return this;
+	}
+
 	@Override
 	public boolean isReadOnly () {
 		return false;

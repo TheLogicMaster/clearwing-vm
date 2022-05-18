@@ -51,13 +51,30 @@ public final class Field {
     private final int index;
     private final Class<?> declaringClass;
     private final Class<?> type;
+    private final Type genericType;
     private final String name;
     private final int modifiers;
 
-    private Field(int index, Class<?> declaringClass, Class<?> type, String name, int modifiers) {
+    private Field(int index, Class<?> declaringClass, Class<?> type, Class<?>[] genericTypes, String name, int modifiers) {
         this.index = index;
         this.declaringClass = declaringClass;
         this.type = type;
+        this.genericType = genericTypes == null ? type : new ParameterizedType() {
+            @Override
+            public Type[] getActualTypeArguments () {
+                return genericTypes;
+            }
+
+            @Override
+            public Type getRawType () {
+                return null;
+            }
+
+            @Override
+            public Type getOwnerType () {
+                return null;
+            }
+        };
         this.name = name;
         this.modifiers = modifiers;
     }
@@ -95,7 +112,7 @@ public final class Field {
     }
 
     public Type getGenericType() {
-        return getType(); // Doesn't support generics...
+        return genericType;
     }
 
     // Todo: type checking?

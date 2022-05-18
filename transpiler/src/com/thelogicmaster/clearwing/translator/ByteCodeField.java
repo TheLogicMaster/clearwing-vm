@@ -25,6 +25,9 @@ package com.thelogicmaster.clearwing.translator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -46,6 +49,8 @@ public class ByteCodeField {
     private Object value;
     private boolean privateField;
     private int modifiers;
+    private String[] genericTypes;
+    private int[] genericTypesDimensions;
     
     public ByteCodeField(String clsName, int access, String name, String desc, String signature, Object value) {
         this.clsName = clsName;
@@ -58,6 +63,24 @@ public class ByteCodeField {
         staticField = (access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC;
         finalField = (access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL;
         fieldName = name.replace('$', '_');
+
+        Pattern outerPattern = Pattern.compile(".*<(.+)>;.*");
+        Matcher outerMatcher = outerPattern.matcher(signature == null ? "" : signature);
+        if (outerMatcher.matches()) {
+            String[] types = outerMatcher.group(1).replaceAll("<(.+)>", "").replace("+", "").replace("-", "")
+                .replace("$", "_").replace("/", "_").split(";");
+            genericTypes = new String[types.length];
+            genericTypesDimensions = new int[types.length];
+            for (int i = 0; i < types.length; i++) {
+                String type = types[i];
+                String rawType = type.replace("[", "");
+                genericTypes[i] = rawType.startsWith("L") ? rawType.substring(1) : "java_lang_Object";
+                genericTypesDimensions[i] = type.length() - rawType.length();
+            }
+        } else {
+            genericTypes = new String[0];
+            genericTypesDimensions = new int[0];
+        }
 
         arrayDimensions = 0;
         while(desc.startsWith("[")) {
@@ -105,6 +128,14 @@ public class ByteCodeField {
                 primitiveType = Character.TYPE;
                 break;
         }
+    }
+
+    public String[] getGenericTypes () {
+        return genericTypes;
+    }
+
+    public int[] getGenericTypesDimensions () {
+        return genericTypesDimensions;
     }
 
     public int getModifiers() {

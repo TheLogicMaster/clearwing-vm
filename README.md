@@ -34,6 +34,9 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Object.clone()
 - Fix GZIP compression
 - Fix try-catch/synchronized block nesting (See SwitchGDX ThreadTest)
+- Dynamic cast checks
+- Annotation reflection
+- Fix component type of 1D primitive arrays so that newInstance can work and not use wrapper types
 
 ## Notes
 - Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)

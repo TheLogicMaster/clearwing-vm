@@ -984,6 +984,14 @@ JAVA_BOOLEAN java_lang_Class_isAnonymousClass___R_boolean(CODENAME_ONE_THREAD_ST
     return clz->isAnonymous;
 }
 
+JAVA_OBJECT fromNativeClassArray(CODENAME_ONE_THREAD_STATE, struct clazz **classes, int size) {
+    JAVA_OBJECT obj = __NEW_ARRAY_java_lang_Class(threadStateData, size);
+    JAVA_ARRAY array = (JAVA_ARRAY)obj;
+    for (int j = 0; j < size; j++)
+        ((struct clazz **)array->data)[j] = classes[j];
+    return obj;
+}
+
 JAVA_OBJECT java_lang_Class_getDeclaredFields___R_java_lang_reflect_Field_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
     JAVA_OBJECT fields = __NEW_ARRAY_java_lang_reflect_Field(threadStateData, clz->fieldCount);
@@ -991,8 +999,9 @@ JAVA_OBJECT java_lang_Class_getDeclaredFields___R_java_lang_reflect_Field_1ARRAY
     for (int i = 0; i < clz->fieldCount; i++) {
         JAVA_OBJECT field = __NEW_java_lang_reflect_Field(threadStateData);
         struct Field fieldStruct = clz->fields[i];
-        java_lang_reflect_Field___INIT_____int_java_lang_Class_java_lang_Class_java_lang_String_int(threadStateData, field, i, (JAVA_OBJECT)clz,
-                (JAVA_OBJECT)fieldStruct.type, fromNativeString(threadStateData, fieldStruct.name), fieldStruct.modifiers);
+        java_lang_reflect_Field___INIT_____int_java_lang_Class_java_lang_Class_java_lang_Class_1ARRAY_java_lang_String_int(threadStateData, field, i, (JAVA_OBJECT)clz,
+                (JAVA_OBJECT)fieldStruct.type, fromNativeClassArray(threadStateData, fieldStruct.genericTypes, fieldStruct.genericTypeCount),
+                fromNativeString(threadStateData, fieldStruct.name), fieldStruct.modifiers);
         ((JAVA_OBJECT *)array->data)[i] = field;
     }
     return (JAVA_OBJECT)fields;
@@ -1005,12 +1014,9 @@ JAVA_OBJECT java_lang_Class_getNativeMethods___R_java_lang_reflect_Method_1ARRAY
     for (int i = 0; i < clz->methodCount; i++) {
         JAVA_OBJECT method = __NEW_java_lang_reflect_Method(threadStateData);
         struct Method methodStruct = clz->methods[i];
-        JAVA_OBJECT argsObj = __NEW_ARRAY_java_lang_Class(threadStateData, methodStruct.paramCount);
-        JAVA_ARRAY args = (JAVA_ARRAY)argsObj;
-        for (int j = 0; j < methodStruct.paramCount; j++)
-            ((struct clazz **)args->data)[j] = methodStruct.paramTypes[j];
         java_lang_reflect_Method___INIT_____int_java_lang_Class_java_lang_Class_1ARRAY_java_lang_Class_java_lang_String_int(threadStateData, method, i,
-            (JAVA_OBJECT)clz, argsObj, (JAVA_OBJECT)methodStruct.returnType, fromNativeString(threadStateData, methodStruct.name), methodStruct.modifiers);
+            (JAVA_OBJECT)clz, fromNativeClassArray(threadStateData, methodStruct.paramTypes, methodStruct.paramCount),
+            (JAVA_OBJECT)methodStruct.returnType, fromNativeString(threadStateData, methodStruct.name), methodStruct.modifiers);
         ((JAVA_OBJECT *)array->data)[i] = method;
     }
     return (JAVA_OBJECT)methods;

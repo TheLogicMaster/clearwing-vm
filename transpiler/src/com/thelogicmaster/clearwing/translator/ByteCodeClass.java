@@ -465,6 +465,10 @@ public class ByteCodeClass {
             for (String clazz: nonOptimized)
                 b.append("#include \"").append(clazz).append(".h\"\n");
 
+        for (ByteCodeField field: fields)
+            for (String clazz: field.getGenericTypes())
+                b.append("#include \"").append(clazz).append(".h\"\n");
+
         b.append('\n');
 
         int methodCount = 0;
@@ -500,10 +504,25 @@ public class ByteCodeClass {
         }
         b.append("};\n\n");
 
+        for (ByteCodeField field: fields) {
+            if (field.getGenericTypes().length == 0)
+                continue;
+            b.append("static struct clazz *field_generic_types_").append("_").append(clsName).append("_").append(field.getFieldName());
+            b.append("[] = {");
+            for (int i = 0; i < field.getGenericTypes().length; i++)
+                b.append("&class").append(field.getGenericTypesDimensions()[i] == 0 ? "" : "_array" + field.getGenericTypesDimensions()[i]).append("__").append(field.getGenericTypes()[i]).append(", ");
+            b.append("};\n");
+        }
         b.append("struct Field fields_for_").append(clsName).append("[] = {\n");
         for (ByteCodeField field: fields) {
             b.append("\t{");
             b.append('"').append(field.getFieldName()).append('"');
+            b.append(", ").append(field.getGenericTypes().length);
+            b.append(", ");
+            if (field.getGenericTypes().length > 0)
+                b.append("field_generic_types_").append("_").append(clsName).append("_").append(field.getFieldName());
+            else
+                b.append("NULL");
             b.append(", ");
             field.appendClassType(b);
             b.append(", ").append(field.getModifiers());
@@ -664,7 +683,7 @@ public class ByteCodeClass {
             // array class type, dimension & internal type
             b.append("JAVA_TRUE, ");
             b.append(iter);
-            b.append(", &class__");
+            b.append(", &class").append(iter >= 2 ? "_array" + (iter - 1) : "").append("__");
             b.append(clsName);
 
             /*

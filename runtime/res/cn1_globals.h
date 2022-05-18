@@ -164,6 +164,8 @@ struct clazz {
 
 struct Field {
     const char *name;
+    int genericTypeCount;
+    struct clazz **genericTypes;
     struct clazz *type;
     int modifiers;
     void *getter;

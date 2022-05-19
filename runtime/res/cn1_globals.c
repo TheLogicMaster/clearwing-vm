@@ -209,7 +209,7 @@ struct clazz class__JAVA_VOID = {
 };
 
 struct clazz class_array1__JAVA_BOOLEAN = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BOOLEAN, "boolean[]", JAVA_TRUE, 1, &class__java_lang_Boolean, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BOOLEAN
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BOOLEAN, "boolean[]", JAVA_TRUE, 1, &class__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BOOLEAN
 };
 
 struct clazz class_array2__JAVA_BOOLEAN = {
@@ -221,7 +221,7 @@ struct clazz class_array3__JAVA_BOOLEAN = {
 };
 
 struct clazz class_array1__JAVA_CHAR = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_CHAR, "char[]", JAVA_TRUE, 1, &class__java_lang_Character, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_CHAR
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_CHAR, "char[]", JAVA_TRUE, 1, &class__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_CHAR
 };
 
 struct clazz class_array2__JAVA_CHAR = {
@@ -233,7 +233,7 @@ struct clazz class_array3__JAVA_CHAR = {
 };
 
 struct clazz class_array1__JAVA_BYTE = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BYTE, "byte[]", JAVA_TRUE, 1, &class__java_lang_Byte, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BYTE
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BYTE, "byte[]", JAVA_TRUE, 1, &class__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BYTE
 };
 
 struct clazz class_array2__JAVA_BYTE = {
@@ -245,7 +245,7 @@ struct clazz class_array3__JAVA_BYTE = {
 };
 
 struct clazz class_array1__JAVA_SHORT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_SHORT, "short[]", JAVA_TRUE, 1, &class__java_lang_Short, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_SHORT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_SHORT, "short[]", JAVA_TRUE, 1, &class__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_SHORT
 };
 
 struct clazz class_array2__JAVA_SHORT = {
@@ -257,7 +257,7 @@ struct clazz class_array3__JAVA_SHORT = {
 };
 
 struct clazz class_array1__JAVA_INT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_INT, "int[]", JAVA_TRUE, 1, &class__java_lang_Integer, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_INT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_INT, "int[]", JAVA_TRUE, 1, &class__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_INT
 };
 
 struct clazz class_array2__JAVA_INT = {
@@ -269,7 +269,7 @@ struct clazz class_array3__JAVA_INT = {
 };
 
 struct clazz class_array1__JAVA_LONG = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_LONG, "long[]", JAVA_TRUE, 1, &class__java_lang_Long, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_LONG
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_LONG, "long[]", JAVA_TRUE, 1, &class__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_LONG
 };
 
 struct clazz class_array2__JAVA_LONG = {
@@ -281,7 +281,7 @@ struct clazz class_array3__JAVA_LONG = {
 };
 
 struct clazz class_array1__JAVA_FLOAT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_FLOAT, "float[]", JAVA_TRUE, 1, &class__java_lang_Float, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_FLOAT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_FLOAT, "float[]", JAVA_TRUE, 1, &class__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_FLOAT
 };
 
 struct clazz class_array2__JAVA_FLOAT = {
@@ -293,7 +293,7 @@ struct clazz class_array3__JAVA_FLOAT = {
 };
 
 struct clazz class_array1__JAVA_DOUBLE = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_DOUBLE, "double[]", JAVA_TRUE, 1, &class__java_lang_Double, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_DOUBLE
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_DOUBLE, "double[]", JAVA_TRUE, 1, &class__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_DOUBLE
 };
 
 struct clazz class_array2__JAVA_DOUBLE = {
@@ -1466,28 +1466,28 @@ void** initVtableForInterface() {
 int byteSizeForArray(struct clazz* cls) {
     int byteSize = sizeof(JAVA_ARRAY_BYTE);
     if( cls->primitiveType ) {
-        if((*cls).arrayType == &class__java_lang_Long) {
+        if((*cls).arrayType == &class__JAVA_LONG) {
             byteSize = sizeof(JAVA_ARRAY_LONG);
         } else {
-            if((*cls).arrayType == &class__java_lang_Double) {
+            if((*cls).arrayType == &class__JAVA_DOUBLE) {
                 byteSize = sizeof(JAVA_ARRAY_DOUBLE);
             } else {
-                if((*cls).arrayType == &class__java_lang_Float) {
+                if((*cls).arrayType == &class__JAVA_FLOAT) {
                     byteSize = sizeof(JAVA_ARRAY_FLOAT);
                 } else {
-                    if((*cls).arrayType == &class__java_lang_Byte) {
+                    if((*cls).arrayType == &class__JAVA_BYTE) {
                         byteSize = sizeof(JAVA_ARRAY_BYTE);
                     } else {
-                        if((*cls).arrayType == &class__java_lang_Short) {
+                        if((*cls).arrayType == &class__JAVA_SHORT) {
                             byteSize = sizeof(JAVA_ARRAY_SHORT);
                         } else {
-                            if((*cls).arrayType == &class__java_lang_Integer) {
+                            if((*cls).arrayType == &class__JAVA_INT) {
                                 byteSize = sizeof(JAVA_ARRAY_INT);
                             } else {
-                                if((*cls).arrayType == &class__java_lang_Character) {
+                                if((*cls).arrayType == &class__JAVA_CHAR) {
                                     byteSize = sizeof(JAVA_ARRAY_CHAR);
                                 } else {
-                                    if((*cls).arrayType == &class__java_lang_Boolean) {
+                                    if((*cls).arrayType == &class__JAVA_BOOLEAN) {
                                         byteSize = sizeof(JAVA_ARRAY_BOOLEAN);
                                     }
                                 }

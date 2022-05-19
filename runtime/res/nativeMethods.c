@@ -1073,26 +1073,25 @@ JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java
     return out;
 }
 
-// Todo: Primitive arrays should really be using the primitive classes for arrayType
 JAVA_VOID java_lang_reflect_Array_set___java_lang_Object_int_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT arrayObj, JAVA_INT index, JAVA_OBJECT value) {
     JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
     struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
 
-    if (arrayType == &class__java_lang_Byte)
+    if (arrayType == &class__JAVA_BYTE)
         ((JAVA_ARRAY_BYTE *)array->data)[index] = (JAVA_ARRAY_BYTE)((struct obj__java_lang_Byte *)value)->java_lang_Byte_value;
-    else if (arrayType == &class__java_lang_Character)
+    else if (arrayType == &class__JAVA_CHAR)
         ((JAVA_ARRAY_CHAR *)array->data)[index] = ((struct obj__java_lang_Character *)value)->java_lang_Character_value;
-    else if (arrayType == &class__java_lang_Short)
+    else if (arrayType == &class__JAVA_SHORT)
         ((JAVA_ARRAY_SHORT *)array->data)[index] = (JAVA_ARRAY_SHORT)((struct obj__java_lang_Short *)value)->java_lang_Short_value;
-    else if (arrayType == &class__java_lang_Integer)
+    else if (arrayType == &class__JAVA_INT)
         ((JAVA_ARRAY_INT *)array->data)[index] = ((struct obj__java_lang_Integer *)value)->java_lang_Integer_value;
-    else if (arrayType == &class__java_lang_Long)
+    else if (arrayType == &class__JAVA_LONG)
         ((JAVA_ARRAY_LONG *)array->data)[index] = ((struct obj__java_lang_Long *)value)->java_lang_Long_value;
-    else if (arrayType == &class__java_lang_Boolean)
+    else if (arrayType == &class__JAVA_BOOLEAN)
         ((JAVA_ARRAY_BOOLEAN *)array->data)[index] = (JAVA_ARRAY_BOOLEAN)((struct obj__java_lang_Boolean *)value)->java_lang_Boolean_value;
-    else if (arrayType == &class__java_lang_Float)
+    else if (arrayType == &class__JAVA_FLOAT)
         ((JAVA_ARRAY_FLOAT *)array->data)[index] = ((struct obj__java_lang_Float *)value)->java_lang_Float_value;
-    else if (arrayType == &class__java_lang_Double)
+    else if (arrayType == &class__JAVA_DOUBLE)
         ((JAVA_ARRAY_DOUBLE *)array->data)[index] = ((struct obj__java_lang_Double *)value)->java_lang_Double_value;
     else
         ((JAVA_ARRAY_OBJECT *)array->data)[index] = value;
@@ -1102,21 +1101,21 @@ JAVA_OBJECT java_lang_reflect_Array_get___java_lang_Object_int_R_java_lang_Objec
     JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
     struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
 
-    if (arrayType == &class__java_lang_Byte)
+    if (arrayType == &class__JAVA_BYTE)
         return java_lang_Byte_valueOf___byte_R_java_lang_Byte(threadStateData, ((JAVA_ARRAY_BYTE *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Character)
+    else if (arrayType == &class__JAVA_CHAR)
         return java_lang_Character_valueOf___char_R_java_lang_Character(threadStateData, ((JAVA_ARRAY_CHAR *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Short)
+    else if (arrayType == &class__JAVA_SHORT)
         return java_lang_Short_valueOf___short_R_java_lang_Short(threadStateData, ((JAVA_ARRAY_SHORT *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Integer)
+    else if (arrayType == &class__JAVA_INT)
         return java_lang_Integer_valueOf___int_R_java_lang_Integer(threadStateData, ((JAVA_ARRAY_INT *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Long)
+    else if (arrayType == &class__JAVA_LONG)
         return java_lang_Long_valueOf___long_R_java_lang_Long(threadStateData, ((JAVA_ARRAY_LONG *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Boolean)
+    else if (arrayType == &class__JAVA_BOOLEAN)
         return java_lang_Boolean_valueOf___boolean_R_java_lang_Boolean(threadStateData, ((JAVA_ARRAY_BOOLEAN *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Float)
+    else if (arrayType == &class__JAVA_FLOAT)
         return java_lang_Float_valueOf___float_R_java_lang_Float(threadStateData, ((JAVA_ARRAY_FLOAT *)array->data)[index]);
-    else if (arrayType == &class__java_lang_Double)
+    else if (arrayType == &class__JAVA_DOUBLE)
         return java_lang_Double_valueOf___double_R_java_lang_Double(threadStateData, ((JAVA_ARRAY_DOUBLE *)array->data)[index]);
     else
         return ((JAVA_ARRAY_OBJECT *)array->data)[index];

@@ -48,9 +48,11 @@ public class Parser extends ClassVisitor {
     private String clsName;
     private static String[] nativeSources;
     private static List<ByteCodeClass> classes = new ArrayList<ByteCodeClass>();
+    private static final HashMap<String, ByteCodeAnnotation> defaultAnnotations = new HashMap<>();
     public static void cleanup() {
     	nativeSources = null;
     	classes.clear();
+        defaultAnnotations.clear();
     	LabelInstruction.cleanup();
     }
     public static void parse(File sourceFile) throws Exception {
@@ -68,6 +70,10 @@ public class Parser extends ClassVisitor {
         r.accept(p, ClassReader.EXPAND_FRAMES);
         
         classes.add(p.cls);
+    }
+
+    public static Map<String, ByteCodeAnnotation> getDefaultAnnotations() {
+        return defaultAnnotations;
     }
 
     public static List<ByteCodeClass> getClasses () {
@@ -444,6 +450,9 @@ public class Parser extends ClassVisitor {
             // and the class may be purged before it even has a shot.
             readNativeFiles(outputDirectory);
 
+            for(ByteCodeClass bc : classes)
+                bc.mergeAnnotations();
+
             for(ByteCodeClass bc : classes) {
                 file = bc.getClsName();
                 bc.updateAllDependencies();
@@ -717,12 +726,16 @@ public class Parser extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
-        return new AnnotationVisitorWrapper(super.visitTypeAnnotation(typeRef, typePath, desc, visible)); 
+        return new AnnotationVisitorWrapper(super.visitTypeAnnotation(typeRef, typePath, desc, visible));
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        return new AnnotationVisitorWrapper(super.visitAnnotation(desc, visible));
+        if (!visible)
+            return null;
+        ByteCodeAnnotation annotation = new ByteCodeAnnotation(Util.sanitizeClassName(desc.substring(1, desc.length() - 1)));
+        cls.addAnnotation(annotation);
+        return new ClassAnnotationVisitor(annotation);
     }
 
     @Override
@@ -945,19 +958,23 @@ public class Parser extends ClassVisitor {
 
         @Override
         public AnnotationVisitor visitAnnotationDefault() {
-            if (mv == null) return null;
-            return new AnnotationVisitorWrapper(super.visitAnnotationDefault());
+            ByteCodeAnnotation annotation;
+            if (defaultAnnotations.containsKey(clsName))
+                annotation = defaultAnnotations.get(clsName);
+            else {
+                annotation = new ByteCodeAnnotation(clsName);
+                defaultAnnotations.put(clsName, annotation);
+            }
+            return new ClassAnnotationVisitor(annotation, mtd.getMethodName());
         }
 
         @Override
         public void visitParameter(String name, int access) {
             super.visitParameter(name, access); 
-        }    
-        
-        
+        }
     }
     
-    class FieldVisitorWrapper extends FieldVisitor {
+    static class FieldVisitorWrapper extends FieldVisitor {
 
         public FieldVisitorWrapper(FieldVisitor fv) {
             super(Opcodes.ASM5, fv);
@@ -1017,8 +1034,65 @@ public class Parser extends ClassVisitor {
         public void visit(String name, Object value) {
             super.visit(name, value); 
         }
-        
-        
-    
+    }
+
+    private static class ClassAnnotationVisitor extends AnnotationVisitor {
+        private final ByteCodeAnnotation annotation;
+        private final String method;
+
+        public ClassAnnotationVisitor (ByteCodeAnnotation annotation) {
+            this(annotation, null);
+        }
+
+        public ClassAnnotationVisitor (ByteCodeAnnotation annotation, String method) {
+            super(Opcodes.ASM5);
+            this.annotation = annotation;
+            this.method = method;
+        }
+
+        @Override
+        public void visit (String name, Object value) {
+            annotation.addValue(new ByteCodeAnnotation.ObjectValue(annotation, method == null ? name : method, value));
+        }
+
+        @Override
+        public void visitEnum (String name, String desc, String value) {
+            annotation.addValue(new ByteCodeAnnotation.EnumValue(method == null ? name : method, Util.sanitizeClassName(desc.substring(1, desc.length() - 1)), value));
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation (String name, String desc) {
+            ByteCodeAnnotation nested = new ByteCodeAnnotation(Util.sanitizeClassName(desc.substring(1, desc.length() - 1)));
+            annotation.addValue(new ByteCodeAnnotation.AnnotationValue(method == null ? name : method, nested));
+            return new ClassAnnotationVisitor(nested);
+        }
+
+        @Override
+        public AnnotationVisitor visitArray (String name) {
+            ArrayList<Object> array = new ArrayList<>();
+            return new AnnotationVisitor(Opcodes.ASM5) {
+                @Override
+                public void visit (String name, Object value) {
+                    array.add(value);
+                }
+
+                @Override
+                public void visitEnum (String name, String desc, String value) {
+                    array.add(new ByteCodeAnnotation.EnumValue(name, Util.sanitizeClassName(desc.substring(1, desc.length() - 1)), value));
+                }
+
+                @Override
+                public AnnotationVisitor visitAnnotation (String name, String desc) {
+                    ByteCodeAnnotation nested = new ByteCodeAnnotation(Util.sanitizeClassName(desc.substring(1, desc.length() - 1)));
+                    array.add(new ByteCodeAnnotation.AnnotationValue(name, nested));
+                    return new ClassAnnotationVisitor(nested);
+                }
+
+                @Override
+                public void visitEnd () {
+                    annotation.addValue(new ByteCodeAnnotation.ObjectValue(annotation, method == null ? name : method, array.toArray()));
+                }
+            };
+        }
     }
 }

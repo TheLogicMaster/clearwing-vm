@@ -11,7 +11,7 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Basic File I/O
 - Buffers (Only direct buffers and ByteBuffer wrappers are supported for now)
 - System language/locale
-- Field, Method, and Constructor Reflection
+- Field, Method, Constructor, and Class Annotation Reflection
 
 ## Todo
 - Internal VM logging
@@ -30,11 +30,10 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Fix GZIP compression
 - Fix try-catch/synchronized block nesting (See SwitchGDX ThreadTest)
 - Dynamic cast checks
-- Annotation reflection
-- Fix component type of 1D primitive arrays so that newInstance can work and not use wrapper types
+- Reformat runtime and transpiler sources
 
 ## Notes
-- Requires retrolambda for lambda support (Use pre-v7 Gradle wrapper)
+- Requires retrolambda for lambda, default method, and method reference support (RetroLambda Gradle plugin doesn't support Gradle 7)
 - Exceptions thrown without a try-catch block on the main Thread are ignored
 - JDK-8 is required for compiling the Transpiler project
 - Classes referenced with reflection must be included in the JSON config file

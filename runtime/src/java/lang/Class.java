@@ -258,11 +258,10 @@ public final class Class<T> implements java.lang.reflect.Type {
      * annotation is present, else null.
      *
      */
-    public <T extends Annotation> T getAnnotation(Class annotationType) {
-        if (annotationType == null) {
-            throw new NullPointerException("Null annotationType");
-        }
-
+    public <A extends Annotation> A getAnnotation(Class<?> annotationType) {
+        for (Annotation annotation: getAnnotations())
+            if (annotationType == annotation.annotationType())
+                return (A)annotation;
         return null;
     }
 
@@ -270,14 +269,26 @@ public final class Class<T> implements java.lang.reflect.Type {
      * Returns all annotations present on this element.
      */
     public Annotation[] getAnnotations() {
-        return new Annotation[0];
+        ArrayList<Annotation> annotations = new ArrayList<>(Arrays.asList(getDeclaredAnnotations()));
+        if (getSuperclass() != null)
+            annotations.addAll(Arrays.asList(getSuperclass().getAnnotations()));
+        return annotations.toArray(new Annotation[0]);
     }
 
     /**
      * Returns all annotations that are directly present on this element.
      */
-    public Annotation[] getDeclaredAnnotations() {
-        return new Annotation[0];
+    public native Annotation[] getDeclaredAnnotations();
+
+    /**
+     * Returns true if an annotation for the specified type is present on this
+     * element, else false.
+     */
+    public boolean isAnnotationPresent(Class<?> annotationType) {
+        for (Annotation annotation: getAnnotations())
+            if (annotationType == annotation.annotationType())
+                return true;
+        return false;
     }
 
     public Field getDeclaredField(String name) throws NoSuchFieldException  {
@@ -292,14 +303,6 @@ public final class Class<T> implements java.lang.reflect.Type {
             if (field.getName().equals(name))
                 return field;
         throw new NoSuchFieldException(name);
-    }
-
-    /**
-     * Returns true if an annotation for the specified type is present on this
-     * element, else false.
-     */
-    public boolean isAnnotationPresent(Class annotationType) {
-        return false;
     }
 
     /**
@@ -350,7 +353,6 @@ public final class Class<T> implements java.lang.reflect.Type {
     
     public native Field[] getDeclaredFields();
 
-    // No concept of visibility in this implementation
     public Field[] getFields() {
         ArrayList<Field> fields = new ArrayList<>();
         for (Field field: getDeclaredFields())

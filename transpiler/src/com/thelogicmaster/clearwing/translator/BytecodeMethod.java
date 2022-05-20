@@ -836,7 +836,7 @@ public class BytecodeMethod implements SignatureSet {
     }
     
     public void appendVirtualMethodC(String cls, StringBuilder b, String offset) {
-        appendVirtualMethodC(cls, b, offset, false);
+        appendVirtualMethodC(cls, b, offset, false, false);
     }
     
     public static void addVirtualMethodsInvoked(String m) {
@@ -857,7 +857,7 @@ public class BytecodeMethod implements SignatureSet {
         return this.clsName + "_"+this.getCMethodName();
     }
     
-    public void appendVirtualMethodC(String cls, StringBuilder b, String offset, boolean includeStaticInitializer) {
+    public void appendVirtualMethodC(String cls, StringBuilder b, String offset, boolean includeStaticInitializer, boolean isAnnotation) {
         if(virtualOverriden) {
             return;
         }
@@ -888,15 +888,37 @@ public class BytecodeMethod implements SignatureSet {
         if(includeStaticInitializer) {
             b.append("__STATIC_INITIALIZER_");
             b.append(cls);
-            b.append("(threadStateData);\n    ");
+            b.append("(threadStateData);\n");
         }
         if (System.getProperty("INCLUDE_NPE_CHECKS", "false").equals("true")) {
-            b.append("\n    if(__cn1ThisObject == JAVA_NULL) THROW_NULL_POINTER_EXCEPTION();\n    ");
-        } 
+            b.append("\tif(__cn1ThisObject == JAVA_NULL) THROW_NULL_POINTER_EXCEPTION();\n");
+        }
+
+        if (isAnnotation) {
+            b.append("\tif (((struct obj__java_lang_annotation_Annotation *)__cn1ThisObject)->__isAnnotation)\n\t\treturn ");
+            switch (methodName) {
+            case "equals":
+                b.append("java_lang_Object_equals___java_lang_Object_R_boolean(threadStateData, __cn1ThisObject, __cn1Arg1)");
+                break;
+            case "hashCode":
+                b.append("java_lang_Object_hashCode___R_int(threadStateData, __cn1ThisObject)");
+                break;
+            case "toString":
+                b.append("java_lang_Object_toString___R_java_lang_String(threadStateData, __cn1ThisObject)");
+                break;
+            case "annotationType":
+                b.append("(JAVA_OBJECT)__cn1ThisObject->__codenameOneParentClsReference");
+                break;
+            default:
+                b.append("((struct obj__").append(clsName).append(" *)__cn1ThisObject)->field__").append(methodName);
+            }
+            b.append(";\n");
+        }
+
         if(!returnType.isVoid()) {
-            b.append("return (*(functionPtr_");
+            b.append("\treturn (*(functionPtr_");
         } else {
-            b.append("(*(functionPtr_");            
+            b.append("\t(*(functionPtr_");
         }
         b.append(bld);
         b.append(")__cn1ThisObject->__codenameOneParentClsReference->vtable[");

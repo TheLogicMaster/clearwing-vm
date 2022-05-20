@@ -69,6 +69,10 @@ public class Util {
         return sigTypeMap.get(cls);
     }
 
+    public static String sanitizeClassName(String cls) {
+        return cls.replace(".", "_").replace("/", "_").replace("$", "_");
+    }
+
     public static List<ByteCodeMethodArg> getMethodArgs(String methodDesc) {
         List<ByteCodeMethodArg> arguments = new ArrayList<ByteCodeMethodArg>();
         int currentArrayDim = 0;

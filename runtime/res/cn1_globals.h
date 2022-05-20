@@ -126,6 +126,8 @@ struct clazz {
     void* releaseFieldsFunction;
     void* markFunction;
 
+    void* initializerFunction;
+
     JAVA_BOOLEAN initialized;
     int classId;
     const char* clsName;
@@ -160,6 +162,8 @@ struct clazz {
 
     int methodCount;
     struct Method *methods;
+
+    JAVA_ARRAY annotations;
 };
 
 struct Field {

@@ -28,6 +28,7 @@
 #include "java_lang_reflect_Method.h"
 #include "java_lang_Class.h"
 #include "java_lang_InterruptedException.h"
+#include "java_lang_annotation_Annotation.h"
 
 #include <pthread.h>
 #include <unistd.h>
@@ -101,7 +102,7 @@ JAVA_VOID java_nio_ByteBuffer_deallocate___long(CODENAME_ONE_THREAD_STATE, JAVA_
  * The class representing classes
  */
 struct clazz ClazzClazz = {
-        DEBUG_GC_INIT 0, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_start_offset, "java.lang.Class", JAVA_FALSE, 0, 0, JAVA_FALSE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+        DEBUG_GC_INIT 0, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_start_offset, "java.lang.Class", JAVA_FALSE, 0, 0, JAVA_FALSE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 
@@ -994,6 +995,8 @@ JAVA_OBJECT fromNativeClassArray(CODENAME_ONE_THREAD_STATE, struct clazz **class
 
 JAVA_OBJECT java_lang_Class_getDeclaredFields___R_java_lang_reflect_Field_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
+    if (clz->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))clz->initializerFunction)(threadStateData);
     JAVA_OBJECT fields = __NEW_ARRAY_java_lang_reflect_Field(threadStateData, clz->fieldCount);
     JAVA_ARRAY array = (JAVA_ARRAY)fields;
     for (int i = 0; i < clz->fieldCount; i++) {
@@ -1009,6 +1012,8 @@ JAVA_OBJECT java_lang_Class_getDeclaredFields___R_java_lang_reflect_Field_1ARRAY
 
 JAVA_OBJECT java_lang_Class_getNativeMethods___R_java_lang_reflect_Method_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
+    if (clz->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))clz->initializerFunction)(threadStateData);
     JAVA_OBJECT methods = __NEW_ARRAY_java_lang_reflect_Method(threadStateData, clz->methodCount);
     JAVA_ARRAY array = (JAVA_ARRAY)methods;
     for (int i = 0; i < clz->methodCount; i++) {
@@ -1027,6 +1032,15 @@ JAVA_BOOLEAN java_lang_Class_isAnnotation___R_boolean(CODENAME_ONE_THREAD_STATE,
     return clz->isAnnotation;
 }
 
+JAVA_OBJECT java_lang_Class_getDeclaredAnnotations___R_java_lang_annotation_Annotation_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
+    struct clazz* clz = (struct clazz*)cls;
+    if (clz->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))clz->initializerFunction)(threadStateData);
+    if (!clz->annotations)
+        return __NEW_ARRAY_java_lang_annotation_Annotation(threadStateData, 0);
+    return (JAVA_OBJECT)clz->annotations;
+}
+
 JAVA_BOOLEAN java_lang_Class_isEnum___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
     return (clz->enumValueOfFp != 0);
@@ -1034,6 +1048,8 @@ JAVA_BOOLEAN java_lang_Class_isEnum___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_
 
 JAVA_OBJECT java_lang_Class_getEnumConstants___R_java_lang_Object_1ARRAY(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
+    if (clz->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))clz->initializerFunction)(threadStateData);
     if (!java_lang_Class_isEnum___R_boolean(threadStateData, cls))
         return JAVA_NULL;
     for (int i = 0; i < clz->fieldCount; i++)
@@ -1061,6 +1077,8 @@ JAVA_OBJECT java_lang_reflect_Constructor_nativeCreate___java_lang_Class_R_java_
 JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_INT len) {
     enteringNativeAllocations();
     struct clazz* clz = (struct clazz*)cls;
+    if (clz->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))clz->initializerFunction)(threadStateData);
     if (clz->arrayClass == 0) {
         JAVA_OBJECT ex = __NEW_java_lang_RuntimeException(CN1_THREAD_STATE_PASS_SINGLE_ARG);
         java_lang_RuntimeException___INIT_____java_lang_String(CN1_THREAD_STATE_PASS_ARG ex, newStringFromCString(CN1_THREAD_STATE_PASS_ARG "Attempt to create array with reflection, but the component class has no registered array class"));
@@ -1076,6 +1094,8 @@ JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java
 JAVA_VOID java_lang_reflect_Array_set___java_lang_Object_int_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT arrayObj, JAVA_INT index, JAVA_OBJECT value) {
     JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
     struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
+    if (arrayObj->__codenameOneParentClsReference->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))arrayObj->__codenameOneParentClsReference->initializerFunction)(threadStateData);
 
     if (arrayType == &class__JAVA_BYTE)
         ((JAVA_ARRAY_BYTE *)array->data)[index] = (JAVA_ARRAY_BYTE)((struct obj__java_lang_Byte *)value)->java_lang_Byte_value;
@@ -1100,6 +1120,8 @@ JAVA_VOID java_lang_reflect_Array_set___java_lang_Object_int_java_lang_Object(CO
 JAVA_OBJECT java_lang_reflect_Array_get___java_lang_Object_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT arrayObj, JAVA_INT index) {
     JAVA_ARRAY array = (JAVA_ARRAY)arrayObj;
     struct clazz* arrayType = arrayObj->__codenameOneParentClsReference->arrayType;
+    if (arrayObj->__codenameOneParentClsReference->initializerFunction)
+        ((void (*)(struct ThreadLocalData *))arrayObj->__codenameOneParentClsReference->initializerFunction)(threadStateData);
 
     if (arrayType == &class__JAVA_BYTE)
         return java_lang_Byte_valueOf___byte_R_java_lang_Byte(threadStateData, ((JAVA_ARRAY_BYTE *)array->data)[index]);
@@ -1127,7 +1149,8 @@ JAVA_INT java_lang_reflect_Array_getLength___java_lang_Object_R_int(CODENAME_ONE
 
 JAVA_OBJECT java_lang_reflect_Field_get___java_lang_Object_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT fieldObj, JAVA_OBJECT object) {
     struct obj__java_lang_reflect_Field* field = (struct obj__java_lang_reflect_Field*)fieldObj;
-    struct Field *fieldStruct = &(((struct clazz *)field->java_lang_reflect_Field_declaringClass)->fields)[field->java_lang_reflect_Field_index];
+    struct clazz *cls = (struct clazz *)field->java_lang_reflect_Field_declaringClass;
+    struct Field *fieldStruct = &cls->fields[field->java_lang_reflect_Field_index];
 
     if (fieldStruct->type == &class__JAVA_BYTE) {
         if (object == JAVA_NULL)
@@ -1175,7 +1198,8 @@ JAVA_OBJECT java_lang_reflect_Field_get___java_lang_Object_R_java_lang_Object(CO
 
 JAVA_VOID java_lang_reflect_Field_set___java_lang_Object_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT fieldObj, JAVA_OBJECT object, JAVA_OBJECT value) {
     struct obj__java_lang_reflect_Field* field = (struct obj__java_lang_reflect_Field*)fieldObj;
-    struct Field *fieldStruct = &(((struct clazz *)field->java_lang_reflect_Field_declaringClass)->fields)[field->java_lang_reflect_Field_index];
+    struct clazz *cls = (struct clazz *)field->java_lang_reflect_Field_declaringClass;
+    struct Field *fieldStruct = &cls->fields[field->java_lang_reflect_Field_index];
 
     if (fieldStruct->type == &class__JAVA_BYTE) {
         if (object != JAVA_NULL)
@@ -1247,7 +1271,8 @@ JAVA_OBJECT java_lang_reflect_Method_invoke___java_lang_Object_java_lang_Object_
     JAVA_OBJECT *paramValues = (JAVA_OBJECT *)params->data;
     struct obj__java_lang_reflect_Method *method = (struct obj__java_lang_reflect_Method *)methodObj;
     JAVA_ARRAY paramTypeArray = (JAVA_ARRAY)method->java_lang_reflect_Method_parameterTypes;
-    struct Method *methodStruct = &(((struct clazz *)method->java_lang_reflect_Method_declaringClass)->methods)[method->java_lang_reflect_Method_index];
+    struct clazz *declaringClass = (struct clazz *)method->java_lang_reflect_Method_declaringClass;
+    struct Method *methodStruct = &declaringClass->methods[method->java_lang_reflect_Method_index];
 
     JAVA_LONG argValues[paramTypeArray->length];
     memset(argValues, 0, sizeof(JAVA_LONG) * paramTypeArray->length);

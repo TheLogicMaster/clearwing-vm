@@ -75,6 +75,8 @@ public class ByteCodeField {
                 String type = types[i];
                 String rawType = type.replace("[", "");
                 genericTypes[i] = rawType.startsWith("L") ? rawType.substring(1) : "java_lang_Object";
+                if (!dependentClasses.contains(genericTypes[i]))
+                    dependentClasses.add(genericTypes[i]);
                 genericTypesDimensions[i] = type.length() - rawType.length();
             }
         } else {

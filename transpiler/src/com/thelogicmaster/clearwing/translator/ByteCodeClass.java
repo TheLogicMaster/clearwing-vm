@@ -63,6 +63,7 @@ public class ByteCodeClass {
     private Set<String> exportsClassesInterfaces = new TreeSet<String>();
     private List<BytecodeMethod> methods = new ArrayList<BytecodeMethod>();
     private List<ByteCodeField> fields = new ArrayList<ByteCodeField>();
+    private List<ByteCodeAnnotation> annotations = new ArrayList<>();
     private String clsName;
     private String originalClassName;
     private String baseClass;
@@ -168,13 +169,25 @@ public class ByteCodeClass {
     public void addField(ByteCodeField m) {
         fields.add(m);
     }
-    
+
+    public void addAnnotation(ByteCodeAnnotation annotation) {
+        annotations.add(annotation);
+    }
+
     public String generateCSharpCode() {
         return "";
     }
     
     public void addWritableField(String field) {
         writableFields.add(field);
+    }
+
+    public void mergeAnnotations() {
+        for (ByteCodeAnnotation annotation: annotations) {
+            if (!Parser.getDefaultAnnotations().containsKey(annotation.getAnnotation()))
+                continue;
+            annotation.merge(Parser.getDefaultAnnotations().get(annotation.getAnnotation()));
+        }
     }
 
     /**
@@ -348,9 +361,10 @@ public class ByteCodeClass {
     public void updateAllDependencies() {
         dependsClassesInterfaces.clear();
         exportsClassesInterfaces.clear();
+
         dependsClassesInterfaces.add("java_lang_NullPointerException");
         setBaseClass(baseClass);
-        if (isAnnotation) {
+        if (isAnnotation || annotations.size() > 0 || mainClass == this) {
             dependsClassesInterfaces.add("java_lang_annotation_Annotation");
         }
         for(String s : baseInterfaces) {
@@ -390,6 +404,9 @@ public class ByteCodeClass {
             //    exportsClassesInterfaces.add(s);
             //}
         }
+
+        for (ByteCodeAnnotation annotation: annotations)
+            dependsClassesInterfaces.addAll(annotation.getDependencies());
     }
     
     private boolean isMethodFromBaseOrInterface(BytecodeMethod bm) {
@@ -460,14 +477,6 @@ public class ByteCodeClass {
             b.append(s);
             b.append(".h\"\n");
         }
-
-        if (mainClass == this)
-            for (String clazz: nonOptimized)
-                b.append("#include \"").append(clazz).append(".h\"\n");
-
-        for (ByteCodeField field: fields)
-            for (String clazz: field.getGenericTypes())
-                b.append("#include \"").append(clazz).append(".h\"\n");
 
         b.append('\n');
 
@@ -564,6 +573,8 @@ public class ByteCodeClass {
         b.append(clsName);
         b.append(" ,0 , &__GC_MARK_");
         b.append(clsName);
+
+        b.append(", &__STATIC_INITIALIZER_").append(clsName);
         
         // initialized defaults to false
         b.append(",  0, ");
@@ -652,6 +663,9 @@ public class ByteCodeClass {
         b.append(", ").append(methodCount);
         // methods
         b.append(", methods_for_").append(clsName);
+
+        // annotations
+        b.append(", NULL");
         
         b.append("};\n\n");
 
@@ -665,11 +679,13 @@ public class ByteCodeClass {
             b.append(iter);
             b.append("__");
             b.append(clsName);
-            if(clsName.equals("java_lang_Class")) { // Todo: switch from null to &class__java_lang_reflect_Type for arrays?
-                b.append(" = {\n DEBUG_GC_INIT 0, 999999, 0, 0, 0, 0, 0, &arrayFinalizerFunction, &gcMarkArrayObject, 0, cn1_array_");
+            if(clsName.equals("java_lang_Class")) {
+                b.append(" = {\n DEBUG_GC_INIT 0, 999999, 0, 0, 0, 0, 0, &arrayFinalizerFunction, &gcMarkArrayObject");
             } else {
-                b.append(" = {\n DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, &arrayFinalizerFunction, &gcMarkArrayObject, 0, cn1_array_");
+                b.append(" = {\n DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, &arrayFinalizerFunction, &gcMarkArrayObject");
             }
+            b.append(", &__STATIC_INITIALIZER_").append(clsName);
+            b.append(", 0, cn1_array_");
             b.append(iter);
             b.append("_id_");
             b.append(clsName);
@@ -935,7 +951,7 @@ public class ByteCodeClass {
 
         // initialize object instances
 
-        if(!isInterface && !isAbstract) {
+        if(isAnnotation || (!isInterface && !isAbstract)) {
             b.append("JAVA_OBJECT __NEW_");
             b.append(clsName);
             b.append("(CODENAME_ONE_THREAD_STATE) {\n    __STATIC_INITIALIZER_");
@@ -946,7 +962,7 @@ public class ByteCodeClass {
             b.append(clsName);
             b.append(");\n    return o;\n}\n\n");
 
-            if(hasDefaultConstructor()) {
+            if(isAnnotation || hasDefaultConstructor()) {
                 b.append("JAVA_OBJECT __NEW_INSTANCE_");
                 b.append(clsName);
                 b.append("(CODENAME_ONE_THREAD_STATE) {\n    __STATIC_INITIALIZER_");
@@ -965,6 +981,7 @@ public class ByteCodeClass {
             b.append("JAVA_OBJECT __NEW_ARRAY_");
             b.append(clsName);
             b.append("(CODENAME_ONE_THREAD_STATE, JAVA_INT size) {\n");
+            b.append("\t__STATIC_INITIALIZER_").append(clsName).append("(threadStateData);\n");
             b.append("    JAVA_OBJECT o = allocArray(threadStateData, size, &class_array1__");
             b.append(clsName);
             b.append(", sizeof(JAVA_OBJECT), 1);\n    (*o).__codenameOneParentClsReference = &class_array1__");
@@ -1006,8 +1023,6 @@ public class ByteCodeClass {
                 }
                 if(m.isMain()) {
                     b.append("\nint main(int argc, char *argv[]) {\n    initConstantPool();\n");
-                    for (String clazz: nonOptimized)
-                        b.append("\t__STATIC_INITIALIZER_").append(clazz).append("(getThreadLocalData());\n");
                     b.append("    ");
                     b.append(clsName);
                     b.append("_main___java_lang_String_1ARRAY(getThreadLocalData(), JAVA_NULL);\n}\n\n");
@@ -1028,12 +1043,12 @@ public class ByteCodeClass {
                 // as if they are regular virtual calls
                 for(BytecodeMethod m : virtualMethodList) {
                     if(m.getClsName().equals("java_lang_Object")) {
-                        m.appendVirtualMethodC(clsName, b, "" + offset, true);
+                        m.appendVirtualMethodC(clsName, b, "" + offset, true, false);
                     } else {
                         // we pretend to have a virtual method here but the optimizer says its not really needed
                         if(!m.isVirtualOverriden()) {
-                            m.appendVirtualMethodC(clsName, b, "classToInterfaceMap_" + clsName + 
-                                    "[__cn1ThisObject->__codenameOneParentClsReference->classId][" + offset + "]", true);
+                            m.appendVirtualMethodC(clsName, b, "classToInterfaceMap_" + clsName + "[__cn1ThisObject->__codenameOneParentClsReference->classId][" +
+                                offset + "]", true, "java_lang_annotation_Annotation".equals(clsName) || isAnnotation);
                         }
                         offset++;
                     }
@@ -1120,7 +1135,7 @@ public class ByteCodeClass {
             b.append(clsName);
             b.append(".vtable = initVtableForInterface();\n    ");
         }
-        
+
         // create the vtable
         b.append("    class__");
         b.append(clsName);
@@ -1185,7 +1200,18 @@ public class ByteCodeClass {
         b.append(clsName);
         b.append(");\n");
 
-        b.append("__").append(clsName).append("_LOADED__=1;\n");
+        b.append("__").append(clsName).append("_LOADED__=1;\n\n");
+
+        // Create annotations
+        if (annotations.size() > 0) {
+            b.append("\tJAVA_OBJECT annotationsObj = __NEW_ARRAY_java_lang_annotation_Annotation(threadStateData, ").append(annotations.size()).append(");\n");
+            b.append("\tclass__").append(clsName).append(".annotations = (JAVA_ARRAY)annotationsObj;\n");
+            b.append("\tJAVA_OBJECT *annotations = (JAVA_OBJECT *)((JAVA_ARRAY)annotationsObj)->data;\n");
+            for (int i = 0; i < annotations.size(); i++) {
+                annotations.get(i).append(b, "annotations[" + i + ']');
+            }
+            b.append('\n');
+        }
         
         b.append("}\n\n");
         
@@ -1365,12 +1391,12 @@ public class ByteCodeClass {
         b.append(clsName);
         b.append("(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT objToMark, JAVA_BOOLEAN force);\n");
         
-        if(!isInterface && !isAbstract) {
+        if(isAnnotation || (!isInterface && !isAbstract)) {
             b.append("extern JAVA_OBJECT __NEW_");
             b.append(clsName);
             b.append("(CODENAME_ONE_THREAD_STATE);\n");
 
-            if(hasDefaultConstructor()) {
+            if(isAnnotation || hasDefaultConstructor()) {
                 b.append("extern JAVA_OBJECT __NEW_INSTANCE_");
                 b.append(clsName);
                 b.append("(CODENAME_ONE_THREAD_STATE);\n");
@@ -1500,11 +1526,19 @@ public class ByteCodeClass {
         b.append("    void* __ownerThread;\n");
         b.append("    int __heapPosition;\n");
 
-        
+        if ("java_lang_annotation_Annotation".equals(clsName) || isAnnotation)
+            b.append("\tJAVA_BOOLEAN __isAnnotation;\n");
+
         addFields(b);
+
+        if (isAnnotation)
+            for (BytecodeMethod method : methods) {
+                b.append("\t");
+                method.getReturnType().appendCSig(b);
+                b.append("field__").append(method.getMethodName()).append(";\n");
+            }
         
         b.append("};\n\n");
-                     
         
         b.append("\n\n#endif //__");
         b.append(clsName.toUpperCase());

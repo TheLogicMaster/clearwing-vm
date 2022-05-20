@@ -173,135 +173,135 @@ static void init_gc_thresholds() {
 //#define DEBUG_GC_OBJECTS_IN_HEAP
 
 struct clazz class__JAVA_BOOLEAN = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_BOOLEAN, "boolean", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_BOOLEAN
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_BOOLEAN, "boolean", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_BOOLEAN
 };
 
 struct clazz class__JAVA_CHAR = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_CHAR, "char", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_CHAR
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_CHAR, "char", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_CHAR
 };
 
 struct clazz class__JAVA_BYTE = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_BYTE, "byte", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_BYTE
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_BYTE, "byte", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_BYTE
 };
 
 struct clazz class__JAVA_SHORT = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_SHORT, "short", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_SHORT
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_SHORT, "short", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_SHORT
 };
 
 struct clazz class__JAVA_INT = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_INT, "int", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_INT
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_INT, "int", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_INT
 };
 
 struct clazz class__JAVA_LONG = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_LONG, "long", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_LONG
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_LONG, "long", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_LONG
 };
 
 struct clazz class__JAVA_FLOAT = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_FLOAT, "float", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_FLOAT
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_FLOAT, "float", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_FLOAT
 };
 
 struct clazz class__JAVA_DOUBLE = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_DOUBLE, "double", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_DOUBLE
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_DOUBLE, "double", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array1__JAVA_DOUBLE
 };
 
 struct clazz class__JAVA_VOID = {
-        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_VOID, "void", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_class_id_JAVA_VOID, "void", 0, 0, 0, 1, 0, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_BOOLEAN = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BOOLEAN, "boolean[]", JAVA_TRUE, 1, &class__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BOOLEAN
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BOOLEAN, "boolean[]", JAVA_TRUE, 1, &class__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BOOLEAN
 };
 
 struct clazz class_array2__JAVA_BOOLEAN = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_BOOLEAN, "boolean[][]", JAVA_TRUE, 2, &class_array1__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_BOOLEAN
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_BOOLEAN, "boolean[][]", JAVA_TRUE, 2, &class_array1__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_BOOLEAN
 };
 
 struct clazz class_array3__JAVA_BOOLEAN = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_BOOLEAN, "boolean[][][]", JAVA_TRUE, 3, &class_array2__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_BOOLEAN, "boolean[][][]", JAVA_TRUE, 3, &class_array2__JAVA_BOOLEAN, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_CHAR = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_CHAR, "char[]", JAVA_TRUE, 1, &class__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_CHAR
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_CHAR, "char[]", JAVA_TRUE, 1, &class__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_CHAR
 };
 
 struct clazz class_array2__JAVA_CHAR = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_CHAR, "char[][]", JAVA_TRUE, 2, &class_array1__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_CHAR
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_CHAR, "char[][]", JAVA_TRUE, 2, &class_array1__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_CHAR
 };
 
 struct clazz class_array3__JAVA_CHAR = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_CHAR, "char[][][]", JAVA_TRUE, 3, &class_array2__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_CHAR, "char[][][]", JAVA_TRUE, 3, &class_array2__JAVA_CHAR, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_BYTE = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BYTE, "byte[]", JAVA_TRUE, 1, &class__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BYTE
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_BYTE, "byte[]", JAVA_TRUE, 1, &class__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_BYTE
 };
 
 struct clazz class_array2__JAVA_BYTE = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_BYTE, "byte[][]", JAVA_TRUE, 2, &class_array1__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_BYTE
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_BYTE, "byte[][]", JAVA_TRUE, 2, &class_array1__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_BYTE
 };
 
 struct clazz class_array3__JAVA_BYTE = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_BYTE, "byte[][][]", JAVA_TRUE, 3, &class_array2__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_BYTE, "byte[][][]", JAVA_TRUE, 3, &class_array2__JAVA_BYTE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_SHORT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_SHORT, "short[]", JAVA_TRUE, 1, &class__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_SHORT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_SHORT, "short[]", JAVA_TRUE, 1, &class__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_SHORT
 };
 
 struct clazz class_array2__JAVA_SHORT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_SHORT, "short[][]", JAVA_TRUE, 2, &class_array1__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_SHORT
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_SHORT, "short[][]", JAVA_TRUE, 2, &class_array1__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_SHORT
 };
 
 struct clazz class_array3__JAVA_SHORT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_SHORT, "short[][][]", JAVA_TRUE, 3, &class_array2__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_SHORT, "short[][][]", JAVA_TRUE, 3, &class_array2__JAVA_SHORT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_INT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_INT, "int[]", JAVA_TRUE, 1, &class__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_INT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_INT, "int[]", JAVA_TRUE, 1, &class__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_INT
 };
 
 struct clazz class_array2__JAVA_INT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_INT, "int[][]", JAVA_TRUE, 2, &class_array1__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_INT
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_INT, "int[][]", JAVA_TRUE, 2, &class_array1__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_INT
 };
 
 struct clazz class_array3__JAVA_INT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_INT, "int[][][]", JAVA_TRUE, 3, &class_array2__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_INT, "int[][][]", JAVA_TRUE, 3, &class_array2__JAVA_INT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_LONG = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_LONG, "long[]", JAVA_TRUE, 1, &class__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_LONG
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_LONG, "long[]", JAVA_TRUE, 1, &class__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_LONG
 };
 
 struct clazz class_array2__JAVA_LONG = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_LONG, "long[][]", JAVA_TRUE, 2, &class_array1__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_LONG
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_LONG, "long[][]", JAVA_TRUE, 2, &class_array1__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_LONG
 };
 
 struct clazz class_array3__JAVA_LONG = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_LONG, "long[][][]", JAVA_TRUE, 3, &class_array2__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_LONG, "long[][][]", JAVA_TRUE, 3, &class_array2__JAVA_LONG, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_FLOAT = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_FLOAT, "float[]", JAVA_TRUE, 1, &class__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_FLOAT
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_FLOAT, "float[]", JAVA_TRUE, 1, &class__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_FLOAT
 };
 
 struct clazz class_array2__JAVA_FLOAT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_FLOAT, "float[][]", JAVA_TRUE, 2, &class_array1__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_FLOAT
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_FLOAT, "float[][]", JAVA_TRUE, 2, &class_array1__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_FLOAT
 };
 
 struct clazz class_array3__JAVA_FLOAT = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_FLOAT, "float[][][]", JAVA_TRUE, 3, &class_array2__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_FLOAT, "float[][][]", JAVA_TRUE, 3, &class_array2__JAVA_FLOAT, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct clazz class_array1__JAVA_DOUBLE = {
-    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_DOUBLE, "double[]", JAVA_TRUE, 1, &class__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_DOUBLE
+    DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_1_id_JAVA_DOUBLE, "double[]", JAVA_TRUE, 1, &class__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array2__JAVA_DOUBLE
 };
 
 struct clazz class_array2__JAVA_DOUBLE = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_2_id_JAVA_DOUBLE, "double[][]", JAVA_TRUE, 2, &class_array1__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_DOUBLE
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_2_id_JAVA_DOUBLE, "double[][]", JAVA_TRUE, 2, &class_array1__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0, 0, 0, 0, 0, 0, &class_array3__JAVA_DOUBLE
 };
 
 struct clazz class_array3__JAVA_DOUBLE = {
-   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, cn1_array_3_id_JAVA_DOUBLE, "double[][][]", JAVA_TRUE, 3, &class_array2__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
+   DEBUG_GC_INIT &class__java_lang_Class, 999999, 0, 0, 0, 0, 0, 0, &gcMarkArrayObject, 0, 0, cn1_array_3_id_JAVA_DOUBLE, "double[][][]", JAVA_TRUE, 3, &class_array2__JAVA_DOUBLE, JAVA_TRUE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
 struct elementStruct* pop(struct elementStruct** sp) {

@@ -962,7 +962,7 @@ JAVA_BOOLEAN java_lang_Class_isAssignableFrom___java_lang_Class_R_boolean(CODENA
 JAVA_BOOLEAN java_lang_Class_isInstance___java_lang_Object_R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_OBJECT obj) {
     struct clazz* clz1 = (struct clazz*)cls;
     struct clazz* clz2 = (struct clazz*)obj->__codenameOneParentClsReference;
-    return instanceofFunction(clz2->classId, clz1->classId);
+    return instanceofFunction(clz1->classId, clz2->classId);
 }
 
 JAVA_BOOLEAN java_lang_Class_isInterface___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
@@ -1388,7 +1388,8 @@ JAVA_OBJECT java_lang_Object_getClassImpl___R_java_lang_Class(CODENAME_ONE_THREA
     if(!obj->__codenameOneParentClsReference) {
         return (JAVA_OBJECT)(&ClazzClazz);
     }
-    obj->__codenameOneParentClsReference->__codenameOneParentClsReference = &ClazzClazz;
+    if (obj->__codenameOneParentClsReference != &ClazzClazz && !obj->__codenameOneParentClsReference->__codenameOneParentClsReference)
+        obj->__codenameOneParentClsReference->__codenameOneParentClsReference = &ClazzClazz; // Todo: Is this even needed?
     return (JAVA_OBJECT)obj->__codenameOneParentClsReference;
 }
 

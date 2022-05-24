@@ -711,37 +711,37 @@ public class BasicInstruction extends Instruction implements AssignableExpressio
                 break;
 
             case Opcodes.LCONST_0:
-                b.append("0 /* LCONST_0 */");
+                b.append("((JAVA_LONG)0) /* LCONST_0 */");
                 //b2.append("CN1_TYPE_LONG");
                 break;
 
             case Opcodes.LCONST_1:
-                b.append("1 /* LCONST_1 */");
+                b.append("((JAVA_LONG)1) /* LCONST_1 */");
                 //b2.append("CN1_TYPE_LONG");
                 break;
 
             case Opcodes.FCONST_0:
-                b.append("0 /* FCONST_0 */");
+                b.append("((JAVA_FLOAT)0) /* FCONST_0 */");
                 //b2.append("CN1_TYPE_FLOAT");
                 break;
 
             case Opcodes.FCONST_1:
-                b.append("1 /* FCONST_1 */");
+                b.append("((JAVA_FLOAT)1) /* FCONST_1 */");
                 //b2.append("CN1_TYPE_FLOAT");
                 break;
 
             case Opcodes.FCONST_2:
-                b.append("2 /* FCONST_2 */");
+                b.append("((JAVA_FLOAT)2) /* FCONST_2 */");
                 //b2.append("CN1_TYPE_FLOAT");
                 break;
 
             case Opcodes.DCONST_0:
-                b.append("0 /* DCONST_0 */");
+                b.append("((JAVA_DOUBLE)0) /* DCONST_0 */");
                 //b2.append("CN1_TYPE_DOUBLE");
                 break;
 
             case Opcodes.DCONST_1:
-                b.append("1 /* DCONST_1 */");
+                b.append("((JAVA_DOUBLE)1) /* DCONST_1 */");
                 //b2.append("CN1_TYPE_DOUBLE");
                 break;
        

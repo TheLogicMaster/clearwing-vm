@@ -158,6 +158,7 @@ public class ByteCodeTranslator {
      */
     public static void main(String[] args) throws Exception {
 //        System.setProperty("optimizer", "off");
+        System.setProperty("INCLUDE_NPE_CHECKS", "true");
 
         if(args.length != 3 && args.length != 4) {
             System.out.println("Usage: <input directory> <output directory> <config> <main class>");

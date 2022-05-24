@@ -31,6 +31,7 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Fix try-catch/synchronized block nesting (See SwitchGDX ThreadTest)
 - Dynamic cast checks
 - Reformat runtime and transpiler sources
+- Reflection type conversions (See SwitchGDX ReflectionTest)
 
 ## Notes
 - Requires retrolambda for lambda, default method, and method reference support (RetroLambda Gradle plugin doesn't support Gradle 7)
@@ -47,3 +48,4 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - JAVA_ARRAY_BYTE must be explicitly `unsigned char`, since it's compiler specific behavior otherwise
 - Array components in multidimensional arrays should refer to array classes of decreasing size
 - Added dedicated primitive types
+- Literals for non-integer types must be explicitly specified

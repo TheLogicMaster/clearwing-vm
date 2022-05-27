@@ -112,6 +112,10 @@ public class BitSet {
         this.isLengthActual = isLengthActual;
     }
 
+    public BitSet clone() {
+        return new BitSet(Arrays.copyOf(bits, bits.length), needClear, actualArrayLength, isLengthActual);
+    }
+
     /**
      * Compares the argument to this {@code BitSet} and returns whether they are
      * equal. The object must be an instance of {@code BitSet} with the same

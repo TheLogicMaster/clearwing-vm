@@ -70,8 +70,7 @@ package java.util.zip;
  * @see         Inflater
  * @author      David Connelly
  */
-public
-class Deflater {
+public class Deflater {
 
     private long address;
     private byte[] buf = new byte[0];
@@ -419,8 +418,7 @@ class Deflater {
             throw new ArrayIndexOutOfBoundsException();
         }
         ensureOpen();
-        if (flush == NO_FLUSH || flush == SYNC_FLUSH ||
-            flush == FULL_FLUSH) {
+        if (flush == NO_FLUSH || flush == SYNC_FLUSH || flush == FULL_FLUSH) {
             int thisLen = this.len;
             int n = deflateBytes(address, b, off, len, flush);
             bytesWritten += n;

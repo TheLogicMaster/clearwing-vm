@@ -75,7 +75,7 @@ class Inflater {
 
     private long address;
     private byte[] buf = defaultBuf;
-    private int len;
+    private int off, len;
     private boolean finished;
     private long bytesRead;
     private long bytesWritten;
@@ -122,6 +122,7 @@ class Inflater {
         }
         this.buf = b;
         this.len = len;
+        this.off = off;
     }
 
     /**

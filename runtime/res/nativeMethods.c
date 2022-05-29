@@ -2152,13 +2152,20 @@ JAVA_LONG java_util_zip_Inflater_init___boolean_R_long(CODENAME_ONE_THREAD_STATE
 }
 
 JAVA_INT java_util_zip_Inflater_inflateBytes___long_byte_1ARRAY_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject, JAVA_LONG address, JAVA_OBJECT b, JAVA_INT off, JAVA_INT len) {
+    struct obj__java_util_zip_Inflater *inflater = (struct obj__java_util_zip_Inflater*)__cn1ThisObject;
     z_streamp stream = (z_streamp)address;
-    stream->next_out = ((JAVA_ARRAY)b)->data;
+    stream->next_out = ((unsigned char *)((JAVA_ARRAY)b)->data) + off;
     stream->avail_out = len;
-    JAVA_ARRAY buf = (JAVA_ARRAY)((struct obj__java_util_zip_Inflater*)__cn1ThisObject)->java_util_zip_Inflater_buf;
-    stream->next_in = buf->data;
-    stream->avail_in = buf->length;
-    return inflate(stream, Z_FINISH);
+    JAVA_ARRAY buf = (JAVA_ARRAY)inflater->java_util_zip_Inflater_buf;
+    stream->next_in = ((unsigned char *)buf->data) + inflater->java_util_zip_Inflater_off;
+    stream->avail_in = inflater->java_util_zip_Inflater_len;
+    uLong preIn = stream->total_in;
+    uLong preOut = stream->total_out;
+    int result = inflate(stream, Z_SYNC_FLUSH);
+    inflater->java_util_zip_Inflater_finished = result == Z_STREAM_END;
+    inflater->java_util_zip_Inflater_len = (JAVA_INT)stream->avail_in;
+    inflater->java_util_zip_Inflater_off += (JAVA_INT)(stream->total_in - preIn);
+    return (JAVA_INT)(stream->total_out - preOut);
 }
 
 JAVA_INT java_util_zip_Inflater_getAdler___long_R_int(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
@@ -2183,15 +2190,19 @@ JAVA_LONG java_util_zip_Deflater_init___int_int_boolean_R_long(CODENAME_ONE_THRE
 
 JAVA_INT java_util_zip_Deflater_deflateBytes___long_byte_1ARRAY_int_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject, JAVA_LONG address, JAVA_OBJECT b, JAVA_INT off, JAVA_INT len, JAVA_INT flush) {
     struct obj__java_util_zip_Deflater *deflater = (struct obj__java_util_zip_Deflater *)__cn1ThisObject;
-    if (deflater->java_util_zip_Deflater_finish)
-        deflater->java_util_zip_Deflater_finished = JAVA_TRUE;
     z_streamp stream = (z_streamp)address;
-    stream->next_out = ((JAVA_ARRAY)b)->data;
+    stream->next_out = ((unsigned char *)((JAVA_ARRAY)b)->data) + off;
     stream->avail_out = len;
-    JAVA_ARRAY buf = (JAVA_ARRAY)((struct obj__java_util_zip_Deflater*)__cn1ThisObject)->java_util_zip_Deflater_buf;
-    stream->next_in = buf->data;
-    stream->avail_in = buf->length;
-    return deflate(stream, Z_FINISH);
+    JAVA_ARRAY buf = (JAVA_ARRAY)deflater->java_util_zip_Deflater_buf;
+    stream->next_in = ((unsigned char *)buf->data) + deflater->java_util_zip_Deflater_off;
+    stream->avail_in = deflater->java_util_zip_Deflater_len;
+    uLong preIn = stream->total_in;
+    uLong preOut = stream->total_out;
+    int result = deflate(stream, Z_FINISH);
+    deflater->java_util_zip_Deflater_finished = result == Z_STREAM_END;
+    deflater->java_util_zip_Deflater_len = (JAVA_INT)stream->avail_in;
+    deflater->java_util_zip_Deflater_off += (JAVA_INT)(stream->total_in - preIn);
+    return (JAVA_INT)(stream->total_out - preOut);
 }
 
 JAVA_INT java_util_zip_Deflater_getAdler___long_R_int(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {

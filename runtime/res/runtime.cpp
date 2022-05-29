@@ -108,14 +108,16 @@ JAVA_BOOLEAN java_io_File_exists___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJ
 }
 
 JAVA_BOOLEAN java_io_File_isDirectory___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT __cn1ThisObject) {
-    struct stat s;
-    stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s);
+    struct stat s{};
+    if (stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s))
+        return false;
     return S_ISDIR(s.st_mode);
 }
 
 JAVA_LONG java_io_File_lastModified___R_long(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
-    struct stat s;
-    stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s);
+    struct stat s{};
+    if (stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s))
+        return 0;
 #ifdef _WIN32
     return s.st_mtime;
 #else
@@ -124,8 +126,9 @@ JAVA_LONG java_io_File_lastModified___R_long(CODENAME_ONE_THREAD_STATE, JAVA_OBJ
 }
 
 JAVA_LONG java_io_File_length___R_long(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
-    struct stat s;
-    stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s);
+    struct stat s{};
+    if (stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s))
+        return 0;
     return s.st_size;
 }
 

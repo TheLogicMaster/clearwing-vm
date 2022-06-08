@@ -65,7 +65,7 @@ public class Parser extends ClassVisitor {
         }*/
         Parser p = new Parser();
         
-        p.clsName = r.getClassName().replace('/', '_').replace('$', '_');
+        p.clsName = r.getClassName().replace('/', '_').replace('$', '_').replace('-', '_');
         p.cls = new ByteCodeClass(p.clsName, r.getClassName());
         r.accept(p, ClassReader.EXPAND_FRAMES);
         

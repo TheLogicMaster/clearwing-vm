@@ -235,6 +235,16 @@ public interface List<E> extends Collection<E> {
      */
     public ListIterator<E> listIterator(int location);
 
+    default void sort(Comparator<? super E> c) {
+        Object[] a = this.toArray();
+        Arrays.sort(a, (Comparator) c);
+        ListIterator<E> i = this.listIterator();
+        for (Object e : a) {
+            i.next();
+            i.set((E) e);
+        }
+    }
+
     /**
      * Removes the object at the specified location from this {@code List}.
      * 

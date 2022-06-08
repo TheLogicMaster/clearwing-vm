@@ -661,4 +661,10 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAcce
         firstIndex = 0;
         modCount = 0;
     }
+
+    @Override
+    public void sort(Comparator<? super E> c) {
+        Arrays.sort(array, firstIndex, firstIndex + size, c);
+        modCount++;
+    }
 }

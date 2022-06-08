@@ -1,7 +1,6 @@
 #include "cn1_globals.h"
 #include <assert.h>
 #include <string.h>
-#include <unistd.h>
 #include "java_lang_Class.h"
 #include "java_lang_Object.h"
 #include "java_lang_Boolean.h"
@@ -17,6 +16,10 @@
 #include "java_lang_Runnable.h"
 #include "java_lang_System.h"
 #include "java_lang_ArrayIndexOutOfBoundsException.h"
+#ifndef __WINRT__
+#include <unistd.h> // Needed?
+#endif
+
 // #import <mach/mach.h>
 // #import <mach/mach_host.h>
 // #import <Foundation/Foundation.h>
@@ -482,7 +485,7 @@ void freeAndFinalize(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT obj) {
 void arrayFinalizerFunction(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT array) {
 }
 
-BOOL invokedGC = NO;
+char invokedGC = NO;
 extern int findPointerPosInHeap(JAVA_OBJECT obj);
 extern pthread_mutex_t* getMemoryAccessMutex();
 extern long gcThreadId;
@@ -931,7 +934,7 @@ JAVA_BOOLEAN java_lang_System_isHighFrequencyGC___R_boolean(CODENAME_ONE_THREAD_
 }
 
 /*extern*/ int mallocWhileSuspended;
-/*extern*/ BOOL isAppSuspended;
+/*extern*/ char isAppSuspended;
 
 JAVA_OBJECT codenameOneGcMalloc(CODENAME_ONE_THREAD_STATE, int size, struct clazz* parent) {
     if(isAppSuspended) {
@@ -1124,7 +1127,7 @@ JAVA_OBJECT allocArray(CODENAME_ONE_THREAD_STATE, int length, struct clazz* type
     (*array).dimensions = dim;
     (*array).primitiveSize = primitiveSize;
     if(actualSize > 0) {
-        void* arr = &(array->data);
+        intptr_t arr = &(array->data);
         arr += sizeof(void*);
         (*array).data = arr;
     } else {

@@ -5,6 +5,8 @@
 #include <fstream>
 #include <filesystem>
 #include <vector>
+#include <chrono>
+#include <thread>
 
 namespace fs = std::filesystem;
 
@@ -19,6 +21,12 @@ extern "C" {
 #include "java_io_FileInputStream.h"
 #include "java_io_FileOutputStream.h"
 #include "java_lang_String.h"
+
+#ifdef __WINRT__
+    void usleep(unsigned int usec) {
+        std::this_thread::sleep_for(std::chrono::microseconds(usec));
+    }
+#endif
 
 JAVA_LONG com_thelogicmaster_clearwing_NativeUtils_getLong___long_R_long(CODENAME_ONE_THREAD_STATE, JAVA_LONG address) {
     return *(JAVA_ARRAY_LONG *) address;
@@ -85,7 +93,7 @@ JAVA_OBJECT com_thelogicmaster_clearwing_NativeUtils_getPrimitive___java_lang_St
     else if (name == "void")
         return (JAVA_OBJECT)&class__JAVA_VOID;
     else
-        return JAVA_NULL;
+        return nullptr;
 }
 
 JAVA_BOOLEAN java_io_File_createFile___java_lang_String_R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT path) {
@@ -111,14 +119,18 @@ JAVA_BOOLEAN java_io_File_isDirectory___R_boolean(CODENAME_ONE_THREAD_STATE, JAV
     struct stat s{};
     if (stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s))
         return false;
+#ifdef __WINRT__
+    return (S_IFDIR & s.st_mode) != 0;
+#else
     return S_ISDIR(s.st_mode);
+#endif
 }
 
 JAVA_LONG java_io_File_lastModified___R_long(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
     struct stat s{};
     if (stat(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), &s))
         return 0;
-#ifdef _WIN32
+#if defined(__WIN32__) || defined(__WINRT__)
     return s.st_mtime;
 #else
     return s.st_mtim.tv_sec;
@@ -136,9 +148,9 @@ JAVA_OBJECT java_io_File_list___R_java_lang_String_1ARRAY(CODENAME_ONE_THREAD_ST
     std::vector<JAVA_OBJECT> collected;
     auto path = toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path);
     if (!fs::is_directory(path))
-        return JAVA_NULL;
+        return nullptr;
     for (const auto & entry : fs::directory_iterator(path)) {
-#ifdef _WIN32
+#if defined(__WIN32__) || defined(__WINRT__)
         std::wstring wstring(entry.path().c_str());
         std::string string(wstring.begin(), wstring.end());
         auto filePath = string.c_str();
@@ -154,7 +166,11 @@ JAVA_OBJECT java_io_File_list___R_java_lang_String_1ARRAY(CODENAME_ONE_THREAD_ST
 }
 
 JAVA_BOOLEAN java_io_File_mkdir___R_boolean(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT  __cn1ThisObject) {
-#ifdef _WIN32
+#if defined(__WINRT__)
+    std::string path(toNativeString(threadStateData, ((obj__java_io_File*)__cn1ThisObject)->java_io_File_path));
+    std::wstring wpath(path.begin(), path.end());
+    return !_wmkdir(wpath.c_str());
+#elif defined(__WIN32__)
     return !mkdir(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path));
 #else
     return !mkdir(toNativeString(threadStateData, ((obj__java_io_File *) __cn1ThisObject)->java_io_File_path), 0777);

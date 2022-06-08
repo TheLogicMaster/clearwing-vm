@@ -487,76 +487,98 @@ public class ByteCodeClass {
             methodCount++;
             b.append("static struct clazz *method_params_");
             method.appendFunctionPointer(b);
-            b.append("[] = {");
-            for (ByteCodeMethodArg arg: method.getArgumentTypes()) {
-                arg.appendClassType(b);
-                b.append(", ");
+            if (method.getArgumentTypes().size() == 0)
+                b.append("[]={NULL};\n");
+            else {
+                b.append("[] = {");
+                for (ByteCodeMethodArg arg : method.getArgumentTypes()) {
+                    arg.appendClassType(b);
+                    b.append(", ");
+                }
+                b.append("};\n");
             }
-            b.append("};\n");
         }
 
-        b.append("struct Method methods_for_").append(clsName).append("[] = {\n");
-        for (BytecodeMethod method: methods) {
-            if (method.isEliminated())
-                continue;
-            b.append("\t{");
-            b.append('"').append(method.getMethodName()).append('"');
-            b.append(", ").append(method.getArgumentTypes().size());
-            b.append(", ").append("method_params_");
-            method.appendFunctionPointer(b);
-            b.append(", ");
-            method.getReturnType().appendClassType(b);
-            b.append(", ").append(method.getModifiers());
-            b.append(", ");
-            method.appendFunctionPointer(b);
-            b.append("},\n");
+        b.append("struct Method methods_for_").append(clsName);
+        if (methods.size() == 0)
+            b.append("[]={NULL};\n");
+        else {
+            b.append("[] = {\n");
+            for (BytecodeMethod method : methods) {
+                if (method.isEliminated())
+                    continue;
+                b.append("\t{");
+                b.append('"').append(method.getMethodName()).append('"');
+                b.append(", ").append(method.getArgumentTypes().size());
+                b.append(", ").append("method_params_");
+                method.appendFunctionPointer(b);
+                b.append(", ");
+                method.getReturnType().appendClassType(b);
+                b.append(", ").append(method.getModifiers());
+                b.append(", ");
+                method.appendFunctionPointer(b);
+                b.append("},\n");
+            }
+            b.append("};\n\n");
         }
-        b.append("};\n\n");
 
         for (ByteCodeField field: fields) {
             if (field.getGenericTypes().length == 0)
                 continue;
             b.append("static struct clazz *field_generic_types_").append("_").append(clsName).append("_").append(field.getFieldName());
-            b.append("[] = {");
-            for (int i = 0; i < field.getGenericTypes().length; i++)
-                b.append("&class").append(field.getGenericTypesDimensions()[i] == 0 ? "" : "_array" + field.getGenericTypesDimensions()[i]).append("__").append(field.getGenericTypes()[i]).append(", ");
-            b.append("};\n");
+            if (field.getGenericTypes().length == 0)
+                b.append("[]={NULL};\n");
+            else {
+                b.append("[] = {");
+                for (int i = 0; i < field.getGenericTypes().length; i++)
+                    b.append("&class").append(field.getGenericTypesDimensions()[i] == 0 ? "" : "_array" + field.getGenericTypesDimensions()[i]).append("__").append(field.getGenericTypes()[i]).append(", ");
+                b.append("};\n");
+            }
         }
-        b.append("struct Field fields_for_").append(clsName).append("[] = {\n");
-        for (ByteCodeField field: fields) {
-            b.append("\t{");
-            b.append('"').append(field.getFieldName()).append('"');
-            b.append(", ").append(field.getGenericTypes().length);
-            b.append(", ");
-            if (field.getGenericTypes().length > 0)
-                b.append("field_generic_types_").append("_").append(clsName).append("_").append(field.getFieldName());
-            else
-                b.append("NULL");
-            b.append(", ");
-            field.appendClassType(b);
-            b.append(", ").append(field.getModifiers());
-            b.append(", get_").append(field.isStaticField() ? "static" : "field").append("_").append(clsName).append("_").append(field.getFieldName());
-            if (field.isStaticField() && field.isFinal() && field.getValue() != null && !writableFields.contains(field.getFieldName()))
-                b.append(", 0");
-            else
-                b.append(", set_").append(field.isStaticField() ? "static" : "field").append("_").append(clsName).append("_").append(field.getFieldName());
-            b.append("},\n");
+        b.append("struct Field fields_for_").append(clsName);
+        if (fields.size() == 0)
+            b.append("[] = {NULL};\n\n");
+        else {
+            b.append("[] = {\n");
+            for (ByteCodeField field : fields) {
+                b.append("\t{");
+                b.append('"').append(field.getFieldName()).append('"');
+                b.append(", ").append(field.getGenericTypes().length);
+                b.append(", ");
+                if (field.getGenericTypes().length > 0)
+                    b.append("field_generic_types_").append("_").append(clsName).append("_").append(field.getFieldName());
+                else
+                    b.append("NULL");
+                b.append(", ");
+                field.appendClassType(b);
+                b.append(", ").append(field.getModifiers());
+                b.append(", get_").append(field.isStaticField() ? "static" : "field").append("_").append(clsName).append("_").append(field.getFieldName());
+                if (field.isStaticField() && field.isFinal() && field.getValue() != null && !writableFields.contains(field.getFieldName()))
+                    b.append(", 0");
+                else
+                    b.append(", set_").append(field.isStaticField() ? "static" : "field").append("_").append(clsName).append("_").append(field.getFieldName());
+                b.append("},\n");
+            }
+            b.append("};\n\n");
         }
-        b.append("};\n\n");
 
         b.append("const struct clazz *base_interfaces_for_");
         b.append(clsName);
-        b.append("[] = {");
-        boolean first = true;
-        for(String ints : baseInterfaces) {
-            if(!first) {
-                b.append(", ");            
+        if (baseInterfaces.size() == 0)
+            b.append("[]={NULL};\n\n");
+        else {
+            b.append("[] = {");
+            boolean first = true;
+            for (String ints : baseInterfaces) {
+                if (!first) {
+                    b.append(", ");
+                }
+                first = false;
+                b.append("&class__");
+                b.append(ints.replace('/', '_').replace('$', '_'));
             }
-            first = false;
-            b.append("&class__");
-            b.append(ints.replace('/', '_').replace('$', '_'));
+            b.append("};\n\n");
         }
-        b.append("};\n\n");
         
         
         // class struct, contains vtable, static fields and meta data (class name), type info etc.
@@ -755,13 +777,13 @@ public class ByteCodeClass {
                             if(bf.getValue() instanceof Double) {
                                 Double d = ((Double)bf.getValue());
                                 if(d.isNaN()) {
-                                    b.append("0.0/0.0");                                    
+                                    b.append("((JAVA_DOUBLE)NAN)");
                                 } else {
                                     if(d.isInfinite()) {
                                         if(d.doubleValue() > 0) {
-                                            b.append("1.0f / 0.0f");
+                                            b.append("((JAVA_DOUBLE)INFINITY)");
                                         } else {
-                                            b.append("-1.0f / 0.0f");
+                                            b.append("((JAVA_DOUBLE)-INFINITY)");
                                         }
                                     } else {
                                         b.append(bf.getValue());
@@ -771,18 +793,23 @@ public class ByteCodeClass {
                                 if(bf.getValue() instanceof Float) {
                                     Float d = ((Float)bf.getValue());
                                     if(d.isNaN()) {
-                                        b.append("0.0/0.0");                                    
+                                        b.append("((JAVA_FLOAT)NAN)");
                                     } else {
                                         if(d.isInfinite()) {
                                             if(d.floatValue() > 0) {
-                                                b.append("1.0f / 0.0f");
+                                                b.append("((JAVA_FLOAT)INFINITY)");
                                             } else {
-                                                b.append("-1.0f / 0.0f");
+                                                b.append("((JAVA_FLOAT)-INFINITY)");
                                             }
                                         } else {
                                             b.append(bf.getValue());
                                         }
                                     }
+                                } else if (bf.getValue() instanceof Integer) {
+                                    if (((Integer) bf.getValue()) == Integer.MIN_VALUE)
+                                        b.append("INT_MIN");
+                                    else
+                                        b.append(bf.getValue());
                                 } else {
                                     b.append(bf.getValue());
                                 }

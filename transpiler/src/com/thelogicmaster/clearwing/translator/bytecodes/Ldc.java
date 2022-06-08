@@ -6,18 +6,18 @@
  * published by the Free Software Foundation.  Codename One designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Oracle in the LICENSE file that accompanied this code.
- *  
+ *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
- * 
+ *
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Please contact Codename One through http://www.codenameone.com/ if you 
+ *
+ * Please contact Codename One through http://www.codenameone.com/ if you
  * need additional information or have any questions.
  */
 
@@ -46,11 +46,11 @@ public class Ldc extends Instruction implements AssignableExpression {
             Parser.addToConstantPool((String)cst);
         }
     }
-    
+
     public Object getValue() {
         return cst;
     }
-    
+
     @Override
     public void addDependencies(List<String> dependencyList) {
         if (cst instanceof Type) {
@@ -84,7 +84,7 @@ public class Ldc extends Instruction implements AssignableExpression {
                     System.out.println("Non-fatal error when reading type: " + tp);
                     t.printStackTrace();
                 }
-            } 
+            }
         }
     }
 
@@ -93,26 +93,27 @@ public class Ldc extends Instruction implements AssignableExpression {
         return true;
     }
 
-    
-    
     public String getValueAsString() {
         StringBuilder b = new StringBuilder();
         if (cst instanceof Integer) {
             //b.append("PUSH_INT(");
-            b.append(((Number)cst).intValue());
+            if (((Number)cst).intValue() == Integer.MIN_VALUE)
+                b.append("INT_MIN");
+            else
+                b.append(((Number)cst).intValue());
             //b.append("); /* LDC */\n");
         } else if (cst instanceof Float) {
             Float f = (Float)cst;
             //b.append("PUSH_FLOAT(");
             if(f.isInfinite()) {
                 if(f.floatValue() > 0) {
-                    b.append("1.0f / 0.0f");
+                    b.append("((JAVA_FLOAT)INFINITY)");
                 } else {
-                    b.append("-1.0f / 0.0f");
+                    b.append("((JAVA_FLOAT)-INFINITY)");
                 }
             } else {
                 if(f.isNaN()) {
-                    b.append("0.0/0.0");
+                    b.append("((JAVA_FLOAT)NAN)");
                 } else {
                     b.append(f.floatValue());
                 }
@@ -132,13 +133,13 @@ public class Ldc extends Instruction implements AssignableExpression {
             //b.append("PUSH_DOUBLE(");
             if(d.isInfinite()) {
                 if(d.floatValue() > 0) {
-                    b.append("1.0 / 0.0");
+                    b.append("((JAVA_DOUBLE)INFINITY)");
                 } else {
-                    b.append("-1.0 / 0.0");
+                    b.append("((JAVA_DOUBLE)-INFINITY)");
                 }
             } else {
                 if(d.isNaN()) {
-                    b.append("0.0/0.0");
+                    b.append("((JAVA_DOUBLE)NAN)");
                 } else {
                     b.append(d.doubleValue());
                 }
@@ -152,7 +153,7 @@ public class Ldc extends Instruction implements AssignableExpression {
             b.append(Parser.addToConstantPool((String)cst));
             b.append(")");
             //b.append("));\n");
-            
+
         } else if (cst instanceof Type) {
             // TODO...
             int sort = ((Type) cst).getSort();
@@ -220,26 +221,29 @@ public class Ldc extends Instruction implements AssignableExpression {
         }
         return b.toString();
     }
-    
+
     @Override
     public void appendInstruction(StringBuilder b) {
         b.append("    ");
         if (cst instanceof Integer) {
             b.append("PUSH_INT(");
-            b.append(((Number)cst).intValue());
+            if (((Number)cst).intValue() == Integer.MIN_VALUE)
+                b.append("INT_MIN");
+            else
+                b.append(((Number)cst).intValue());
             b.append("); /* LDC */\n");
         } else if (cst instanceof Float) {
             Float f = (Float)cst;
             b.append("PUSH_FLOAT(");
             if(f.isInfinite()) {
                 if(f.floatValue() > 0) {
-                    b.append("1.0f / 0.0f");
+                    b.append("((JAVA_FLOAT)INFINITY)");
                 } else {
-                    b.append("-1.0f / 0.0f");
+                    b.append("((JAVA_FLOAT)-INFINITY)");
                 }
             } else {
                 if(f.isNaN()) {
-                    b.append("0.0/0.0");
+                    b.append("((JAVA_FLOAT)NAN)");
                 } else {
                     b.append(f.floatValue());
                 }
@@ -259,13 +263,13 @@ public class Ldc extends Instruction implements AssignableExpression {
             b.append("PUSH_DOUBLE(");
             if(d.isInfinite()) {
                 if(d.floatValue() > 0) {
-                    b.append("1.0 / 0.0");
+                    b.append("((JAVA_DOUBLE)INFINITY)");
                 } else {
-                    b.append("-1.0 / 0.0");
+                    b.append("((JAVA_DOUBLE)-INFINITY)");
                 }
             } else {
                 if(d.isNaN()) {
-                    b.append("0.0/0.0");
+                    b.append("((JAVA_DOUBLE)NAN)");
                 } else {
                     b.append(d.doubleValue());
                 }
@@ -339,7 +343,7 @@ public class Ldc extends Instruction implements AssignableExpression {
             b.append(cst.getClass().getName());
             b.append(" */");
         }
- 
+
     }
 
     @Override

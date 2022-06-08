@@ -31,16 +31,20 @@
 #include "java_lang_annotation_Annotation.h"
 
 #include <pthread.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <math.h>
 #include <ctype.h>
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/param.h>
 #include <zlib.h>
 #include <ffi.h>
+#ifdef __WINRT__
+#include <winsock2.h> // Needed for timeval struct...
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/param.h>
+#endif
 
 // Todo: Proper logging
 #define NSLog(...)
@@ -70,6 +74,29 @@ static const uint8_t utf8d[] = {
         1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,3,1,1,1,1,1,1, // s5..s6
         1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
+
+#ifdef __WINRT__
+// https://stackoverflow.com/a/26085827
+int gettimeofday(struct timeval* tp, struct timezone* tzp) {
+    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
+    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
+    // until 00:00:00 January 1, 1970 
+    static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
+
+    SYSTEMTIME  system_time;
+    FILETIME    file_time;
+    uint64_t    time;
+
+    GetSystemTime(&system_time);
+    SystemTimeToFileTime(&system_time, &file_time);
+    time = ((uint64_t)file_time.dwLowDateTime);
+    time += ((uint64_t)file_time.dwHighDateTime) << 32;
+
+    tp->tv_sec = (long)((time - EPOCH) / 10000000L);
+    tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
+    return 0;
+}
+#endif
 
 pthread_t gcThread;
 
@@ -546,7 +573,7 @@ JAVA_VOID java_lang_System_arraycopy___java_lang_Object_int_java_lang_Object_int
     }
     struct clazz* cls = (*srcArr).__codenameOneParentClsReference;
     int byteSize = byteSizeForArray(cls);
-    memcpy( (*dstArr).data + (dstOffset * byteSize), (*srcArr).data  + (srcOffset * byteSize), length * byteSize);
+    memcpy(((char *)dstArr->data) + (dstOffset * byteSize), ((char *)srcArr->data)  + (srcOffset * byteSize), length * byteSize);
 }
 
 JAVA_LONG java_lang_System_currentTimeMillis___R_long(CODENAME_ONE_THREAD_STATE) {
@@ -642,7 +669,7 @@ JAVA_OBJECT java_lang_Double_toStringImpl___double_boolean_R_java_lang_String(CO
     int j=0;
     int i=32;
     char s2[32];
-    BOOL inside=NO;
+    char inside=NO;
     while (i-->0 && j < 32){
         if (inside){
             if (s[i]=='.'){
@@ -1274,11 +1301,11 @@ JAVA_OBJECT java_lang_reflect_Method_invoke___java_lang_Object_java_lang_Object_
     struct clazz *declaringClass = (struct clazz *)method->java_lang_reflect_Method_declaringClass;
     struct Method *methodStruct = &declaringClass->methods[method->java_lang_reflect_Method_index];
 
-    JAVA_LONG argValues[paramTypeArray->length];
+    JAVA_LONG *argValues = malloc(sizeof(JAVA_LONG) * paramTypeArray->length);
     memset(argValues, 0, sizeof(JAVA_LONG) * paramTypeArray->length);
     int argOffset = object == JAVA_NULL ? 1 : 2;
-    ffi_type *argTypes[paramTypeArray->length + argOffset];
-    void *args[paramTypeArray->length + argOffset];
+    ffi_type** argTypes = malloc(sizeof(ffi_type *) * (paramTypeArray->length + argOffset));
+    void** args = malloc(sizeof(void *) * (paramTypeArray->length + argOffset));
 
     argTypes[0] = &ffi_type_pointer;
     args[0] = &threadStateData;
@@ -1322,6 +1349,10 @@ JAVA_OBJECT java_lang_reflect_Method_invoke___java_lang_Object_java_lang_Object_
         // Todo: Exception for internal error
     }
 
+    free(argValues);
+    free(argTypes);
+    free(args);
+
     struct clazz *cls = (struct clazz *)method->java_lang_reflect_Method_returnType;
     if (cls == &class__JAVA_BOOLEAN)
         return java_lang_Boolean_valueOf___boolean_R_java_lang_Boolean(threadStateData, *(JAVA_BOOLEAN *)&returnValue);
@@ -1360,9 +1391,11 @@ JAVA_OBJECT java_lang_Object_toString___R_java_lang_String(CODENAME_ONE_THREAD_S
     } else {
         struct clazz* cls = obj->__codenameOneParentClsReference;
         const char* className = cls->clsName;
-        char s[strlen(className) + 32];
-        sprintf(s, "%s@%" PRIx64, className, ((JAVA_LONG)obj));
-        return newStringFromCString(threadStateData, s);
+        char* buffer = malloc(strlen(className) + 32);
+        sprintf(buffer, "%s@%" PRIx64, className, ((JAVA_LONG)obj));
+        JAVA_OBJECT string = newStringFromCString(threadStateData, buffer);
+        free(buffer);
+        return string;
     }
 }
 
@@ -1861,7 +1894,11 @@ JAVA_VOID java_lang_Thread_start__(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT th) {
     pthread_attr_destroy(&attr);
 
     // First thread created will be GC thread
+#ifdef __WINRT__
+    if (!gcThread.p) // A pointer would be a better fix
+#else
     if (!gcThread)
+#endif
         gcThread = pt;
 }
 
@@ -1873,7 +1910,7 @@ JAVA_DOUBLE java_lang_StringToReal_parseDblImpl___java_lang_String_int_R_double(
     int length = java_lang_String_length___R_int(threadStateData, s);
     JAVA_ARRAY arrayData = (JAVA_ARRAY)java_lang_String_toCharNoCopy___R_char_1ARRAY(threadStateData, s);
     JAVA_ARRAY_CHAR* chrs = arrayData->data;
-    char data[length + 1];
+    char* data = malloc(length + 1);
     for(int iter = 0 ; iter < length ; iter++) {
         data[iter] = (char)chrs[iter];
     }
@@ -1881,9 +1918,13 @@ JAVA_DOUBLE java_lang_StringToReal_parseDblImpl___java_lang_String_int_R_double(
     char *err;
     JAVA_DOUBLE db = strtod(data, &err);
     if (data == err) {
+        free(data);
+        data = NULL;
         JAVA_OBJECT numberFormatException = java_lang_StringToReal_invalidReal___java_lang_String_boolean_R_java_lang_NumberFormatException(threadStateData, s, JAVA_TRUE);
         throwException(threadStateData,numberFormatException);
     }
+    if (data)
+        free(data);
     JAVA_LONG exp = 1;
     if(e != 0) {
         if(e < 0) {

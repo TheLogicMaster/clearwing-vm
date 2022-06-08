@@ -4,7 +4,9 @@
 // #import <Foundation/Foundation.h>
 #define NSLog(...)
 #include <stdint.h>
+#ifndef __WINRT__
 #define BOOL char
+#endif
 #define YES 1
 #define NO 0
 

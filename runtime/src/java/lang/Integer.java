@@ -109,6 +109,21 @@ public final class Integer extends Number implements Comparable<Integer> {
 		return value;
 	}
 
+	public static int rotateLeft(int i, int distance) {
+		return i << distance | i >>> -distance;
+	}
+
+	public static int rotateRight(int i, int distance) {
+		return i >>> distance | i << -distance;
+	}
+
+	public static int reverse(int i) {
+		i = (i & 1431655765) << 1 | i >>> 1 & 1431655765;
+		i = (i & 858993459) << 2 | i >>> 2 & 858993459;
+		i = (i & 252645135) << 4 | i >>> 4 & 252645135;
+		return reverseBytes(i);
+	}
+
 	public static int reverseBytes (int i) {
 		return ((i >>> 24)) | ((i >> 8) & 0xFF00) | ((i << 8) & 0xFF0000) | ((i << 24));
 	}
@@ -135,6 +150,10 @@ public final class Integer extends Number implements Comparable<Integer> {
 
 	public static int lowestOneBit(int i) {
 		return i & -i;
+	}
+
+	public static int highestOneBit(int i) {
+		return i & MIN_VALUE >>> numberOfLeadingZeros(i);
 	}
 
 	/**
@@ -205,6 +224,19 @@ public final class Integer extends Number implements Comparable<Integer> {
 
 	private static NumberFormatException invalidInt (String s) {
 		throw new NumberFormatException("Invalid int: \"" + s + "\"");
+	}
+
+	/**
+	 * Returns a hash code for a {@code int} value; compatible with
+	 * {@code Integer.hashCode()}.
+	 *
+	 * @param value the value to hash
+	 * @since 1.8
+	 *
+	 * @return a hash code value for a {@code int} value.
+	 */
+	public static int hashCode(int value) {
+		return value;
 	}
 
 	/**

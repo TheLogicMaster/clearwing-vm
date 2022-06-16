@@ -151,6 +151,24 @@ public final class Math {
 
 	public native static double atan2 (double a, double b);
 
+	public native static double sinh (double a);
+
+	public native static double cosh (double a);
+
+	public native static double tanh (double a);
+
+	public native static double exp (double a);
+
+	public native static double expm1 (double a);
+
+	public native static double log10 (double a);
+
+	public native static double log1p (double a);
+
+	public native static double rint (double a);
+
+	public static native double IEEEremainder(double f1, double f2);
+
 	public native static double log(double a);
 
 	public native static double hypot (double a, double b);
@@ -160,6 +178,246 @@ public final class Math {
 		if (randomInst == null)
 			randomInst = new Random();
 		return randomInst.nextDouble();
+	}
+
+	/**
+	 * Returns the floating-point value adjacent to {@code d} in
+	 * the direction of positive infinity.  This method is
+	 * semantically equivalent to {@code nextAfter(d,
+	 * Double.POSITIVE_INFINITY)}; however, a {@code nextUp}
+	 * implementation may run faster than its equivalent
+	 * {@code nextAfter} call.
+	 *
+	 * <p>Special Cases:
+	 * <ul>
+	 * <li> If the argument is NaN, the result is NaN.
+	 *
+	 * <li> If the argument is positive infinity, the result is
+	 * positive infinity.
+	 *
+	 * <li> If the argument is zero, the result is
+	 * {@link Double#MIN_VALUE}
+	 *
+	 * </ul>
+	 *
+	 * @param d starting floating-point value
+	 * @return The adjacent floating-point value closer to positive
+	 * infinity.
+	 * @since 1.6
+	 */
+	public static double nextUp(double d) {
+		if( Double.isNaN(d) || d == Double.POSITIVE_INFINITY)
+			return d;
+		else {
+			d += 0.0d;
+			return Double.longBitsToDouble(Double.doubleToRawLongBits(d) +
+				((d >= 0.0d)?+1L:-1L));
+		}
+	}
+
+	/**
+	 * Returns the floating-point value adjacent to {@code f} in
+	 * the direction of positive infinity.  This method is
+	 * semantically equivalent to {@code nextAfter(f,
+	 * Float.POSITIVE_INFINITY)}; however, a {@code nextUp}
+	 * implementation may run faster than its equivalent
+	 * {@code nextAfter} call.
+	 *
+	 * <p>Special Cases:
+	 * <ul>
+	 * <li> If the argument is NaN, the result is NaN.
+	 *
+	 * <li> If the argument is positive infinity, the result is
+	 * positive infinity.
+	 *
+	 * <li> If the argument is zero, the result is
+	 * {@link Float#MIN_VALUE}
+	 *
+	 * </ul>
+	 *
+	 * @param f starting floating-point value
+	 * @return The adjacent floating-point value closer to positive
+	 * infinity.
+	 * @since 1.6
+	 */
+	public static float nextUp(float f) {
+		if( Float.isNaN(f) || f == FloatConsts.POSITIVE_INFINITY)
+			return f;
+		else {
+			f += 0.0f;
+			return Float.intBitsToFloat(Float.floatToRawIntBits(f) +
+				((f >= 0.0f)?+1:-1));
+		}
+	}
+
+	/**
+	 * Returns the size of an ulp of the argument.  An ulp, unit in
+	 * the last place, of a {@code double} value is the positive
+	 * distance between this floating-point value and the {@code
+	 * double} value next larger in magnitude.  Note that for non-NaN
+	 * <i>x</i>, <code>ulp(-<i>x</i>) == ulp(<i>x</i>)</code>.
+	 *
+	 * <p>Special Cases:
+	 * <ul>
+	 * <li> If the argument is NaN, then the result is NaN.
+	 * <li> If the argument is positive or negative infinity, then the
+	 * result is positive infinity.
+	 * <li> If the argument is positive or negative zero, then the result is
+	 * {@code Double.MIN_VALUE}.
+	 * <li> If the argument is &plusmn;{@code Double.MAX_VALUE}, then
+	 * the result is equal to 2<sup>971</sup>.
+	 * </ul>
+	 *
+	 * @param d the floating-point value whose ulp is to be returned
+	 * @return the size of an ulp of the argument
+	 * @author Joseph D. Darcy
+	 * @since 1.5
+	 */
+	public static double ulp(double d) {
+		int exp = getExponent(d);
+
+		switch(exp) {
+		case DoubleConsts.MAX_EXPONENT+1:       // NaN or infinity
+			return Math.abs(d);
+
+		case DoubleConsts.MIN_EXPONENT-1:       // zero or subnormal
+			return Double.MIN_VALUE;
+
+		default:
+			assert exp <= DoubleConsts.MAX_EXPONENT && exp >= DoubleConsts.MIN_EXPONENT;
+
+			// ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
+			exp = exp - (DoubleConsts.SIGNIFICAND_WIDTH-1);
+			if (exp >= DoubleConsts.MIN_EXPONENT) {
+				return powerOfTwoD(exp);
+			}
+			else {
+				// return a subnormal result; left shift integer
+				// representation of Double.MIN_VALUE appropriate
+				// number of positions
+				return Double.longBitsToDouble(1L <<
+					(exp - (DoubleConsts.MIN_EXPONENT - (DoubleConsts.SIGNIFICAND_WIDTH-1)) ));
+			}
+		}
+	}
+
+	/**
+	 * Returns the size of an ulp of the argument.  An ulp, unit in
+	 * the last place, of a {@code float} value is the positive
+	 * distance between this floating-point value and the {@code
+	 * float} value next larger in magnitude.  Note that for non-NaN
+	 * <i>x</i>, <code>ulp(-<i>x</i>) == ulp(<i>x</i>)</code>.
+	 *
+	 * <p>Special Cases:
+	 * <ul>
+	 * <li> If the argument is NaN, then the result is NaN.
+	 * <li> If the argument is positive or negative infinity, then the
+	 * result is positive infinity.
+	 * <li> If the argument is positive or negative zero, then the result is
+	 * {@code Float.MIN_VALUE}.
+	 * <li> If the argument is &plusmn;{@code Float.MAX_VALUE}, then
+	 * the result is equal to 2<sup>104</sup>.
+	 * </ul>
+	 *
+	 * @param f the floating-point value whose ulp is to be returned
+	 * @return the size of an ulp of the argument
+	 * @author Joseph D. Darcy
+	 * @since 1.5
+	 */
+	public static float ulp(float f) {
+		int exp = getExponent(f);
+
+		switch(exp) {
+		case FloatConsts.MAX_EXPONENT+1:        // NaN or infinity
+			return Math.abs(f);
+
+		case FloatConsts.MIN_EXPONENT-1:        // zero or subnormal
+			return FloatConsts.MIN_VALUE;
+
+		default:
+			assert exp <= FloatConsts.MAX_EXPONENT && exp >= FloatConsts.MIN_EXPONENT;
+
+			// ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
+			exp = exp - (FloatConsts.SIGNIFICAND_WIDTH-1);
+			if (exp >= FloatConsts.MIN_EXPONENT) {
+				return powerOfTwoF(exp);
+			}
+			else {
+				// return a subnormal result; left shift integer
+				// representation of FloatConsts.MIN_VALUE appropriate
+				// number of positions
+				return Float.intBitsToFloat(1 <<
+					(exp - (FloatConsts.MIN_EXPONENT - (FloatConsts.SIGNIFICAND_WIDTH-1)) ));
+			}
+		}
+	}
+
+	/**
+	 * Returns a floating-point power of two in the normal range.
+	 */
+	static double powerOfTwoD(int n) {
+		assert(n >= DoubleConsts.MIN_EXPONENT && n <= DoubleConsts.MAX_EXPONENT);
+		return Double.longBitsToDouble((((long)n + (long)DoubleConsts.EXP_BIAS) <<
+			(DoubleConsts.SIGNIFICAND_WIDTH-1))
+			& DoubleConsts.EXP_BIT_MASK);
+	}
+
+	/**
+	 * Returns a floating-point power of two in the normal range.
+	 */
+	static float powerOfTwoF(int n) {
+		assert(n >= FloatConsts.MIN_EXPONENT && n <= FloatConsts.MAX_EXPONENT);
+		return Float.intBitsToFloat(((n + FloatConsts.EXP_BIAS) <<
+			(FloatConsts.SIGNIFICAND_WIDTH-1))
+			& FloatConsts.EXP_BIT_MASK);
+	}
+
+	/**
+	 * Returns the unbiased exponent used in the representation of a
+	 * {@code float}.  Special cases:
+	 *
+	 * <ul>
+	 * <li>If the argument is NaN or infinite, then the result is
+	 * {@link Float#MAX_EXPONENT} + 1.
+	 * <li>If the argument is zero or subnormal, then the result is
+	 * {@link Float#MIN_EXPONENT} -1.
+	 * </ul>
+	 * @param f a {@code float} value
+	 * @return the unbiased exponent of the argument
+	 * @since 1.6
+	 */
+	public static int getExponent(float f) {
+		/*
+		 * Bitwise convert f to integer, mask out exponent bits, shift
+		 * to the right and then subtract out float's bias adjust to
+		 * get true exponent value
+		 */
+		return ((Float.floatToRawIntBits(f) & FloatConsts.EXP_BIT_MASK) >>
+			(FloatConsts.SIGNIFICAND_WIDTH - 1)) - FloatConsts.EXP_BIAS;
+	}
+
+	/**
+	 * Returns the unbiased exponent used in the representation of a
+	 * {@code double}.  Special cases:
+	 *
+	 * <ul>
+	 * <li>If the argument is NaN or infinite, then the result is
+	 * {@link Double#MAX_EXPONENT} + 1.
+	 * <li>If the argument is zero or subnormal, then the result is
+	 * {@link Double#MIN_EXPONENT} -1.
+	 * </ul>
+	 * @param d a {@code double} value
+	 * @return the unbiased exponent of the argument
+	 * @since 1.6
+	 */
+	public static int getExponent(double d) {
+		/*
+		 * Bitwise convert d to long, mask out exponent bits, shift
+		 * to the right and then subtract out double's bias adjust to
+		 * get true exponent value.
+		 */
+		return (int)(((Double.doubleToRawLongBits(d) & DoubleConsts.EXP_BIT_MASK) >>
+			(DoubleConsts.SIGNIFICAND_WIDTH - 1)) - DoubleConsts.EXP_BIAS);
 	}
 
 	/**

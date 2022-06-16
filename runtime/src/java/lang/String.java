@@ -23,6 +23,7 @@
 
 package java.lang;
 
+import java.io.UnsupportedOperationException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -72,6 +73,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         count = 0;        
     }
 
+    public String(int[] codePoints, int offset, int count) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Construct a new String by converting the specified array of bytes using the platform's default character encoding. The length of the new String is a function of the encoding, and hence may not be equal to the length of the byte array.
      * bytes - The bytes to be converted into characters
@@ -102,6 +107,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     
     public String(byte[] bytes, java.nio.charset.Charset charset) throws java.io.UnsupportedEncodingException {
         this(bytes, 0, bytes.length, charset.displayName());
+    }
+
+    public String(byte[] bytes, int offset, int length, Charset charset) throws java.io.UnsupportedEncodingException {
+        this(bytes, offset, length, charset.displayName());
     }
 
     /**
@@ -181,6 +190,121 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         this.count = buffer.length();
         this.value = new char[count];
         buffer.getChars(0, count, value, 0);
+    }
+
+    /**
+     * Returns the character (Unicode code point) at the specified
+     * index. The index refers to {@code char} values
+     * (Unicode code units) and ranges from {@code 0} to
+     * {@link #length()}{@code  - 1}.
+     *
+     * <p> If the {@code char} value specified at the given index
+     * is in the high-surrogate range, the following index is less
+     * than the length of this {@code String}, and the
+     * {@code char} value at the following index is in the
+     * low-surrogate range, then the supplementary code point
+     * corresponding to this surrogate pair is returned. Otherwise,
+     * the {@code char} value at the given index is returned.
+     *
+     * @param      index the index to the {@code char} values
+     * @return     the code point value of the character at the
+     *             {@code index}
+     * @exception  IndexOutOfBoundsException  if the {@code index}
+     *             argument is negative or not less than the length of this
+     *             string.
+     * @since      1.5
+     */
+    public int codePointAt(int index) {
+        if ((index < 0) || (index >= value.length)) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return Character.codePointAtImpl(value, index, value.length);
+    }
+
+    /**
+     * Returns the character (Unicode code point) before the specified
+     * index. The index refers to {@code char} values
+     * (Unicode code units) and ranges from {@code 1} to {@link
+     * CharSequence#length() length}.
+     *
+     * <p> If the {@code char} value at {@code (index - 1)}
+     * is in the low-surrogate range, {@code (index - 2)} is not
+     * negative, and the {@code char} value at {@code (index -
+     * 2)} is in the high-surrogate range, then the
+     * supplementary code point value of the surrogate pair is
+     * returned. If the {@code char} value at {@code index -
+     * 1} is an unpaired low-surrogate or a high-surrogate, the
+     * surrogate value is returned.
+     *
+     * @param     index the index following the code point that should be returned
+     * @return    the Unicode code point value before the given index.
+     * @exception IndexOutOfBoundsException if the {@code index}
+     *            argument is less than 1 or greater than the length
+     *            of this string.
+     * @since     1.5
+     */
+    public int codePointBefore(int index) {
+        int i = index - 1;
+        if ((i < 0) || (i >= value.length)) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return Character.codePointBeforeImpl(value, index, 0);
+    }
+
+    /**
+     * Returns the number of Unicode code points in the specified text
+     * range of this {@code String}. The text range begins at the
+     * specified {@code beginIndex} and extends to the
+     * {@code char} at index {@code endIndex - 1}. Thus the
+     * length (in {@code char}s) of the text range is
+     * {@code endIndex-beginIndex}. Unpaired surrogates within
+     * the text range count as one code point each.
+     *
+     * @param beginIndex the index to the first {@code char} of
+     * the text range.
+     * @param endIndex the index after the last {@code char} of
+     * the text range.
+     * @return the number of Unicode code points in the specified text
+     * range
+     * @exception IndexOutOfBoundsException if the
+     * {@code beginIndex} is negative, or {@code endIndex}
+     * is larger than the length of this {@code String}, or
+     * {@code beginIndex} is larger than {@code endIndex}.
+     * @since  1.5
+     */
+    public int codePointCount(int beginIndex, int endIndex) {
+        if (beginIndex < 0 || endIndex > value.length || beginIndex > endIndex) {
+            throw new IndexOutOfBoundsException();
+        }
+        return Character.codePointCountImpl(value, beginIndex, endIndex - beginIndex);
+    }
+
+    /**
+     * Returns the index within this {@code String} that is
+     * offset from the given {@code index} by
+     * {@code codePointOffset} code points. Unpaired surrogates
+     * within the text range given by {@code index} and
+     * {@code codePointOffset} count as one code point each.
+     *
+     * @param index the index to be offset
+     * @param codePointOffset the offset in code points
+     * @return the index within this {@code String}
+     * @exception IndexOutOfBoundsException if {@code index}
+     *   is negative or larger then the length of this
+     *   {@code String}, or if {@code codePointOffset} is positive
+     *   and the substring starting with {@code index} has fewer
+     *   than {@code codePointOffset} code points,
+     *   or if {@code codePointOffset} is negative and the substring
+     *   before {@code index} has fewer than the absolute value
+     *   of {@code codePointOffset} code points.
+     * @since 1.5
+     */
+    public int offsetByCodePoints(int index, int codePointOffset) {
+        if (index < 0 || index > value.length) {
+            throw new IndexOutOfBoundsException();
+        }
+        return Character.offsetByCodePointsImpl(value, 0, value.length,
+            index, codePointOffset);
     }
 
     /**
@@ -340,6 +464,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
 //            dstBegin++;
 //        }
 //    }
+
+    void getChars(char dst[], int dstBegin) {
+        System.arraycopy(value, 0, dst, dstBegin, value.length);
+    }
 
     /**
      * Returns a hashcode for this string. The hashcode for a String object is computed as s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1] using int arithmetic, where s[i] is the

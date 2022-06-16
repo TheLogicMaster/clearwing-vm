@@ -128,6 +128,21 @@ public final class Long extends Number implements Comparable<Long> {
 		return (byte)value;
 	}
 
+	public static long rotateLeft(long i, int distance) {
+		return i << distance | i >>> -distance;
+	}
+
+	public static long rotateRight(long i, int distance) {
+		return i >>> distance | i << -distance;
+	}
+
+	public static long reverse(long i) {
+		i = (i & 6148914691236517205L) << 1 | i >>> 1 & 6148914691236517205L;
+		i = (i & 3689348814741910323L) << 2 | i >>> 2 & 3689348814741910323L;
+		i = (i & 1085102592571150095L) << 4 | i >>> 4 & 1085102592571150095L;
+		return reverseBytes(i);
+	}
+
 	public static long reverseBytes (long i) {
 		i = (i & 0x00ff00ff00ff00ffL) << 8 | (i >>> 8) & 0x00ff00ff00ff00ffL;
 		return (i << 48) | ((i & 0xffff0000L) << 16) | ((i >>> 16) & 0xffff0000L) | (i >>> 48);
@@ -274,6 +289,10 @@ public final class Long extends Number implements Comparable<Long> {
 	 */
 	public static String toHexString(long i) {
 		return toUnsignedString0(i, 4);
+	}
+
+	public static String toBinaryString(long i) {
+		return toUnsignedString0(i, 1);
 	}
 
 	/**

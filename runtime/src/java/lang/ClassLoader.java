@@ -49,4 +49,7 @@ public abstract class ClassLoader extends Object {
         throw new UnsupportedOperationException();
     }
 
+    public Class<?> loadClass(String name) {
+        throw new UnsupportedOperationException();
+    }
 }

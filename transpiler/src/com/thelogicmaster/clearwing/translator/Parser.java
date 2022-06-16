@@ -81,7 +81,7 @@ public class Parser extends ClassVisitor {
     }
 
     private static ByteCodeClass getClassByName(String name) {
-        name = name.replace('/', '_').replace('$', '_');
+        name = name.replace('/', '_').replace('$', '_').replace('-', '_');
         for(ByteCodeClass bc : classes) {
             if(bc.getClsName().equals(name)) {
                 return bc;
@@ -183,7 +183,7 @@ public class Parser extends ClassVisitor {
                 bldM.append(",\n    ");
             }
             first = false;
-            bldM.append(addToConstantPool(bc.getClsName().replace('_', '.')));
+            bldM.append(addToConstantPool(bc.getClsName().replace('_', '.').replace('-', '_')));
             bldM.append("");
         }
         bldM.append("};\n\n");
@@ -329,7 +329,7 @@ public class Parser extends ClassVisitor {
 
         for(ByteCodeClass bc : classes) {
             bldM.append("extern struct clazz class__");
-            bldM.append(bc.getClsName().replace('/', '_').replace('$', '_'));
+            bldM.append(bc.getClsName().replace('/', '_').replace('$', '_').replace('-', '_'));
             bldM.append(";\n");
         }
         bldM.append("\n\nstruct clazz* classesList[] = {");
@@ -342,7 +342,7 @@ public class Parser extends ClassVisitor {
             }
             first = false;
             bldM.append("    &class__");
-            bldM.append(bc.getClsName().replace('/', '_').replace('$', '_'));
+            bldM.append(bc.getClsName().replace('/', '_').replace('$', '_').replace('-', '_'));
         }
         bldM.append("};\n\n\n");
         
@@ -367,7 +367,7 @@ public class Parser extends ClassVisitor {
         fos.close();
     }
     
-    private static String encodeString(String con) {
+    public static String encodeString(String con) {
         String str = con.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
         return encodeStringSlashU(str);
     }

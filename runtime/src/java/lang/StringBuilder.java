@@ -298,6 +298,41 @@ public final class StringBuilder implements CharSequence, Appendable {
         System.arraycopy(value, start, dst, dstStart, end - start);
     }*/
 
+    public StringBuilder replace(int start, int end, String str) {
+        if (start < 0)
+            throw new StringIndexOutOfBoundsException(start);
+        if (start > count)
+            throw new StringIndexOutOfBoundsException("start > length()");
+        if (start > end)
+            throw new StringIndexOutOfBoundsException("start > end");
+
+        if (end > count)
+            end = count;
+        int len = str.length();
+        int newCount = count + len - (end - start);
+        if (newCount > count) {
+            newCount = Math.max(newCount, value.length * 2 + 2);
+            char[] newData = new char[newCount];
+            System.arraycopy(value, 0, newData, 0, value.length);
+            value = newData;
+        }
+
+        System.arraycopy(value, end, value, start + len, count - end);
+        str.getChars(value, start);
+        count = newCount;
+        return this;
+    }
+
+    public java.lang.StringBuilder insert(int index, char[] chars, int offset, int len) {
+        if (chars.length != 0) {
+            move(len, index);
+            System.arraycopy(value, index, value, index + len, count - index);
+            System.arraycopy(chars, offset, value, index, len);
+            count += chars.length;
+        }
+        return this;
+    }
+
     /**
      * Inserts the string representation of the boolean argument into this string builder.
      * The second argument is converted to a string as if by the method String.valueOf, and the characters of that string are then inserted into this string builder at the indicated offset.
@@ -613,6 +648,10 @@ public final class StringBuilder implements CharSequence, Appendable {
             return insert(offset, "null", start, end);
         }
         return insert(offset, cs.toString(), start, end);
+    }
+
+    public String substring(int start, int end) {
+        return toString().substring(start, end);
     }
 
     @Override

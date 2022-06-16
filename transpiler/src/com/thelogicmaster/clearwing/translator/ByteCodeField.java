@@ -95,7 +95,7 @@ public class ByteCodeField {
                 // Object skip until ;
                 int idx = desc.indexOf(';');
                 String objectType = desc.substring(1, idx);
-                objectType = objectType.replace('/', '_').replace('$', '_');
+                objectType = objectType.replace('/', '_').replace('$', '_').replace('-', '_');
                 if(!dependentClasses.contains(objectType)) {
                     dependentClasses.add(objectType);
                 }

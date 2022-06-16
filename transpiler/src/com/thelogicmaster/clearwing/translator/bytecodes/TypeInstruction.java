@@ -41,7 +41,7 @@ public class TypeInstruction extends Instruction {
 
     @Override
     public void addDependencies(List<String> dependencyList) {
-        String t = type.replace('.', '_').replace('/', '_').replace('$', '_');
+        String t = type.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         actualType = t;
         if(t != null && !dependencyList.contains(t)) {
@@ -94,7 +94,7 @@ public class TypeInstruction extends Instruction {
     
     @Override
     public void appendInstruction(StringBuilder b, List<Instruction> l) {
-        type = type.replace('.', '_').replace('/', '_').replace('$', '_');
+        type = type.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         b.append("    ");
         switch(opcode) {
             case Opcodes.NEW:

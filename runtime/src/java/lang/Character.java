@@ -345,6 +345,133 @@ public final class Character implements Comparable<Character>{
                 (1L << 0x0020)) >> ch) & 1L) != 0);
     }
 
+    public static boolean isDefined(char ch) {
+        return getType(ch) != UNASSIGNED;
+    }
+
+    /**
+     * Determines if the specified character is an ISO control
+     * character.  A character is considered to be an ISO control
+     * character if its code is in the range {@code '\u005Cu0000'}
+     * through {@code '\u005Cu001F'} or in the range
+     * {@code '\u005Cu007F'} through {@code '\u005Cu009F'}.
+     *
+     * <p><b>Note:</b> This method cannot handle <a
+     * href="#supplementary"> supplementary characters</a>. To support
+     * all Unicode characters, including supplementary characters, use
+     * the {@link #isISOControl(int)} method.
+     *
+     * @param   ch      the character to be tested.
+     * @return  {@code true} if the character is an ISO control character;
+     *          {@code false} otherwise.
+     *
+     * @see     Character#isSpaceChar(char)
+     * @see     Character#isWhitespace(char)
+     * @since   1.1
+     */
+    public static boolean isISOControl(char ch) {
+        return isISOControl((int)ch);
+    }
+
+    /**
+     * Determines if the referenced character (Unicode code point) is an ISO control
+     * character.  A character is considered to be an ISO control
+     * character if its code is in the range {@code '\u005Cu0000'}
+     * through {@code '\u005Cu001F'} or in the range
+     * {@code '\u005Cu007F'} through {@code '\u005Cu009F'}.
+     *
+     * @param   codePoint the character (Unicode code point) to be tested.
+     * @return  {@code true} if the character is an ISO control character;
+     *          {@code false} otherwise.
+     * @see     Character#isSpaceChar(int)
+     * @see     Character#isWhitespace(int)
+     * @since   1.5
+     */
+    public static boolean isISOControl(int codePoint) {
+        // Optimized form of:
+        //     (codePoint >= 0x00 && codePoint <= 0x1F) ||
+        //     (codePoint >= 0x7F && codePoint <= 0x9F);
+        return codePoint <= 0x9F &&
+            (codePoint >= 0x7F || (codePoint >>> 5 == 0));
+    }
+
+    /**
+     * Determines if the specified character is a titlecase character.
+     * <p>
+     * A character is a titlecase character if its general
+     * category type, provided by {@code Character.getType(ch)},
+     * is {@code TITLECASE_LETTER}.
+     * <p>
+     * Some characters look like pairs of Latin letters. For example, there
+     * is an uppercase letter that looks like "LJ" and has a corresponding
+     * lowercase letter that looks like "lj". A third form, which looks like "Lj",
+     * is the appropriate form to use when rendering a word in lowercase
+     * with initial capitals, as for a book title.
+     * <p>
+     * These are some of the Unicode characters for which this method returns
+     * {@code true}:
+     * <ul>
+     * <li>{@code LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON}
+     * <li>{@code LATIN CAPITAL LETTER L WITH SMALL LETTER J}
+     * <li>{@code LATIN CAPITAL LETTER N WITH SMALL LETTER J}
+     * <li>{@code LATIN CAPITAL LETTER D WITH SMALL LETTER Z}
+     * </ul>
+     * <p> Many other Unicode characters are titlecase too.
+     *
+     * <p><b>Note:</b> This method cannot handle <a
+     * href="#supplementary"> supplementary characters</a>. To support
+     * all Unicode characters, including supplementary characters, use
+     * the {@link #isTitleCase(int)} method.
+     *
+     * @param   ch   the character to be tested.
+     * @return  {@code true} if the character is titlecase;
+     *          {@code false} otherwise.
+     * @see     Character#isLowerCase(char)
+     * @see     Character#isUpperCase(char)
+     * @see     Character#toTitleCase(char)
+     * @see     Character#getType(char)
+     * @since   1.0.2
+     */
+    public static boolean isTitleCase(char ch) {
+        return isTitleCase((int)ch);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) is a titlecase character.
+     * <p>
+     * A character is a titlecase character if its general
+     * category type, provided by {@link Character#getType(int) getType(codePoint)},
+     * is {@code TITLECASE_LETTER}.
+     * <p>
+     * Some characters look like pairs of Latin letters. For example, there
+     * is an uppercase letter that looks like "LJ" and has a corresponding
+     * lowercase letter that looks like "lj". A third form, which looks like "Lj",
+     * is the appropriate form to use when rendering a word in lowercase
+     * with initial capitals, as for a book title.
+     * <p>
+     * These are some of the Unicode characters for which this method returns
+     * {@code true}:
+     * <ul>
+     * <li>{@code LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON}
+     * <li>{@code LATIN CAPITAL LETTER L WITH SMALL LETTER J}
+     * <li>{@code LATIN CAPITAL LETTER N WITH SMALL LETTER J}
+     * <li>{@code LATIN CAPITAL LETTER D WITH SMALL LETTER Z}
+     * </ul>
+     * <p> Many other Unicode characters are titlecase too.<p>
+     *
+     * @param   codePoint the character (Unicode code point) to be tested.
+     * @return  {@code true} if the character is titlecase;
+     *          {@code false} otherwise.
+     * @see     Character#isLowerCase(int)
+     * @see     Character#isUpperCase(int)
+     * @see     Character#toTitleCase(int)
+     * @see     Character#getType(int)
+     * @since   1.5
+     */
+    public static boolean isTitleCase(int codePoint) {
+        return getType(codePoint) == Character.TITLECASE_LETTER;
+    }
+
     public static boolean isJavaIdentifierStart(char ch) {
         return isJavaIdentifierStart((int) ch);
     }
@@ -430,6 +557,79 @@ public final class Character implements Comparable<Character>{
         }
         //return isDigitImpl(codePoint);
         return false;
+    }
+
+    static void toSurrogates(int codePoint, char[] dst, int index) {
+        // We write elements "backwards" to guarantee all-or-nothing
+        dst[index+1] = lowSurrogate(codePoint);
+        dst[index] = highSurrogate(codePoint);
+    }
+
+    static int codePointCountImpl(char[] a, int offset, int count) {
+        int endIndex = offset + count;
+        int n = count;
+        for (int i = offset; i < endIndex; ) {
+            if (isHighSurrogate(a[i++]) && i < endIndex &&
+                isLowSurrogate(a[i])) {
+                n--;
+                i++;
+            }
+        }
+        return n;
+    }
+
+    static int offsetByCodePointsImpl(char[]a, int start, int count,
+        int index, int codePointOffset) {
+        int x = index;
+        if (codePointOffset >= 0) {
+            int limit = start + count;
+            int i;
+            for (i = 0; x < limit && i < codePointOffset; i++) {
+                if (isHighSurrogate(a[x++]) && x < limit &&
+                    isLowSurrogate(a[x])) {
+                    x++;
+                }
+            }
+            if (i < codePointOffset) {
+                throw new IndexOutOfBoundsException();
+            }
+        } else {
+            int i;
+            for (i = codePointOffset; x > start && i < 0; i++) {
+                if (isLowSurrogate(a[--x]) && x > start &&
+                    isHighSurrogate(a[x-1])) {
+                    x--;
+                }
+            }
+            if (i < 0) {
+                throw new IndexOutOfBoundsException();
+            }
+        }
+        return x;
+    }
+
+    // throws ArrayIndexOutOfBoundsException if index out of bounds
+    static int codePointAtImpl(char[] a, int index, int limit) {
+        char c1 = a[index];
+        if (isHighSurrogate(c1) && ++index < limit) {
+            char c2 = a[index];
+            if (isLowSurrogate(c2)) {
+                return toCodePoint(c1, c2);
+            }
+        }
+        return c1;
+    }
+
+    // throws ArrayIndexOutOfBoundsException if index-1 out of bounds
+    static int codePointBeforeImpl(char[] a, int index, int start) {
+        char c2 = a[--index];
+        if (isLowSurrogate(c2) && index > start) {
+            char c1 = a[--index];
+            if (isHighSurrogate(c1)) {
+                return toCodePoint(c1, c2);
+            }
+        }
+        return c2;
     }
 
     /**

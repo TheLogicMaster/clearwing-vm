@@ -1127,9 +1127,9 @@ JAVA_OBJECT allocArray(CODENAME_ONE_THREAD_STATE, int length, struct clazz* type
     (*array).dimensions = dim;
     (*array).primitiveSize = primitiveSize;
     if(actualSize > 0) {
-        intptr_t arr = &(array->data);
+        intptr_t arr = (intptr_t)&(array->data);
         arr += sizeof(void*);
-        (*array).data = arr;
+        (*array).data = (void *)arr;
     } else {
         (*array).data = 0;
     }

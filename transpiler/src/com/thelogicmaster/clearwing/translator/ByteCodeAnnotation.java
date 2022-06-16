@@ -128,7 +128,7 @@ public class ByteCodeAnnotation {
 			else if (o instanceof Double)
 				buffer.append((double)(Double)o);
 			else if (o instanceof String)
-				buffer.append("fromNativeString(threadStateData, \"").append((String)o).append("\")");
+				buffer.append("fromNativeString(threadStateData, \"").append(Parser.encodeString((String)o)).append("\")");
 			else if (o instanceof Type)
 				buffer.append("(JAVA_OBJECT)&class__").append(Util.sanitizeClassName(((Type)o).getClassName()));
 			else
@@ -211,7 +211,7 @@ public class ByteCodeAnnotation {
 							if (array[i] instanceof String || array[i] instanceof Type) {
 								buffer.append("\t((JAVA_OBJECT *)((JAVA_ARRAY)").append(variable).append(")->data)[").append(i).append("] = ");
 								if (array[i] instanceof String)
-									buffer.append("fromNativeString(threadStateData, \"").append((String)array[i]).append("\")");
+									buffer.append("fromNativeString(threadStateData, \"").append(Parser.encodeString((String)array[i])).append("\")");
 								else
 									buffer.append("(JAVA_OBJECT)&class__").append(Util.sanitizeClassName(((Type)array[i]).getClassName()));
 							} else {

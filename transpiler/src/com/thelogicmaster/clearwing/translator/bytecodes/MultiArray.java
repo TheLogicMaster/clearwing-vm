@@ -44,7 +44,7 @@ public class MultiArray extends Instruction {
     
     @Override
     public void addDependencies(List<String> dependencyList) {
-        String t = desc.replace('.', '_').replace('/', '_').replace('$', '_');
+        String t = desc.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         actualType = t;
         if(t != null && !dependencyList.contains(t)) {

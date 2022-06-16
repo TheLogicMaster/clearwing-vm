@@ -70,7 +70,7 @@ public class Util {
     }
 
     public static String sanitizeClassName(String cls) {
-        return cls.replace(".", "_").replace("/", "_").replace("$", "_");
+        return cls.replace(".", "_").replace("/", "_").replace("$", "_").replace('-', '_');
     }
 
     public static List<ByteCodeMethodArg> getMethodArgs(String methodDesc) {
@@ -91,7 +91,7 @@ public class Util {
                     // Object skip until ;
                     int idx = desc.indexOf(';', i);
                     String objectType = desc.substring(i + 1, idx);
-                    objectType = objectType.replace('/', '_').replace('$', '_');
+                    objectType = objectType.replace('/', '_').replace('$', '_').replace('-', '_');
                     //if(!dependentClasses.contains(objectType)) {
                     //    dependentClasses.add(objectType);
                     //}

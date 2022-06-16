@@ -92,7 +92,7 @@ public class CustomInvoke extends Instruction {
     
     @Override
     public void addDependencies(List<String> dependencyList) {
-        String t = owner.replace('.', '_').replace('/', '_').replace('$', '_');
+        String t = owner.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         if(t != null && !dependencyList.contains(t)) {
             dependencyList.add(t);
@@ -102,7 +102,7 @@ public class CustomInvoke extends Instruction {
         if(origOpcode != Opcodes.INVOKEINTERFACE && origOpcode != Opcodes.INVOKEVIRTUAL) {
             return;
         }         
-        bld.append(owner.replace('/', '_').replace('$', '_'));
+        bld.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
         bld.append("_");
         if(name.equals("<init>")) {
             bld.append("__INIT__");
@@ -168,7 +168,7 @@ public class CustomInvoke extends Instruction {
             // so we need to check 
             boolean isVirtual = true;
             if (origOpcode == Opcodes.INVOKEVIRTUAL) {
-                ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_'));
+                ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 if (bc == null) {
                     System.err.println("WARNING: Failed to find class object for owner "+owner+" when rendering virtual method "+name);
                 } else {
@@ -187,13 +187,13 @@ public class CustomInvoke extends Instruction {
         
         if(origOpcode == Opcodes.INVOKESTATIC) {
             // find the actual class of the static method to workaround javac not defining it correctly
-            ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_'));
+            ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
             owner = findActualOwner(bc);
         }
         if (owner.startsWith("[")) {
             bld.append("java_lang_Object");
         } else{
-            bld.append(owner.replace('/', '_').replace('$', '_'));
+            bld.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
         }
         bld.append("_");
         if(name.equals("<init>")) {
@@ -280,7 +280,7 @@ public class CustomInvoke extends Instruction {
             // so we need to check 
             boolean isVirtual = true;
             if (origOpcode == Opcodes.INVOKEVIRTUAL) {
-                ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_'));
+                ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 if (bc == null) {
                     System.err.println("WARNING: Failed to find class object for owner "+owner+" when rendering virtual method "+name);
                 } else {
@@ -299,7 +299,7 @@ public class CustomInvoke extends Instruction {
         
         if(origOpcode == Opcodes.INVOKESTATIC) {
             // find the actual class of the static method to workaround javac not defining it correctly
-            ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_'));
+            ByteCodeClass bc = Parser.getClassObject(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
             owner = findActualOwner(bc);
         }
         //if(owner.replace('/', '_').replace('$', '_').equals("java_lang_System_1") && name.equals("sleep")) {
@@ -308,7 +308,7 @@ public class CustomInvoke extends Instruction {
         if (owner.startsWith("[")) {
             bld.append("java_lang_Object");
         } else{
-            bld.append(owner.replace('/', '_').replace('$', '_'));
+            bld.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
         }
         bld.append("_");
         if(name.equals("<init>")) {

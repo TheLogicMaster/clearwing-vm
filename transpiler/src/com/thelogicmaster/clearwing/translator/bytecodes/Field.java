@@ -42,7 +42,7 @@ public class Field extends Instruction implements AssignableExpression {
     public Field(int opcode, String owner, String name, String desc) {
         super(opcode);
         this.owner = owner;
-        this.name = name.replace('$', '_');
+        this.name = name.replace('$', '_').replace('-', '_');
         this.desc = desc;
     }
 
@@ -53,7 +53,7 @@ public class Field extends Instruction implements AssignableExpression {
     
     @Override
     public void addDependencies(List<String> dependencyList) {
-        String t = owner.replace('.', '_').replace('/', '_').replace('$', '_');
+        String t = owner.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         if(t != null && !dependencyList.contains(t)) {
             dependencyList.add(t);
@@ -67,7 +67,7 @@ public class Field extends Instruction implements AssignableExpression {
     }
     
     public String getFieldFromThis() {
-        return "get_field_" + owner.replace('/', '_').replace('$', '_') + 
+        return "get_field_" + owner.replace('/', '_').replace('$', '_').replace('-', '_') +
                 "_" + name + "(__cn1ThisObject)";
         
     }
@@ -75,14 +75,14 @@ public class Field extends Instruction implements AssignableExpression {
     public String setFieldFromThis(int arg) {
         // special case for this
         if(arg == 0) {
-            return "    set_field_" + owner.replace('/', '_').replace('$', '_') + 
+            return "    set_field_" + owner.replace('/', '_').replace('$', '_').replace('-', '_') +
                     "_" + name + "(threadStateData, __cn1ThisObject, __cn1ThisObject);\n";
         }
         if(isObject()) {
-            return "    set_field_" + owner.replace('/', '_').replace('$', '_') + 
+            return "    set_field_" + owner.replace('/', '_').replace('$', '_').replace('-', '_') +
                     "_" + name + "(threadStateData, __cn1Arg" + arg + ", __cn1ThisObject);\n";
         }
-        return "    set_field_" + owner.replace('/', '_').replace('$', '_') + 
+        return "    set_field_" + owner.replace('/', '_').replace('$', '_').replace('-', '_') +
                 "_" + name + "(threadStateData, __cn1Arg" + arg + ", __cn1ThisObject);\n";        
     }
 
@@ -111,7 +111,7 @@ public class Field extends Instruction implements AssignableExpression {
                 break;
         }
         b.append("(get_field_");
-        b.append(owner.replace('/', '_').replace('$', '_'));
+        b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
         b.append("_");
         b.append(name);
         b.append("(__cn1ThisObject));\n");
@@ -130,14 +130,14 @@ public class Field extends Instruction implements AssignableExpression {
             }
             if (opcode == Opcodes.GETSTATIC) {
                 b.append("get_static_");
-                b.append(owner.replace('/', '_').replace('$', '_'));
+                b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("_");
-                b.append(name.replace('/', '_').replace('$', '_'));
+                b.append(name.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("(threadStateData)");
             } else {
                 
                 b.append("get_field_");
-                b.append(owner.replace('/', '_').replace('$', '_'));
+                b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("_");
                 b.append(name);
                 StringBuilder sb3 = new StringBuilder();
@@ -211,17 +211,17 @@ public class Field extends Instruction implements AssignableExpression {
                         break;
                 }
                 b.append("(get_static_");
-                b.append(owner.replace('/', '_').replace('$', '_'));
+                b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("_");
-                b.append(name.replace('/', '_').replace('$', '_'));
+                b.append(name.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("(threadStateData));\n");
                 break;
             case Opcodes.PUTSTATIC: {
                 //b.append("SAFE_RETAIN(1);\n    ");
                 b.append("set_static_");
-                b.append(owner.replace('/', '_').replace('$', '_'));
+                b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("_");
-                b.append(name.replace('/', '_').replace('$', '_'));
+                b.append(name.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("(threadStateData, ");
                 StringBuilder sb2 = new StringBuilder();
                 StringBuilder sb3 = new StringBuilder();
@@ -283,7 +283,7 @@ public class Field extends Instruction implements AssignableExpression {
                 }
                 
                 b.append("(get_field_");
-                b.append(owner.replace('/', '_').replace('$', '_'));
+                b.append(owner.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("_");
                 b.append(name);
                 
@@ -299,7 +299,7 @@ public class Field extends Instruction implements AssignableExpression {
             }
         case Opcodes.PUTFIELD: {
             String funcName = "set_field_"
-                + owner.replace('/', '_').replace('$', '_')
+                + owner.replace('/', '_').replace('$', '_').replace('-', '_')
                 + "_"
                 + name;
             String funcEnd = "(threadStateData, cn1Val, cn1T);";

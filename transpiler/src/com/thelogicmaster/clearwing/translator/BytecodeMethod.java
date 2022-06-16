@@ -153,7 +153,7 @@ public class BytecodeMethod implements SignatureSet {
                             // Object skip until ;
                             int idx = retType.indexOf(';');
                             String objectType = retType.substring(1, idx);
-                            objectType = objectType.replace('/', '_').replace('$', '_');
+                            objectType = objectType.replace('/', '_').replace('$', '_').replace('-', '_');
                             if(!dependentClasses.contains(objectType)) {
                                 dependentClasses.add(objectType);
                             }
@@ -203,7 +203,7 @@ public class BytecodeMethod implements SignatureSet {
                     // Object skip until ;
                     int idx = desc.indexOf(';', i);
                     String objectType = desc.substring(i + 1, idx);
-                    objectType = objectType.replace('/', '_').replace('$', '_');
+                    objectType = objectType.replace('/', '_').replace('$', '_').replace('-', '_');
                     if(!dependentClasses.contains(objectType)) {
                         dependentClasses.add(objectType);
                     }
@@ -416,7 +416,7 @@ public class BytecodeMethod implements SignatureSet {
                     // Object skip until ;
                     int idx = desc.indexOf(';', i);
                     String objectType = desc.substring(i + 1, idx);
-                    objectType = objectType.replace('/', '_').replace('$', '_');
+                    objectType = objectType.replace('/', '_').replace('$', '_').replace('-', '_');
                     i = idx;
                     b.append("_");
                     b.append(objectType);
@@ -636,7 +636,7 @@ public class BytecodeMethod implements SignatureSet {
                     b.append("    DEFINE_METHOD_STACK(");
                 } else {
                     b.append("    __STATIC_INITIALIZER_");
-                    b.append(clsName.replace('/', '_').replace('$', '_'));
+                    b.append(clsName.replace('/', '_').replace('$', '_').replace('-', '_'));
                     b.append("(threadStateData);\n    DEFINE_METHOD_STACK(");
                 }
             } else {

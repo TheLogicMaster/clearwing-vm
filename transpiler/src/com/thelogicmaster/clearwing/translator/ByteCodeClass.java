@@ -368,7 +368,7 @@ public class ByteCodeClass {
             dependsClassesInterfaces.add("java_lang_annotation_Annotation");
         }
         for(String s : baseInterfaces) {
-            s = s.replace('/', '_').replace('$', '_');
+            s = s.replace('/', '_').replace('$', '_').replace('-', '_');
             if(!dependsClassesInterfaces.contains(s)) {
                 dependsClassesInterfaces.add(s);
             }
@@ -575,7 +575,7 @@ public class ByteCodeClass {
                 }
                 first = false;
                 b.append("&class__");
-                b.append(ints.replace('/', '_').replace('$', '_'));
+                b.append(ints.replace('/', '_').replace('$', '_').replace('-', '_'));
             }
             b.append("};\n\n");
         }
@@ -608,7 +608,7 @@ public class ByteCodeClass {
         
         // name of the class
         b.append("\"");
-        b.append(clsName.replace('_', '.'));
+        b.append(clsName.replace('_', '.').replace('-', '_'));
         b.append("\", ");
         
         // is array class type
@@ -626,7 +626,7 @@ public class ByteCodeClass {
         // reference to the base class
         if(baseClass != null) {
             b.append("&class__");
-            b.append(baseClass.replace('/', '_').replace('$', '_'));
+            b.append(baseClass.replace('/', '_').replace('$', '_').replace('-', '_'));
         } else {
             b.append("(const struct clazz*)0");
         }
@@ -712,7 +712,7 @@ public class ByteCodeClass {
             b.append("_id_");
             b.append(clsName);
             b.append(", \"");
-            b.append(clsName.replace('_', '.'));
+            b.append(clsName.replace('_', '.').replace('-', '_'));
             for (int arrayDim = 0; arrayDim < iter; arrayDim++) {
                 b.append("[]");
             }
@@ -942,7 +942,7 @@ public class ByteCodeClass {
         // invoke the finalize method of the base
         if(baseClass != null) {
             b.append("    __FINALIZER_");
-            b.append(baseClass.replace('/', '_').replace('$', '_'));
+            b.append(baseClass.replace('/', '_').replace('$', '_').replace('-', '_'));
             b.append("(threadStateData, objToDelete);\n");
         }
         
@@ -968,7 +968,7 @@ public class ByteCodeClass {
         // invoke the mark method of the base
         if(baseClass != null) {
             b.append("    __GC_MARK_");
-            b.append(baseClass.replace('/', '_').replace('$', '_'));
+            b.append(baseClass.replace('/', '_').replace('$', '_').replace('-', '_'));
             b.append("(threadStateData, objToMark, force);\n");
         } else {
             // we can do this in Object.java only since all code will reach here eventually
@@ -1093,7 +1093,7 @@ public class ByteCodeClass {
             b.append("(CODENAME_ONE_THREAD_STATE, void** vtable) {\n    ");
             if(baseClass != null) {
                 b.append("    __INIT_VTABLE_");
-                b.append(baseClass.replace('/', '_').replace('$', '_'));
+                b.append(baseClass.replace('/', '_').replace('$', '_').replace('-', '_'));
                 b.append("(threadStateData, vtable);\n");
             }
             for(int iter = 0 ; iter < virtualMethodList.size() ; iter++) {
@@ -1629,7 +1629,7 @@ public class ByteCodeClass {
     public void setBaseClass(String baseClass) {
         this.baseClass = baseClass;
         if(baseClass != null) {
-            String b = baseClass.replace('/', '_').replace('$', '_');
+            String b = baseClass.replace('/', '_').replace('$', '_').replace('-', '_');
             if(!dependsClassesInterfaces.contains(b)) {
                 dependsClassesInterfaces.add(b);
             }
@@ -1641,7 +1641,7 @@ public class ByteCodeClass {
         baseInterfaces = Arrays.asList(interfaces);
         if(baseInterfaces != null) {
             for(String s : interfaces) {
-                s = s.replace('/', '_').replace('$', '_');
+                s = s.replace('/', '_').replace('$', '_').replace('-', '_');
                 if(!dependsClassesInterfaces.contains(s)) {
                     dependsClassesInterfaces.add(s);
                 }

@@ -57,7 +57,7 @@ public class TryCatch extends Instruction {
     @Override
     public void addDependencies(List<String> dependencyList) {
         if(type != null) {
-            String t = type.replace('.', '_').replace('/', '_').replace('$', '_');
+            String t = type.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
             if(!dependencyList.contains(t)) {
                 dependencyList.add(t);
             }
@@ -79,7 +79,7 @@ public class TryCatch extends Instruction {
         
         String cid = "0";
         if(type != null) {
-            cid = "cn1_class_id_" + type.replace('/', '_').replace('$', '_');
+            cid = "cn1_class_id_" + type.replace('/', '_').replace('$', '_').replace('-', '_');
         } 
         LabelInstruction.addTryBeginLabel(start, cid, counter);
         b.append("    volatile int restoreTo");

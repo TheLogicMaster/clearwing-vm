@@ -22,6 +22,8 @@
  */
 package java.nio.charset;
 
+import java.io.UnsupportedOperationException;
+
 /**
  * Added this for Kotlin
  * @author shannah
@@ -44,5 +46,12 @@ public class Charset implements Comparable<Charset> {
     public static Charset forName(String name) {
         throw new UnsupportedOperationException("Charset.forName not implemented on this platform");
     }
-    
+
+    public CharsetDecoder newDecoder() {
+        throw new UnsupportedOperationException();
+    }
+
+    public CharsetEncoder newEncoder() {
+        throw new UnsupportedOperationException();
+    }
 }

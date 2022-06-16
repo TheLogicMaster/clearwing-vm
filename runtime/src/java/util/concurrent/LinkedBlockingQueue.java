@@ -998,24 +998,24 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
      * its elements (each an {@code Object}) in the proper order,
      * followed by a null
      */
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
-
-        fullyLock();
-        try {
-            // Write out any hidden stuff, plus capacity
-            s.defaultWriteObject();
-
-            // Write out all elements in the proper order.
-            for (Node<E> p = head.next; p != null; p = p.next)
-                s.writeObject(p.item);
-
-            // Use trailing null as sentinel
-            s.writeObject(null);
-        } finally {
-            fullyUnlock();
-        }
-    }
+//    private void writeObject(java.io.ObjectOutputStream s)
+//        throws java.io.IOException {
+//
+//        fullyLock();
+//        try {
+//            // Write out any hidden stuff, plus capacity
+//            s.defaultWriteObject();
+//
+//            // Write out all elements in the proper order.
+//            for (Node<E> p = head.next; p != null; p = p.next)
+//                s.writeObject(p.item);
+//
+//            // Use trailing null as sentinel
+//            s.writeObject(null);
+//        } finally {
+//            fullyUnlock();
+//        }
+//    }
 
     /**
      * Reconstitutes this queue from a stream (that is, deserializes it).
@@ -1024,21 +1024,21 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
      *         could not be found
      * @throws java.io.IOException if an I/O error occurs
      */
-    private void readObject(java.io.ObjectInputStream s)
-        throws java.io.IOException, ClassNotFoundException {
-        // Read in capacity, and any hidden stuff
-        s.defaultReadObject();
-
-        count.set(0);
-        last = head = new Node<E>(null);
-
-        // Read in all elements and place in queue
-        for (;;) {
-            @SuppressWarnings("unchecked")
-            E item = (E)s.readObject();
-            if (item == null)
-                break;
-            add(item);
-        }
-    }
+//    private void readObject(java.io.ObjectInputStream s)
+//        throws java.io.IOException, ClassNotFoundException {
+//        // Read in capacity, and any hidden stuff
+//        s.defaultReadObject();
+//
+//        count.set(0);
+//        last = head = new Node<E>(null);
+//
+//        // Read in all elements and place in queue
+//        for (;;) {
+//            @SuppressWarnings("unchecked")
+//            E item = (E)s.readObject();
+//            if (item == null)
+//                break;
+//            add(item);
+//        }
+//    }
 }

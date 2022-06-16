@@ -940,6 +940,42 @@ JAVA_DOUBLE java_lang_Math_hypot___double_double_R_double(CODENAME_ONE_THREAD_ST
     return hypot(a, b);
 }
 
+JAVA_DOUBLE java_lang_Math_sinh___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return sinh(a);
+}
+
+JAVA_DOUBLE java_lang_Math_cosh___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return cosh(a);
+}
+
+JAVA_DOUBLE java_lang_Math_tanh___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return tanh(a);
+}
+
+JAVA_DOUBLE java_lang_Math_exp___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return exp(a);
+}
+
+JAVA_DOUBLE java_lang_Math_expm1___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return expm1(a);
+}
+
+JAVA_DOUBLE java_lang_Math_log10___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return log10(a);
+}
+
+JAVA_DOUBLE java_lang_Math_log1p___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return log1p(a);
+}
+
+JAVA_DOUBLE java_lang_Math_rint___double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a) {
+    return rint(a);
+}
+
+JAVA_DOUBLE java_lang_Math_IEEEremainder___double_double_R_double(CODENAME_ONE_THREAD_STATE, JAVA_DOUBLE a, JAVA_DOUBLE b) {
+    return remainder(a, b);
+}
+
 JAVA_BOOLEAN isClassNameEqual(const char * clsName, JAVA_ARRAY_CHAR* chrs, int length) {
     for(int i = 0 ; i < length ; i++) {
         if(clsName[i] != chrs[i]) return JAVA_FALSE;

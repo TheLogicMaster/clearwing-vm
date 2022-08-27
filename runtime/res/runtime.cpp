@@ -151,13 +151,12 @@ JAVA_OBJECT java_io_File_list___R_java_lang_String_1ARRAY(CODENAME_ONE_THREAD_ST
         return nullptr;
     for (const auto & entry : fs::directory_iterator(path)) {
 #if defined(__WIN32__) || defined(__WINRT__)
-        std::wstring wstring(entry.path().c_str());
-        std::string string(wstring.begin(), wstring.end());
-        auto filePath = string.c_str();
+        std::wstring wstring(entry.path().filename().c_str());
+        std::string filePath(wstring.begin(), wstring.end());
 #else
-        auto filePath = entry.path().c_str();
+        auto filePath = entry.path().filename().string();
 #endif
-        collected.emplace_back(newStringFromCString(threadStateData, filePath));
+        collected.emplace_back(newStringFromCString(threadStateData, filePath.c_str()));
     }
     auto array = __NEW_ARRAY_java_lang_String(threadStateData, (int)collected.size());
     for (int i = 0; i < (int)collected.size(); i++)

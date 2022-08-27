@@ -23,17 +23,15 @@
  * questions.
  */
 
-// -- This file was mechanically generated: Do not edit! -- //
-
 package java.nio;
 
-class ByteBufferAsCharBufferL                  // package-private
+class ByteBufferAsCharBufferL
 	extends CharBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsCharBufferL (ByteBuffer bb) {   // package-private
+	ByteBufferAsCharBufferL (ByteBuffer bb) {
 
 		super(-1, 0, bb.remaining() >> 1, bb.remaining() >> 1);
 		this.bb = bb;
@@ -71,9 +69,6 @@ class ByteBufferAsCharBufferL                  // package-private
 
 	public CharBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
-//		return new ByteBufferAsCharBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
-
 	}
 
 	protected int ix (int i) {
@@ -150,8 +145,6 @@ class ByteBufferAsCharBufferL                  // package-private
 			throw new IndexOutOfBoundsException();
 		}
 	}
-
-	// --- Methods to support CharSequence ---
 
 	public CharBuffer subSequence (int start, int end) {
 		int pos = position();

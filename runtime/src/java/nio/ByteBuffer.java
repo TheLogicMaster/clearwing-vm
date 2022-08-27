@@ -308,7 +308,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 1;
-		return new ByteBufferAsCharBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsCharBufferB(this, -1, 0, size, size, off) : new ByteBufferAsCharBufferL(this, -1, 0, size, size, off);
 	}
 
 	private short getShort (long a) {
@@ -343,7 +343,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 1;
-		return new ByteBufferAsShortBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsShortBufferB(this, -1, 0, size, size, off) : new ByteBufferAsShortBufferL(this, -1, 0, size, size, off);
 	}
 
 	private int getInt (long a) {
@@ -378,7 +378,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 2;
-		return new ByteBufferAsIntBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsIntBufferB(this, -1, 0, size, size, off) : new ByteBufferAsIntBufferL(this, -1, 0, size, size, off);
 	}
 
 	private long getLong (long a) {
@@ -413,7 +413,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 3;
-		return new ByteBufferAsLongBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsLongBufferB(this, -1, 0, size, size, off) : new ByteBufferAsLongBufferL(this, -1, 0, size, size, off);
 	}
 
 	private float getFloat (long a) {
@@ -449,7 +449,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 2;
-		return new ByteBufferAsFloatBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsFloatBufferB(this, -1, 0, size, size, off) : new ByteBufferAsFloatBufferL(this, -1, 0, size, size, off);
 	}
 
 	private double getDouble (long a) {
@@ -485,6 +485,6 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 3;
-		return new ByteBufferAsDoubleBufferL(this, -1, 0, size, size, off);
+		return bigEndian ? new ByteBufferAsDoubleBufferB(this, -1, 0, size, size, off) : new ByteBufferAsDoubleBufferL(this, -1, 0, size, size, off);
 	}
 }

@@ -26,7 +26,7 @@ package java.lang.ref;
  * Abstract base class for reference objects. This class defines the operations common to all reference objects. Because reference objects are implemented in close cooperation with the garbage collector, this class may not be subclassed directly.
  * Since: JDK1.2, CLDC 1.1
  */
-public abstract class Reference{
+public abstract class Reference<T>{
     /**
      * Clears this reference object.
      */

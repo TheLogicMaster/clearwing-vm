@@ -29,6 +29,7 @@
 #include "java_lang_Class.h"
 #include "java_lang_InterruptedException.h"
 #include "java_lang_annotation_Annotation.h"
+#include "java_lang_IllegalArgumentException.h"
 
 #include <pthread.h>
 #include <math.h>
@@ -80,7 +81,7 @@ static const uint8_t utf8d[] = {
 int gettimeofday(struct timeval* tp, struct timezone* tzp) {
     // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
     // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
-    // until 00:00:00 January 1, 1970 
+    // until 00:00:00 January 1, 1970
     static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
 
     SYSTEMTIME  system_time;
@@ -132,6 +133,16 @@ struct clazz ClazzClazz = {
         DEBUG_GC_INIT 0, 999999, 0, 0, 0, 0, 0, 0, 0, 0, 0, cn1_array_start_offset, "java.lang.Class", JAVA_FALSE, 0, 0, JAVA_FALSE, &class__java_lang_Object, EMPTY_INTERFACES, 0, 0, 0
 };
 
+
+JAVA_INT unsignedShiftRightInt(JAVA_INT value, JAVA_INT shift) {
+    uint32_t temp = *(uint32_t*)&value >> (0x1F & shift);
+    return *(JAVA_INT*)&temp;
+}
+
+JAVA_LONG unsignedShiftRightLong(JAVA_LONG value, JAVA_INT shift) {
+    uint64_t temp = *(uint64_t*)&value >> (0x3F & shift);
+    return *(JAVA_LONG*)&temp;
+}
 
 JAVA_BOOLEAN compareStringToCharArray(const char* str, JAVA_ARRAY_CHAR* chrs, int length) {
     if(strlen(str) != length) {
@@ -571,9 +582,14 @@ JAVA_VOID java_lang_System_arraycopy___java_lang_Object_int_java_lang_Object_int
         THROW_ARRAY_INDEX_EXCEPTION(-1);
         return;
     }
-    struct clazz* cls = (*srcArr).__codenameOneParentClsReference;
+    struct clazz *cls = (*srcArr).__codenameOneParentClsReference;
     int byteSize = byteSizeForArray(cls);
-    memcpy(((char *)dstArr->data) + (dstOffset * byteSize), ((char *)srcArr->data)  + (srcOffset * byteSize), length * byteSize);
+    if (src == dst) {
+        JAVA_ARRAY arr = (JAVA_ARRAY)allocArray(getThreadLocalData(), length, cls, byteSize, srcArr->dimensions);
+        memcpy(arr->data, ((char *) srcArr->data) + (srcOffset * byteSize), length * byteSize);
+        memcpy(((char *) dstArr->data) + (dstOffset * byteSize), arr->data, length * byteSize);
+    } else
+        memcpy(((char *) dstArr->data) + (dstOffset * byteSize), ((char *) srcArr->data) + (srcOffset * byteSize), length * byteSize);
 }
 
 JAVA_LONG java_lang_System_currentTimeMillis___R_long(CODENAME_ONE_THREAD_STATE) {
@@ -1134,7 +1150,7 @@ JAVA_OBJECT java_lang_Class_getSuperclass___R_java_lang_Class(CODENAME_ONE_THREA
 
 JAVA_OBJECT java_lang_reflect_Constructor_nativeCreate___java_lang_Class_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls) {
     struct clazz* clz = (struct clazz*)cls;
-    return ((JAVA_OBJECT (*) (struct ThreadLocalData *))clz->newInstanceFp)(threadStateData);
+    return ((JAVA_OBJECT (*) (struct ThreadLocalData *))clz->newFp)(threadStateData);
 }
 
 JAVA_OBJECT java_lang_reflect_Array_newInstanceImpl___java_lang_Class_int_R_java_lang_Object(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_INT len) {
@@ -1415,10 +1431,12 @@ JAVA_OBJECT java_lang_reflect_Method_invoke___java_lang_Object_java_lang_Object_
 JAVA_OBJECT java_lang_Enum_valueOf___java_lang_Class_java_lang_String_R_java_lang_Enum(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT cls, JAVA_OBJECT value) {
     struct clazz* clz = (struct clazz*)cls;
     enumValueOfFunctionPointer f = clz->enumValueOfFp;
-    if (f == 0) {
-        return JAVA_NULL;
-    }
-    return f(threadStateData, value);
+    JAVA_OBJECT result = JAVA_NULL;
+    if (f != 0)
+        result = f(threadStateData, value);
+    if (!result)
+        throwException(threadStateData, __NEW_INSTANCE_java_lang_IllegalArgumentException(threadStateData));
+    return result;
 }
 
 JAVA_OBJECT java_lang_Object_toString___R_java_lang_String(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT obj) {

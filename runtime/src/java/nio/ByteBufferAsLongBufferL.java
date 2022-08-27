@@ -23,17 +23,15 @@
  * questions.
  */
 
-// -- This file was mechanically generated: Do not edit! -- //
-
 package java.nio;
 
-class ByteBufferAsLongBufferL                  // package-private
+class ByteBufferAsLongBufferL
 	extends LongBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsLongBufferL (ByteBuffer bb) {   // package-private
+	ByteBufferAsLongBufferL (ByteBuffer bb) {
 
 		super(-1, 0, bb.remaining() >> 3, bb.remaining() >> 3);
 		this.bb = bb;
@@ -71,9 +69,6 @@ class ByteBufferAsLongBufferL                  // package-private
 
 	public LongBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
-//		return new ByteBufferAsLongBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
-
 	}
 
 	protected int ix (int i) {

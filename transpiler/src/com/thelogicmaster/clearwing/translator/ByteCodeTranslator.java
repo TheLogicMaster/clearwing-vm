@@ -207,7 +207,7 @@ public class ByteCodeTranslator {
         JSONObject config = new JSONObject(new String(Files.readAllBytes(Paths.get(args[2]))));
         JSONArray reflection = config.getJSONArray("nonOptimized");
         for (Object o: reflection) {
-            Pattern pattern = Pattern.compile(((String)o).replace('.', '_').replace("*", ".+"));
+            Pattern pattern = Pattern.compile(((String)o).replace('.', '_').replace("**", ".+").replace("*", "\\w+"));
             for (ByteCodeClass clazz: Parser.getClasses())
                 if (pattern.matcher(clazz.getClsName()).matches()) {
                     ByteCodeClass.addArrayType(clazz.getClsName(), 1);

@@ -25,13 +25,13 @@
 
 package java.nio;
 
-class ByteBufferAsIntBufferL
-	extends IntBuffer {
+class ByteBufferAsFloatBufferB
+	extends FloatBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsIntBufferL (ByteBuffer bb) {
+	ByteBufferAsFloatBufferB (ByteBuffer bb) {
 
 		super(-1, 0, bb.remaining() >> 2, bb.remaining() >> 2);
 		this.bb = bb;
@@ -45,7 +45,7 @@ class ByteBufferAsIntBufferL
 		address = bb.address;
 	}
 
-	ByteBufferAsIntBufferL (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
+	ByteBufferAsFloatBufferB (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
 
 		super(mark, pos, lim, cap);
 		this.bb = bb;
@@ -54,51 +54,50 @@ class ByteBufferAsIntBufferL
 		address = bb.address + off;
 	}
 
-	public IntBuffer slice () {
+	public FloatBuffer slice () {
 		int pos = this.position();
 		int lim = this.limit();
 		int rem = (pos <= lim ? lim - pos : 0);
 		int off = (pos << 2) + offset;
 		assert (off >= 0);
-		return new ByteBufferAsIntBufferL(bb, -1, 0, rem, rem, off);
+		return new ByteBufferAsFloatBufferB(bb, -1, 0, rem, rem, off);
 	}
 
-	public IntBuffer duplicate () {
-		return new ByteBufferAsIntBufferL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+	public FloatBuffer duplicate () {
+		return new ByteBufferAsFloatBufferB(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 	}
 
-	public IntBuffer asReadOnlyBuffer () {
+	public FloatBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
 	}
 
 	protected int ix (int i) {
 		return (i << 2) + offset;
 	}
 
-	public int get () {
-		return Bits.getIntL(bb, ix(nextGetIndex()));
+	public float get () {
+		return Bits.getFloatB(bb, ix(nextGetIndex()));
 	}
 
-	public int get (int i) {
-		return Bits.getIntL(bb, ix(checkIndex(i)));
+	public float get (int i) {
+		return Bits.getFloatB(bb, ix(checkIndex(i)));
 	}
 
-	public IntBuffer put (int x) {
+	public FloatBuffer put (float x) {
 
-		Bits.putIntL(bb, ix(nextPutIndex()), x);
+		Bits.putFloatB(bb, ix(nextPutIndex()), x);
 		return this;
 
 	}
 
-	public IntBuffer put (int i, int x) {
+	public FloatBuffer put (int i, float x) {
 
-		Bits.putIntL(bb, ix(checkIndex(i)), x);
+		Bits.putFloatB(bb, ix(checkIndex(i)), x);
 		return this;
 
 	}
 
-	public IntBuffer compact () {
+	public FloatBuffer compact () {
 
 		int pos = position();
 		int lim = limit();
@@ -128,7 +127,7 @@ class ByteBufferAsIntBufferL
 
 	public ByteOrder order () {
 
-		return ByteOrder.LITTLE_ENDIAN;
+		return ByteOrder.BIG_ENDIAN;
 
 	}
 

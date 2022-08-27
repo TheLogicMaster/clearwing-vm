@@ -25,15 +25,15 @@
 
 package java.nio;
 
-class ByteBufferAsIntBufferL
-	extends IntBuffer {
+class ByteBufferAsDoubleBufferB
+	extends DoubleBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsIntBufferL (ByteBuffer bb) {
+	ByteBufferAsDoubleBufferB (ByteBuffer bb) {
 
-		super(-1, 0, bb.remaining() >> 2, bb.remaining() >> 2);
+		super(-1, 0, bb.remaining() >> 3, bb.remaining() >> 3);
 		this.bb = bb;
 		// enforce limit == capacity
 		int cap = this.capacity();
@@ -45,7 +45,7 @@ class ByteBufferAsIntBufferL
 		address = bb.address;
 	}
 
-	ByteBufferAsIntBufferL (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
+	ByteBufferAsDoubleBufferB (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
 
 		super(mark, pos, lim, cap);
 		this.bb = bb;
@@ -54,51 +54,50 @@ class ByteBufferAsIntBufferL
 		address = bb.address + off;
 	}
 
-	public IntBuffer slice () {
+	public DoubleBuffer slice () {
 		int pos = this.position();
 		int lim = this.limit();
 		int rem = (pos <= lim ? lim - pos : 0);
-		int off = (pos << 2) + offset;
+		int off = (pos << 3) + offset;
 		assert (off >= 0);
-		return new ByteBufferAsIntBufferL(bb, -1, 0, rem, rem, off);
+		return new ByteBufferAsDoubleBufferB(bb, -1, 0, rem, rem, off);
 	}
 
-	public IntBuffer duplicate () {
-		return new ByteBufferAsIntBufferL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+	public DoubleBuffer duplicate () {
+		return new ByteBufferAsDoubleBufferB(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 	}
 
-	public IntBuffer asReadOnlyBuffer () {
+	public DoubleBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
 	}
 
 	protected int ix (int i) {
-		return (i << 2) + offset;
+		return (i << 3) + offset;
 	}
 
-	public int get () {
-		return Bits.getIntL(bb, ix(nextGetIndex()));
+	public double get () {
+		return Bits.getDoubleB(bb, ix(nextGetIndex()));
 	}
 
-	public int get (int i) {
-		return Bits.getIntL(bb, ix(checkIndex(i)));
+	public double get (int i) {
+		return Bits.getDoubleB(bb, ix(checkIndex(i)));
 	}
 
-	public IntBuffer put (int x) {
+	public DoubleBuffer put (double x) {
 
-		Bits.putIntL(bb, ix(nextPutIndex()), x);
+		Bits.putDoubleB(bb, ix(nextPutIndex()), x);
 		return this;
 
 	}
 
-	public IntBuffer put (int i, int x) {
+	public DoubleBuffer put (int i, double x) {
 
-		Bits.putIntL(bb, ix(checkIndex(i)), x);
+		Bits.putDoubleB(bb, ix(checkIndex(i)), x);
 		return this;
 
 	}
 
-	public IntBuffer compact () {
+	public DoubleBuffer compact () {
 
 		int pos = position();
 		int lim = limit();
@@ -109,7 +108,7 @@ class ByteBufferAsIntBufferL
 		db.limit(ix(lim));
 		db.position(ix(0));
 		ByteBuffer sb = db.slice();
-		sb.position(pos << 2);
+		sb.position(pos << 3);
 		sb.compact();
 		position(rem);
 		limit(capacity());
@@ -128,7 +127,7 @@ class ByteBufferAsIntBufferL
 
 	public ByteOrder order () {
 
-		return ByteOrder.LITTLE_ENDIAN;
+		return ByteOrder.BIG_ENDIAN;
 
 	}
 

@@ -23,17 +23,15 @@
  * questions.
  */
 
-// -- This file was mechanically generated: Do not edit! -- //
-
 package java.nio;
 
-class ByteBufferAsShortBufferL                  // package-private
+class ByteBufferAsShortBufferL
 	extends ShortBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsShortBufferL (ByteBuffer bb) {   // package-private
+	ByteBufferAsShortBufferL (ByteBuffer bb) {
 
 		super(-1, 0, bb.remaining() >> 1, bb.remaining() >> 1);
 		this.bb = bb;
@@ -71,9 +69,6 @@ class ByteBufferAsShortBufferL                  // package-private
 
 	public ShortBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
-//		return new ByteBufferAsShortBufferRL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
-
 	}
 
 	protected int ix (int i) {

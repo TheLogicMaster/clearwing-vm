@@ -22,6 +22,9 @@
  */
 
 package java.io;
+
+import java.nio.charset.Charset;
+
 /**
  * An InputStreamReader is a bridge from byte streams to character streams: It reads bytes and translates them into characters. The encoding that it uses may be specified by name, or the platform's default encoding may be accepted.
  * Each invocation of one of an InputStreamReader's read() methods may cause one or more bytes to be read from the underlying byte input stream. To enable the efficient conversion of bytes to characters, more bytes may be read ahead from the underlying stream than are necessary to satisfy the current read operation.
@@ -40,6 +43,10 @@ public class InputStreamReader extends java.io.Reader{
     public InputStreamReader(java.io.InputStream is) {
          internal = is;
          this.enc = "UTF-8";
+    }
+
+    public InputStreamReader(java.io.InputStream is, Charset charset) {
+        this(is);
     }
 
     private void complete() throws IOException{

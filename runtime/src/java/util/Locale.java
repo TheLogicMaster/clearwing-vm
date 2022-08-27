@@ -186,7 +186,12 @@ public class Locale {
 
     @Override
     public String toString () {
-        return "Locale{" + "language='" + language + '\'' + ", country='" + country + '\'' + ", variant='" + variant + '\'' + '}';
+        String string = language;
+        if (country != null && !country.isEmpty())
+            string += '_' + country;
+        if (variant != null && ! variant.isEmpty())
+            string += '_' + variant;
+        return string;
     }
 
     public enum Category {

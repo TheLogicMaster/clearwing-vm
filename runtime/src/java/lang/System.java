@@ -160,6 +160,15 @@ public final class System {
      */
     public static native java.lang.String getProperty(java.lang.String key);
 
+    public static String getProperty(String key, String def) {
+        String value = getProperty(key);
+        return value == null ? def : value;
+    }
+
+    public static String getenv(String name) {
+        return null;
+    }
+
     /**
      * Returns the same hashcode for the given object as would be returned by the default method hashCode(), whether or not the given object's class overrides hashCode(). The hashcode for the null reference is zero.
      */

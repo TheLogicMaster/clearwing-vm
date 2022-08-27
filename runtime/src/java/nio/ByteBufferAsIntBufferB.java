@@ -25,13 +25,13 @@
 
 package java.nio;
 
-class ByteBufferAsIntBufferL
+class ByteBufferAsIntBufferB
 	extends IntBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsIntBufferL (ByteBuffer bb) {
+	ByteBufferAsIntBufferB (ByteBuffer bb) {
 
 		super(-1, 0, bb.remaining() >> 2, bb.remaining() >> 2);
 		this.bb = bb;
@@ -45,7 +45,7 @@ class ByteBufferAsIntBufferL
 		address = bb.address;
 	}
 
-	ByteBufferAsIntBufferL (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
+	ByteBufferAsIntBufferB (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
 
 		super(mark, pos, lim, cap);
 		this.bb = bb;
@@ -60,11 +60,11 @@ class ByteBufferAsIntBufferL
 		int rem = (pos <= lim ? lim - pos : 0);
 		int off = (pos << 2) + offset;
 		assert (off >= 0);
-		return new ByteBufferAsIntBufferL(bb, -1, 0, rem, rem, off);
+		return new ByteBufferAsIntBufferB(bb, -1, 0, rem, rem, off);
 	}
 
 	public IntBuffer duplicate () {
-		return new ByteBufferAsIntBufferL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+		return new ByteBufferAsIntBufferB(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 	}
 
 	public IntBuffer asReadOnlyBuffer () {
@@ -77,23 +77,23 @@ class ByteBufferAsIntBufferL
 	}
 
 	public int get () {
-		return Bits.getIntL(bb, ix(nextGetIndex()));
+		return Bits.getIntB(bb, ix(nextGetIndex()));
 	}
 
 	public int get (int i) {
-		return Bits.getIntL(bb, ix(checkIndex(i)));
+		return Bits.getIntB(bb, ix(checkIndex(i)));
 	}
 
 	public IntBuffer put (int x) {
 
-		Bits.putIntL(bb, ix(nextPutIndex()), x);
+		Bits.putIntB(bb, ix(nextPutIndex()), x);
 		return this;
 
 	}
 
 	public IntBuffer put (int i, int x) {
 
-		Bits.putIntL(bb, ix(checkIndex(i)), x);
+		Bits.putIntB(bb, ix(checkIndex(i)), x);
 		return this;
 
 	}
@@ -128,7 +128,7 @@ class ByteBufferAsIntBufferL
 
 	public ByteOrder order () {
 
-		return ByteOrder.LITTLE_ENDIAN;
+		return ByteOrder.BIG_ENDIAN;
 
 	}
 

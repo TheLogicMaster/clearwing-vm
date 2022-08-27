@@ -32,6 +32,8 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Dynamic cast checks
 - Reformat runtime and transpiler sources
 - Reflection type conversions (See SwitchGDX ReflectionTest)
+- Reflection error handling
+- Isolate String constants for incremental compilation
 
 ## Notes
 - Requires retrolambda for lambda, default method, and method reference support (RetroLambda Gradle plugin doesn't support Gradle 7)
@@ -49,3 +51,4 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Array components in multidimensional arrays should refer to array classes of decreasing size
 - Added dedicated primitive types
 - Literals for non-integer types must be explicitly specified
+- System.array copy from same source and dest must use intermediate buffer if necessary

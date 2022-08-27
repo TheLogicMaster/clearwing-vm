@@ -417,13 +417,23 @@ public class BasicInstruction extends Instruction implements AssignableExpressio
             case Opcodes.LSHR:
                 b.append("    SP--; SP[-1].data.l = (SP[-1].data.l >> (0x3f & (*SP).data.l)); /* LSHR */\n");
                 break;
-                
+
             case Opcodes.IUSHR:
-                b.append("    SP--; SP[-1].data.i = (((unsigned int)SP[-1].data.i) >> (0x1f & ((unsigned int)(*SP).data.i))); /* IUSHR */\n");
+                b.append(""
+                    + "    {\n"
+                    + "        SP--;\n"
+                    + "        uint32_t tmpResult = (*(uint32_t*)&SP[-1].data.i) >> (0x1f & (*SP).data.i);\n"
+                    + "        SP[-1].data.i = *(int32_t*)&tmpResult;\n"
+                    + "    } /* IUSHR */\n");
                 break;
-                
+
             case Opcodes.LUSHR:
-                b.append("    SP--; SP[-1].data.l = (((unsigned long long)SP[-1].data.l) >> (0x3f & ((unsigned long long)(*SP).data.i))); /* LUSHR */\n");
+                b.append(""
+                    + "    {\n"
+                    + "        SP--;\n"
+                    + "        uint64_t tmpResult = (*(uint64_t*)&SP[-1].data.l) >> (0x3f & (*SP).data.i);\n"
+                    + "        SP[-1].data.l = *(int64_t*)&tmpResult;\n"
+                    + "    } /* LUSHR */\n");
                 break;
                 
             case Opcodes.IAND:

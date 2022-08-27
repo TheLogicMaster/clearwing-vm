@@ -146,29 +146,25 @@ public class Executors {
 ////                                    0L, TimeUnit.MILLISECONDS,
 ////                                    new LinkedBlockingQueue<Runnable>()));
 ////    }
-////
-////    /**
-////     * Creates an Executor that uses a single worker thread operating
-////     * off an unbounded queue, and uses the provided ThreadFactory to
-////     * create a new thread when needed. Unlike the otherwise
-////     * equivalent {@code newFixedThreadPool(1, threadFactory)} the
-////     * returned executor is guaranteed not to be reconfigurable to use
-////     * additional threads.
-////     *
-////     * @param threadFactory the factory to use when creating new
-////     * threads
-////     *
-////     * @return the newly created single-threaded Executor
-////     * @throws NullPointerException if threadFactory is null
-////     */
-////    public static ExecutorService newSingleThreadExecutor(ThreadFactory threadFactory) {
-////        return new FinalizableDelegatedExecutorService
-////            (new ThreadPoolExecutor(1, 1,
-////                                    0L, TimeUnit.MILLISECONDS,
-////                                    new LinkedBlockingQueue<Runnable>(),
-////                                    threadFactory));
-////    }
-////
+
+    /**
+     * Creates an Executor that uses a single worker thread operating
+     * off an unbounded queue, and uses the provided ThreadFactory to
+     * create a new thread when needed. Unlike the otherwise
+     * equivalent {@code newFixedThreadPool(1, threadFactory)} the
+     * returned executor is guaranteed not to be reconfigurable to use
+     * additional threads.
+     *
+     * @param threadFactory the factory to use when creating new
+     * threads
+     *
+     * @return the newly created single-threaded Executor
+     * @throws NullPointerException if threadFactory is null
+     */
+    public static ExecutorService newSingleThreadExecutor(ThreadFactory threadFactory) {
+        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), threadFactory);
+    }
+
 ////    /**
 ////     * Creates a thread pool that creates new threads as needed, but
 ////     * will reuse previously constructed threads when they are

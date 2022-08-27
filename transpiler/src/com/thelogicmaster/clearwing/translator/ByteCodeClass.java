@@ -647,6 +647,12 @@ public class ByteCodeClass {
         } else {
             b.append(", 0");
         }
+
+        if (isAnnotation || (!isInterface && !isAbstract)) {
+            b.append(", &__NEW_");
+            b.append(clsName);
+        } else
+            b.append(", 0");
         
         // vtable 
         b.append(", 0\n");
@@ -746,7 +752,7 @@ public class ByteCodeClass {
             b.append(", JAVA_FALSE, &class__java_lang_Object, EMPTY_INTERFACES, 0, ");
 
             // new instance function pointer and vtable 
-            b.append("0, 0, 0, 0, 0, 0, 0, "+getArrayClazz(iter+1)+"\n};\n\n");
+            b.append("0, 0, 0, 0, 0, 0, 0, 0, "+getArrayClazz(iter+1)+"\n};\n\n");
         }
 
         staticFieldList = new ArrayList<ByteCodeField>();

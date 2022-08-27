@@ -41,23 +41,23 @@
 
 
 typedef void               JAVA_VOID;
-typedef int                JAVA_BOOLEAN;
-typedef int                JAVA_CHAR;
-typedef int                JAVA_BYTE;
-typedef int                JAVA_SHORT;
-typedef int                JAVA_INT;
+typedef int32_t            JAVA_BOOLEAN;
+typedef int32_t            JAVA_CHAR;
+typedef int32_t            JAVA_BYTE;
+typedef int32_t            JAVA_SHORT;
+typedef int32_t            JAVA_INT;
 typedef int64_t            JAVA_LONG;
 typedef float              JAVA_FLOAT;
 typedef double             JAVA_DOUBLE;
 
-typedef signed char       JAVA_ARRAY_BYTE;
-typedef char              JAVA_ARRAY_BOOLEAN;
-typedef unsigned short    JAVA_ARRAY_CHAR;
-typedef short             JAVA_ARRAY_SHORT;
-typedef int               JAVA_ARRAY_INT;
-typedef int64_t           JAVA_ARRAY_LONG;
-typedef float             JAVA_ARRAY_FLOAT;
-typedef double            JAVA_ARRAY_DOUBLE;
+typedef int8_t             JAVA_ARRAY_BYTE;
+typedef int8_t             JAVA_ARRAY_BOOLEAN;
+typedef uint16_t           JAVA_ARRAY_CHAR;
+typedef int16_t            JAVA_ARRAY_SHORT;
+typedef int32_t            JAVA_ARRAY_INT;
+typedef int64_t            JAVA_ARRAY_LONG;
+typedef float              JAVA_ARRAY_FLOAT;
+typedef double             JAVA_ARRAY_DOUBLE;
 
 typedef struct JavaArrayPrototype*               JAVA_ARRAY;
 typedef struct JavaObjectPrototype*              JAVA_OBJECT;
@@ -147,6 +147,7 @@ struct clazz {
     const int baseInterfaceCount;
 
     void* newInstanceFp;
+    void* newFp;
 
     // virtual method table lookup
     void** vtable;
@@ -655,17 +656,22 @@ else if (IS_DOUBLE_WORD(-1)) SP=BC_DUP2_X2_DSS(SP);\
 #define BC_LSHR() SP--; SP[-1].data.l = (SP[-1].data.l >> (0x3f & (*SP).data.l))
 #define BC_LSHR_EXPR(val1, val2) (val1 >> (0x3f & val2))
 
-#define BC_IUSHL() SP--; SP[-1].data.i = (((unsigned int)SP[-1].data.i) << (0x1f & ((unsigned int)(*SP).data.i)))
-#define BC_IUSHL_EXPR(val1, val2) (((unsigned int)val1) << (0x1f & ((unsigned int)val2)))
+#define BC_IUSHL() SP--; SP[-1].data.i = (((uint32_t)SP[-1].data.i) << (0x1f & ((uint32_t(*SP).data.i)))
+#define BC_IUSHL_EXPR(val1, val2) (((uint32_tval1) << (0x1f & ((uint32_tval2)))
 
-#define BC_LUSHL() SP--; SP[-1].data.l = (((unsigned long long)SP[-1].data.l) << (0x3f & ((unsigned long long)(*SP).data.l)))
-#define BC_LUSHL_EXPR(val1, val2) (((unsigned long long)val1) << (0x3f & ((unsigned long long)val2)))
+#define BC_LUSHL() SP--; SP[-1].data.l = (((uint64_t)SP[-1].data.l) << (0x3f & ((uint64_t)(*SP).data.l)))
+#define BC_LUSHL_EXPR(val1, val2) (((uint64_t)val1) << (0x3f & ((uint64_t)val2)))
 
-#define BC_IUSHR() SP--; SP[-1].data.i = (((unsigned int)SP[-1].data.i) >> (0x1f & ((unsigned int)(*SP).data.i)))
-#define BC_IUSHR_EXPR(val1, val2) (((unsigned int)val1) >> (0x1f & ((unsigned int)val2)))
+#define BC_IUSHR() SP--; SP[-1].data.i = (((uint32_tSP[-1].data.i) >> (0x1f & ((uint32_t(*SP).data.i)))
+//#define BC_IUSHR_EXPR(val1, val2) (((uint32_t)val1) >> (0x1f & ((uint32_t)val2)))
+#define BC_IUSHR_EXPR unsignedShiftRightInt
 
-#define BC_LUSHR() SP--; SP[-1].data.l = (((unsigned long long)SP[-1].data.l) >> (0x3f & ((unsigned long long)(*SP).data.l)))
-#define BC_LUSHR_EXPR(val1, val2) (((unsigned long long)val1) >> (0x3f & ((unsigned long long)val2)))
+#define BC_LUSHR() SP--; SP[-1].data.l = (((uint64_t)SP[-1].data.l) >> (0x3f & ((uint64_t)(*SP).data.l)))
+//#define BC_LUSHR_EXPR(val1, val2) (((uint64_t)val1) >> (0x3f & ((uint64_t)val2)))
+#define BC_LUSHR_EXPR unsignedShiftRightLong
+
+extern JAVA_INT unsignedShiftRightInt(JAVA_INT value, JAVA_INT shift);
+extern JAVA_LONG unsignedShiftRightLong(JAVA_LONG value, JAVA_INT shift);
 
 #define BC_ISUB() SP--; SP[-1].data.i = (SP[-1].data.i - (*SP).data.i)
 

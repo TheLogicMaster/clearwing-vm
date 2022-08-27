@@ -25,15 +25,15 @@
 
 package java.nio;
 
-class ByteBufferAsIntBufferL
-	extends IntBuffer {
+class ByteBufferAsCharBufferB
+	extends CharBuffer {
 
 	protected final ByteBuffer bb;
 	protected final int offset;
 
-	ByteBufferAsIntBufferL (ByteBuffer bb) {
+	ByteBufferAsCharBufferB (ByteBuffer bb) {
 
-		super(-1, 0, bb.remaining() >> 2, bb.remaining() >> 2);
+		super(-1, 0, bb.remaining() >> 1, bb.remaining() >> 1);
 		this.bb = bb;
 		// enforce limit == capacity
 		int cap = this.capacity();
@@ -45,7 +45,7 @@ class ByteBufferAsIntBufferL
 		address = bb.address;
 	}
 
-	ByteBufferAsIntBufferL (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
+	ByteBufferAsCharBufferB (ByteBuffer bb, int mark, int pos, int lim, int cap, int off) {
 
 		super(mark, pos, lim, cap);
 		this.bb = bb;
@@ -54,51 +54,54 @@ class ByteBufferAsIntBufferL
 		address = bb.address + off;
 	}
 
-	public IntBuffer slice () {
+	public CharBuffer slice () {
 		int pos = this.position();
 		int lim = this.limit();
 		int rem = (pos <= lim ? lim - pos : 0);
-		int off = (pos << 2) + offset;
+		int off = (pos << 1) + offset;
 		assert (off >= 0);
-		return new ByteBufferAsIntBufferL(bb, -1, 0, rem, rem, off);
+		return new ByteBufferAsCharBufferB(bb, -1, 0, rem, rem, off);
 	}
 
-	public IntBuffer duplicate () {
-		return new ByteBufferAsIntBufferL(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
+	public CharBuffer duplicate () {
+		return new ByteBufferAsCharBufferB(bb, this.markValue(), this.position(), this.limit(), this.capacity(), offset);
 	}
 
-	public IntBuffer asReadOnlyBuffer () {
+	public CharBuffer asReadOnlyBuffer () {
 		throw new UnsupportedOperationException();
-
 	}
 
 	protected int ix (int i) {
-		return (i << 2) + offset;
+		return (i << 1) + offset;
 	}
 
-	public int get () {
-		return Bits.getIntL(bb, ix(nextGetIndex()));
+	public char get () {
+		return Bits.getCharB(bb, ix(nextGetIndex()));
 	}
 
-	public int get (int i) {
-		return Bits.getIntL(bb, ix(checkIndex(i)));
+	public char get (int i) {
+		return Bits.getCharB(bb, ix(checkIndex(i)));
 	}
 
-	public IntBuffer put (int x) {
+	char getUnchecked (int i) {
+		return Bits.getCharB(bb, ix(i));
+	}
 
-		Bits.putIntL(bb, ix(nextPutIndex()), x);
+	public CharBuffer put (char x) {
+
+		Bits.putCharB(bb, ix(nextPutIndex()), x);
 		return this;
 
 	}
 
-	public IntBuffer put (int i, int x) {
+	public CharBuffer put (int i, char x) {
 
-		Bits.putIntL(bb, ix(checkIndex(i)), x);
+		Bits.putCharB(bb, ix(checkIndex(i)), x);
 		return this;
 
 	}
 
-	public IntBuffer compact () {
+	public CharBuffer compact () {
 
 		int pos = position();
 		int lim = limit();
@@ -109,7 +112,7 @@ class ByteBufferAsIntBufferL
 		db.limit(ix(lim));
 		db.position(ix(0));
 		ByteBuffer sb = db.slice();
-		sb.position(pos << 2);
+		sb.position(pos << 1);
 		sb.compact();
 		position(rem);
 		limit(capacity());
@@ -126,9 +129,38 @@ class ByteBufferAsIntBufferL
 		return false;
 	}
 
+	public String toString (int start, int end) {
+		if ((end > limit()) || (start > end))
+			throw new IndexOutOfBoundsException();
+		try {
+			int len = end - start;
+			char[] ca = new char[len];
+			CharBuffer cb = CharBuffer.wrap(ca);
+			CharBuffer db = this.duplicate();
+			db.position(start);
+			db.limit(end);
+			cb.put(db);
+			return new String(ca);
+		} catch (StringIndexOutOfBoundsException x) {
+			throw new IndexOutOfBoundsException();
+		}
+	}
+
+	public CharBuffer subSequence (int start, int end) {
+		int pos = position();
+		int lim = limit();
+		assert (pos <= lim);
+		pos = (pos <= lim ? pos : lim);
+		int len = lim - pos;
+
+		if ((start < 0) || (end > len) || (start > end))
+			throw new IndexOutOfBoundsException();
+		return new ByteBufferAsCharBufferB(bb, -1, pos + start, pos + end, capacity(), offset);
+	}
+
 	public ByteOrder order () {
 
-		return ByteOrder.LITTLE_ENDIAN;
+		return ByteOrder.BIG_ENDIAN;
 
 	}
 

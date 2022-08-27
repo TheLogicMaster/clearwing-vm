@@ -154,7 +154,7 @@ public class CustomInvoke extends Instruction {
             if (targetObjectLiteral != null) {
                 b.append("cloneArray(").append(targetObjectLiteral).append(")");
             } else {
-                b.append("cloneArray(POP_OBJ(1))");
+                b.append("cloneArray(POP_OBJ())");
             }
             return true;
         }

@@ -32,6 +32,7 @@ import java.util.IllegalFormatException;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * The String class represents character strings. All string literals in Java programs, such as "abc", are implemented as instances of this class.
@@ -493,6 +494,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
 
     public String replace(CharSequence a, CharSequence b) {
         return Pattern.compile(a.toString(), Pattern.LITERAL).matcher(this).replaceAll(b.toString());
+    }
+
+    public boolean matches(String regex) {
+        return Pattern.matches(regex, this);
     }
 
     /**

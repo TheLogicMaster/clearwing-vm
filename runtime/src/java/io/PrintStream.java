@@ -38,7 +38,7 @@ public class PrintStream extends FilterOutputStream implements Appendable {
      */
     private boolean ioError;
 
-    private final Formatter formatter = new Formatter();
+    private Formatter formatter;
 
     /**
      * indicates whether or not this PrintStream should flush its contents after
@@ -515,6 +515,8 @@ public class PrintStream extends FilterOutputStream implements Appendable {
     }
 
     public PrintStream printf(String format, Object ... args) {
+        if (formatter == null)
+            formatter = new Formatter();
         print(formatter.format(format, args));
         return this;
     }

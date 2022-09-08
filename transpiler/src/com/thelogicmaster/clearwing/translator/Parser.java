@@ -26,6 +26,7 @@ package com.thelogicmaster.clearwing.translator;
 import java.io.*;
 import java.util.*;
 
+import com.thelogicmaster.clearwing.translator.bytecodes.CustomIntruction;
 import com.thelogicmaster.clearwing.translator.bytecodes.LabelInstruction;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Attribute;
@@ -36,6 +37,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 
@@ -539,7 +541,7 @@ public class Parser extends ClassVisitor {
     	int nfound = 0;
     	for(ByteCodeClass bc : classes) {
             bc.unmark();
-            if(bc.isIsInterface() || bc.getBaseClass() == null) {
+            if(bc.isIsInterface() || bc.isTranspilerGenerated() || bc.getBaseClass() == null) {
                 continue;
             }
             for(BytecodeMethod mtd : bc.getMethods()) {
@@ -879,6 +881,58 @@ public class Parser extends ClassVisitor {
 
         @Override
         public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
+            if (!bsm.getOwner().contains("LambdaMetafactory"))
+                throw new RuntimeException("Unsupported InvokeDynamic call");
+            Handle handle = (Handle)bsmArgs[1];
+            Type interfaceType = (Type)bsmArgs[0];
+            Type proxyType = Type.getMethodType(desc);
+            String interfaceClass = proxyType.getReturnType().getClassName();
+
+            String className = Util.sanitizeClassName(handle.getOwner()) + "__InvokeDynamic_" + handle.getName().replace('$', '_');
+            ByteCodeClass proxyClass = new ByteCodeClass(className, handle.getOwner());
+            proxyClass.setTranspilerGenerated(true);
+            proxyClass.setBaseInterfaces(new String[]{Util.sanitizeClassName(interfaceClass)});
+            proxyClass.setBaseClass("java/lang/Object");
+            for (int i = 0; i < proxyType.getArgumentTypes().length; i++) {
+                ByteCodeField field = new ByteCodeField(className, 0, "field" + i, proxyType.getArgumentTypes()[i].getDescriptor(), null, null);
+                proxyClass.addField(field);
+            }
+
+            StringBuilder contentBuilder = new StringBuilder("\t");
+            if (!interfaceType.getReturnType().equals(Type.VOID_TYPE))
+                contentBuilder.append("return ");
+            contentBuilder.append(Util.sanitizeClassName(handle.getOwner()));
+            contentBuilder.append("_");
+            contentBuilder.append(handle.getName());
+            contentBuilder.append("__");
+            BytecodeMethod.appendMethodSignatureSuffixFromDesc(handle.getDesc(), contentBuilder, new ArrayList<>());
+            contentBuilder.append("(threadStateData");
+            for (int i = 0; i < proxyType.getArgumentTypes().length; i++)
+                contentBuilder.append(", get_field_").append(className).append("_field").append(i).append("(__cn1ThisObject)");
+            for (int i = 0; i < interfaceType.getArgumentTypes().length; i++)
+                contentBuilder.append(", __cn1Arg").append(i + 1);
+            contentBuilder.append(");\n");
+            String content = contentBuilder.toString();
+            BytecodeMethod delegate = new BytecodeMethod(className, 0, name, interfaceType.getDescriptor(), null, null);
+            delegate.addDependentClass(Util.sanitizeClassName(handle.getOwner()));
+            delegate.addInstruction(new CustomIntruction(content, content, delegate.getDependentClasses()));
+            proxyClass.addMethod(delegate);
+            classes.add(proxyClass);
+
+            StringBuilder invokeBuilder = new StringBuilder();
+            invokeBuilder.append("\t{/* DynamicInvoke */\n");
+            invokeBuilder.append("\t\tJAVA_OBJECT proxy = __NEW_").append(className).append("(threadStateData);\n");
+            for (int i = 0; i < proxyType.getArgumentTypes().length; i++)
+                invokeBuilder.append("\t\tset_field_").append(className).append("_field").append(i)
+                    .append("(threadStateData, SP[").append(-proxyType.getArgumentTypes().length + i).append("].data.")
+                    .append(Util.getElementEnumName(proxyType.getArgumentTypes()[i].getDescriptor())).append(", proxy);\n");
+            invokeBuilder.append("\t\tSP--;\n");
+            invokeBuilder.append("\t\tPUSH_OBJ(proxy);\n");
+            invokeBuilder.append("\t}\n");
+            String invokeContent = invokeBuilder.toString();
+            mtd.addDependentClass(className);
+            mtd.addInstruction(new CustomIntruction(invokeContent, invokeContent, mtd.getDependentClasses()));
+
             super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs); 
         }
 

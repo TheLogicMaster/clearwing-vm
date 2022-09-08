@@ -74,6 +74,7 @@ public class ByteCodeClass {
     private boolean isAnnotation;
     private boolean isAnonymous;
     private boolean eliminated;
+    private boolean isTranspilerGenerated;
 
     private static boolean saveUnitTests;
     private boolean isUnitTest;
@@ -113,6 +114,14 @@ public class ByteCodeClass {
      */
     public boolean isEliminated() {
         return eliminated;
+    }
+
+    public boolean isTranspilerGenerated () {
+        return isTranspilerGenerated;
+    }
+
+    public void setTranspilerGenerated (boolean transpilerGenerated) {
+        isTranspilerGenerated = transpilerGenerated;
     }
 
     /**

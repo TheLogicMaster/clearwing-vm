@@ -24,6 +24,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.Objects;
+
+import com.thelogicmaster.clearwing.translator.Util;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
@@ -99,27 +101,7 @@ public class LocalVariable extends Instruction {
     }
     
     public char getQualifier() {
-        switch (desc.charAt(0)) {
-            case 'B' :
-            case 'C' :
-            case 'Z' :
-            case 'I' : 
-            case 'S' :
-                return 'i';
-            case 'J' :
-                return 'l';
-            case 'F' :
-                return 'f';
-            case 'D' : 
-                return 'd';
-            case 'L' :
-            case '[' :
-                return 'o';
-            default :
-                throw new RuntimeException("Unknown local variable type "+desc);
-               
-        }
-        
+        return Util.getElementEnumName(desc);
     }
     
     public String getOrigName() {

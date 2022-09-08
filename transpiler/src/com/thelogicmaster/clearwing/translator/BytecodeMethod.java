@@ -513,12 +513,16 @@ public class BytecodeMethod implements SignatureSet {
     public List<String> getDependentClasses() {
         return dependentClasses;
     }
-    
+
+    public void addDependentClass(String clazz) {
+        dependentClasses.add(clazz);
+    }
+
     //public List<String> getExportedClasses() {
     //    return exportedClasses;
     //}
     
-    private void appendCMethodPrefix(StringBuilder b, String prefix) {
+    protected void appendCMethodPrefix(StringBuilder b, String prefix) {
         appendCMethodPrefix(b, prefix, clsName);
     }
     
@@ -1082,7 +1086,7 @@ public class BytecodeMethod implements SignatureSet {
         this.maxStack = maxStack;
     }
     
-    private void addInstruction(Instruction i) {
+    public void addInstruction(Instruction i) {
         instructions.add(i);
         i.addDependencies(dependentClasses);
     }

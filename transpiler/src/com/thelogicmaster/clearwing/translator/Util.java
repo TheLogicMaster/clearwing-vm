@@ -73,6 +73,28 @@ public class Util {
         return cls.replace(".", "_").replace("/", "_").replace("$", "_").replace('-', '_');
     }
 
+    public static char getElementEnumName(String desc) {
+        switch (desc.charAt(0)) {
+        case 'B' :
+        case 'C' :
+        case 'Z' :
+        case 'I' :
+        case 'S' :
+            return 'i';
+        case 'J' :
+            return 'l';
+        case 'F' :
+            return 'f';
+        case 'D' :
+            return 'd';
+        case 'L' :
+        case '[' :
+            return 'o';
+        default :
+            throw new RuntimeException("Unknown local variable type "+desc);
+        }
+    }
+
     public static List<ByteCodeMethodArg> getMethodArgs(String methodDesc) {
         List<ByteCodeMethodArg> arguments = new ArrayList<ByteCodeMethodArg>();
         int currentArrayDim = 0;

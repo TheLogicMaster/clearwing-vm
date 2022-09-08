@@ -160,7 +160,7 @@ public class ByteCodeTranslator {
 //        System.setProperty("optimizer", "off");
         System.setProperty("INCLUDE_NPE_CHECKS", "true");
 
-        if(args.length != 3 && args.length != 4) {
+        if(args.length < 2 || args.length > 4) {
             System.out.println("Usage: <input directory> <output directory> <config> <main class>");
             System.exit(1);
             return;
@@ -204,15 +204,17 @@ public class ByteCodeTranslator {
 //        File nativeMethods = new File(dest, "nativeMethods.c");
 //        copy(ByteCodeTranslator.class.getResourceAsStream("/nativeMethods.c"), new FileOutputStream(nativeMethods));
 
-        JSONObject config = new JSONObject(new String(Files.readAllBytes(Paths.get(args[2]))));
-        JSONArray reflection = config.getJSONArray("nonOptimized");
-        for (Object o: reflection) {
-            Pattern pattern = Pattern.compile(((String)o).replace('.', '_').replace("**", ".+").replace("*", "\\w+"));
-            for (ByteCodeClass clazz: Parser.getClasses())
-                if (pattern.matcher(clazz.getClsName()).matches()) {
-                    ByteCodeClass.addArrayType(clazz.getClsName(), 1);
-                    ByteCodeClass.addNonOptimized(clazz.getClsName());
-                }
+        if (args.length >= 3) {
+            JSONObject config = new JSONObject(new String(Files.readAllBytes(Paths.get(args[2]))));
+            JSONArray reflection = config.getJSONArray("nonOptimized");
+            for (Object o : reflection) {
+                Pattern pattern = Pattern.compile(((String)o).replace('.', '_').replace("**", ".+").replace("*", "\\w+"));
+                for (ByteCodeClass clazz : Parser.getClasses())
+                    if (pattern.matcher(clazz.getClsName()).matches()) {
+                        ByteCodeClass.addArrayType(clazz.getClsName(), 1);
+                        ByteCodeClass.addNonOptimized(clazz.getClsName());
+                    }
+            }
         }
 
         Parser.writeOutput(dest);

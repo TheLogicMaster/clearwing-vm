@@ -920,13 +920,12 @@ public class Parser extends ClassVisitor {
             classes.add(proxyClass);
 
             StringBuilder invokeBuilder = new StringBuilder();
-            invokeBuilder.append("\t{/* DynamicInvoke */\n");
+            invokeBuilder.append("\t{/* InvokeDynamic */\n");
             invokeBuilder.append("\t\tJAVA_OBJECT proxy = __NEW_").append(className).append("(threadStateData);\n");
-            for (int i = 0; i < proxyType.getArgumentTypes().length; i++)
+            for (int i = proxyType.getArgumentTypes().length - 1; i >= 0; i--)
                 invokeBuilder.append("\t\tset_field_").append(className).append("_field").append(i)
-                    .append("(threadStateData, SP[").append(-proxyType.getArgumentTypes().length + i).append("].data.")
+                    .append("(threadStateData, (--SP)").append("->data.")
                     .append(Util.getElementEnumName(proxyType.getArgumentTypes()[i].getDescriptor())).append(", proxy);\n");
-            invokeBuilder.append("\t\tSP--;\n");
             invokeBuilder.append("\t\tPUSH_OBJ(proxy);\n");
             invokeBuilder.append("\t}\n");
             String invokeContent = invokeBuilder.toString();

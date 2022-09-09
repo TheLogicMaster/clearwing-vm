@@ -85,7 +85,7 @@ public class BytecodeMethod implements SignatureSet {
     private boolean privateMethod;
     private boolean abstractMethod;
     private boolean nativeMethod;
-    private List<String> dependentClasses = new ArrayList<String>();
+    private Set<String> dependentClasses = new HashSet<>();
     //private List<String> exportedClasses = new ArrayList<String>();
     private List<Instruction> instructions = new ArrayList<Instruction>();
     private String declaration = ""; 
@@ -525,7 +525,7 @@ public class BytecodeMethod implements SignatureSet {
         return abstractMethod;
     }
 
-    public List<String> getDependentClasses() {
+    public Set<String> getDependentClasses() {
         return dependentClasses;
     }
 

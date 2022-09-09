@@ -25,6 +25,8 @@ package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import com.thelogicmaster.clearwing.translator.ByteCodeClass;
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -43,7 +45,7 @@ public class MultiArray extends Instruction {
     }
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         String t = desc.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         actualType = t;

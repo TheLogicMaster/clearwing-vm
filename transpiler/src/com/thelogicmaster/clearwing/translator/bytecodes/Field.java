@@ -24,6 +24,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -52,7 +54,7 @@ public class Field extends Instruction implements AssignableExpression {
     }
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         String t = owner.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         if(t != null && !dependencyList.contains(t)) {

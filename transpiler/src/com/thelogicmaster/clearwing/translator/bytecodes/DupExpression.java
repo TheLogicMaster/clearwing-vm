@@ -6,6 +6,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -35,7 +37,7 @@ public class DupExpression extends Instruction implements AssignableExpression {
     }
 
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if (dupInstr != null) {
             dupInstr.addDependencies(dependencyList);
         }

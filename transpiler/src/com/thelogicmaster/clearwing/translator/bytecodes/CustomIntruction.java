@@ -24,6 +24,7 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * A custom instruction allows us to override existing bytecode with an optimization
@@ -33,10 +34,10 @@ import java.util.List;
 public class CustomIntruction extends Instruction implements AssignableExpression {
     private String code;
     private String complexCode;
-    private List<String> dependencies;
+    private Set<String> dependencies;
     private AssignableExpression assignableExpression;
     
-    public CustomIntruction(String code, String complexCode, List<String> dependencies, AssignableExpression assignable) {
+    public CustomIntruction(String code, String complexCode, Set<String> dependencies, AssignableExpression assignable) {
         super(-1);
         this.code = code;
         this.complexCode = complexCode;
@@ -44,7 +45,7 @@ public class CustomIntruction extends Instruction implements AssignableExpressio
         this.assignableExpression = assignable;
     }
     
-    public CustomIntruction(String code, String complexCode, List<String> dependencies) {
+    public CustomIntruction(String code, String complexCode, Set<String> dependencies) {
         this(code, complexCode, dependencies, null);
     }
     

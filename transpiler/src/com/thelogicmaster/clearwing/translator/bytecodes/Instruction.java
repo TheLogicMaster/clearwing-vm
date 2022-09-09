@@ -27,6 +27,7 @@ import com.thelogicmaster.clearwing.translator.BytecodeMethod;
 import com.thelogicmaster.clearwing.translator.SignatureSet;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -67,7 +68,7 @@ public abstract class Instruction implements SignatureSet
         appendInstruction(b);
     }
 
-    public void addDependencies(List<String> dependencyList) {}
+    public void addDependencies(Set<String> dependencyList) {}
     
     public String unarray(String t) {
         if(t.startsWith("[")) {

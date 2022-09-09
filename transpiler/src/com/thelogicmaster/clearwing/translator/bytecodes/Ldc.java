@@ -26,6 +26,8 @@ package com.thelogicmaster.clearwing.translator.bytecodes;
 import com.thelogicmaster.clearwing.translator.ByteCodeClass;
 import com.thelogicmaster.clearwing.translator.Parser;
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -52,7 +54,7 @@ public class Ldc extends Instruction implements AssignableExpression {
     }
 
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if (cst instanceof Type) {
             int sort = ((Type) cst).getSort();
             Type tp = (Type) cst;

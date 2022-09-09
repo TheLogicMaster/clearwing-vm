@@ -30,6 +30,7 @@ import com.thelogicmaster.clearwing.translator.SignatureSet;
 import com.thelogicmaster.clearwing.translator.Util;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.objectweb.asm.Opcodes;
 
@@ -91,7 +92,7 @@ public class CustomInvoke extends Instruction {
     public String getSignature() { return(desc); }
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         String t = owner.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
         t = unarray(t);
         if(t != null && !dependencyList.contains(t)) {

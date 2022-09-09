@@ -24,6 +24,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Label;
 
 /**
@@ -55,7 +57,7 @@ public class TryCatch extends Instruction {
     }
 
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if(type != null) {
             String t = type.replace('.', '_').replace('/', '_').replace('$', '_').replace('-', '_');
             if(!dependencyList.contains(t)) {

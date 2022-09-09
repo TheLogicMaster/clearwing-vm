@@ -6,6 +6,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -66,7 +68,7 @@ public class ArrayLoadExpression extends Instruction implements AssignableExpres
     }
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if (indexInstruction != null) {
             indexInstruction.addDependencies(dependencyList);
         }

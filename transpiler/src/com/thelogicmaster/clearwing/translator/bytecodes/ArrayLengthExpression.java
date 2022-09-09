@@ -7,6 +7,8 @@ package com.thelogicmaster.clearwing.translator.bytecodes;
 
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -45,7 +47,7 @@ public class ArrayLengthExpression extends Instruction implements AssignableExpr
     
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if (target != null) {
             target.addDependencies(dependencyList);
         }

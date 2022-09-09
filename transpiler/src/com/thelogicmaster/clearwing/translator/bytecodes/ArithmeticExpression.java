@@ -6,6 +6,8 @@
 package com.thelogicmaster.clearwing.translator.bytecodes;
 
 import java.util.List;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 
 
@@ -41,7 +43,7 @@ public class ArithmeticExpression extends Instruction implements AssignableExpre
     
     
     @Override
-    public void addDependencies(List<String> dependencyList) {
+    public void addDependencies(Set<String> dependencyList) {
         if (subExpression != null) {
             subExpression.addDependencies(dependencyList);
         }

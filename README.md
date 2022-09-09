@@ -12,6 +12,7 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Buffers (Only direct buffers and ByteBuffer wrappers are supported for now)
 - System language/locale
 - Field, Method, Constructor, and Class Annotation Reflection
+- Lambda/Method reference and default method support
 
 ## Todo
 - Internal VM logging
@@ -36,7 +37,6 @@ LibGDX backend but doesn't depend on it. An example project is provided in the `
 - Isolate String constants for incremental compilation
 
 ## Notes
-- Requires retrolambda for lambda, default method, and method reference support (RetroLambda Gradle plugin doesn't support Gradle 7)
 - Exceptions thrown without a try-catch block on the main Thread are ignored
 - JDK-8 is required for compiling the Transpiler project
 - Classes referenced with reflection must be included in the JSON config file

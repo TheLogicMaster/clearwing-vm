@@ -83,6 +83,7 @@ public class BytecodeMethod implements SignatureSet {
     private boolean constructor;
     private boolean staticMethod;
     private boolean privateMethod;
+    private boolean abstractMethod;
     private boolean nativeMethod;
     private List<String> dependentClasses = new ArrayList<String>();
     //private List<String> exportedClasses = new ArrayList<String>();
@@ -96,6 +97,7 @@ public class BytecodeMethod implements SignatureSet {
     private boolean forceVirtual;
     private boolean virtualOverriden;
     private boolean finalMethod;
+    private boolean defaultMethod;
     private boolean synchronizedMethod;
     private final static Set<String> virtualMethodsInvoked = new TreeSet<String>();    
     private String desc;
@@ -121,6 +123,7 @@ public class BytecodeMethod implements SignatureSet {
         nativeMethod = (access & Opcodes.ACC_NATIVE) == Opcodes.ACC_NATIVE;
         staticMethod = (access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC;
         finalMethod = (access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL;
+        abstractMethod = (access & Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT;
         synchronizedMethod = (access & Opcodes.ACC_SYNCHRONIZED) == Opcodes.ACC_SYNCHRONIZED;
         int pos = desc.lastIndexOf(')');
         if (!staticMethod) {
@@ -240,6 +243,14 @@ public class BytecodeMethod implements SignatureSet {
             }
             currentArrayDim = 0;
         }
+    }
+
+    public boolean isDefaultMethod () {
+        return defaultMethod;
+    }
+
+    public void setDefaultMethod (boolean defaultMethod) {
+        this.defaultMethod = defaultMethod;
     }
 
     // use this instead of isMethodUsed to compare traditional with new results
@@ -509,7 +520,11 @@ public class BytecodeMethod implements SignatureSet {
         }
         return returnType;
     }
-    
+
+    public boolean isAbstractMethod () {
+        return abstractMethod;
+    }
+
     public List<String> getDependentClasses() {
         return dependentClasses;
     }
@@ -765,7 +780,7 @@ public class BytecodeMethod implements SignatureSet {
         if(!returnType.isVoid()) {
             b.append("return virtual_");
         } else {
-            b.append("virtual_");            
+            b.append("virtual_");
         }
         b.append(clsName);
         b.append("_");
@@ -779,7 +794,7 @@ public class BytecodeMethod implements SignatureSet {
             returnType.appendCMethodExt(b);
         }
         b.append("(threadStateData");
-        
+
         int arg = 1;
         b.append(", __cn1ThisObject");
         for(int iter = 0 ; iter < arguments.size() ; iter++) {
@@ -787,7 +802,7 @@ public class BytecodeMethod implements SignatureSet {
             b.append("__cn1Arg");
             b.append(arg);
             arg++;
-        }        
+        }
         b.append(");\n}\n\n");
     }
 

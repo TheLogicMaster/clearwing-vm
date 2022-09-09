@@ -701,6 +701,7 @@ public class Parser extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         BytecodeMethod mtd = new BytecodeMethod(clsName, access, name, desc, signature, exceptions);
+        mtd.setDefaultMethod(cls.isIsInterface() && !mtd.isAbstractMethod());
         cls.addMethod(mtd);
         JSRInlinerAdapter a = new JSRInlinerAdapter(new MethodVisitorWrapper(super.visitMethod(access, name, desc, signature, exceptions), mtd), access, name, desc, signature, exceptions);
         return a; 

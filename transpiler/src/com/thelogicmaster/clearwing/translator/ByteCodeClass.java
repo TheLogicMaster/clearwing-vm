@@ -1054,7 +1054,10 @@ public class ByteCodeClass {
                     m.appendMethodC(b);
                     clInitMethod = clsName + "_" + m.getMethodName() + "__";
                 } else {
-                    m.appendInterfaceMethodC(b);
+                    if (m.isAbstractMethod())
+                        m.appendInterfaceMethodC(b);
+                    else
+                        m.appendMethodC(b);
                 }
             }
         } else {
@@ -1115,7 +1118,7 @@ public class ByteCodeClass {
 
                 BytecodeMethod bm = virtualMethodList.get(iter);
 
-                if(bm.getClsName().equals(clsName) && !bm.isVirtualOverriden()) {
+                if(bm.isDefaultMethod() || (bm.getClsName().equals(clsName) && !bm.isVirtualOverriden())) {
                     b.append("    vtable[");
                     b.append(iter);
                     b.append("] = &");

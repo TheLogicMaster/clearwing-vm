@@ -39,6 +39,8 @@
  * header file containing global CN1 constants and structs
  */
 
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 typedef void               JAVA_VOID;
 typedef int32_t            JAVA_BOOLEAN;

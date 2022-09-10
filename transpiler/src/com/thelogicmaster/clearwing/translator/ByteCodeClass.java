@@ -85,7 +85,7 @@ public class ByteCodeClass {
     public static final Set<String> nonOptimized = new HashSet<>();
     
     private ByteCodeClass baseClassObject;
-    private List<ByteCodeClass> baseInterfacesObject;
+    private List<ByteCodeClass> baseInterfacesObject = new ArrayList<>();
     
     List<BytecodeMethod> virtualMethodList;
     private String sourceFile;
@@ -1290,6 +1290,12 @@ public class ByteCodeClass {
                 bm.add(m);
             }
         }
+        for (ByteCodeClass i: base.baseInterfacesObject)
+            for (BytecodeMethod m: i.methods)
+                if (m.isDefaultMethod() && !bm.contains(m)) {
+                    m.appendSuperCall(b, clsName);
+                    bm.add(m);
+                }
         if(base.baseClassObject != null) {
             appendSuperStub(b, bm, base.baseClassObject);
         }
@@ -1305,6 +1311,12 @@ public class ByteCodeClass {
                 bm.add(m);
             }
         }
+        for (ByteCodeClass i: base.baseInterfacesObject)
+            for (BytecodeMethod m: i.methods)
+                if (m.isDefaultMethod() && !bm.contains(m)) {
+                    m.appendMethodHeader(b, clsName);
+                    bm.add(m);
+                }
         if(base.baseClassObject != null) {
             appendSuperStubHeader(b, bm, base.baseClassObject);
         }

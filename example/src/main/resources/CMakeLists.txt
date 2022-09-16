@@ -9,6 +9,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 find_package(FFI REQUIRED)
+find_package(ZZip REQUIRED)
 
 add_definitions(-DNOJNI)
 
@@ -20,8 +21,8 @@ if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(dist PUBLIC "-pthread")
 endif()
 
-target_include_directories(dist PUBLIC ${ZLIB_INCLUDE_DIRS})
-target_link_libraries(dist ${ZLIB_LIBRARIES} stdc++fs ${FFI_LIBRARIES})
+target_include_directories(dist PUBLIC ${ZLIB_INCLUDE_DIRS} ${ZZip_INCLUDE_DIRS})
+target_link_libraries(dist ${ZLIB_LIBRARIES} stdc++fs ${FFI_LIBRARIES} ${ZZip_LIBRARIES})
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(dist "${CMAKE_THREAD_LIBS_INIT}")
 endif()

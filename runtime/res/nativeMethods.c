@@ -16,6 +16,7 @@
 #include "java_lang_StringBuilder.h"
 #include "java_util_HashMap.h"
 #include "java_util_HashMap_Entry.h"
+#include "java_util_ArrayList.h"
 #include "java_lang_NullPointerException.h"
 #include "java_nio_ByteBuffer.h"
 #include "java_util_Date.h"
@@ -24,6 +25,7 @@
 #include "java_lang_System.h"
 #include "java_util_zip_Inflater.h"
 #include "java_util_zip_Deflater.h"
+#include "java_util_zip_ZipEntry.h"
 #include "java_lang_reflect_Field.h"
 #include "java_lang_reflect_Method.h"
 #include "java_lang_Class.h"
@@ -38,6 +40,7 @@
 #include <string.h>
 #include <assert.h>
 #include <zlib.h>
+#include <zzip/lib.h>
 #include <ffi.h>
 #ifdef __WINRT__
 #include <winsock2.h> // Needed for timeval struct...
@@ -2325,4 +2328,39 @@ JAVA_INT java_util_zip_CRC32_updateBytes___int_byte_1ARRAY_int_int_R_int(CODENAM
 
 JAVA_INT java_util_zip_CRC32_updateByteBuffer___int_java_nio_ByteBuffer_int_int_R_int(CODENAME_ONE_THREAD_STATE, JAVA_INT crc, JAVA_OBJECT buffer, JAVA_INT off, JAVA_INT len) {
     return (JAVA_INT)crc32(crc, (unsigned char*)((struct obj__java_nio_ByteBuffer*)buffer)->java_nio_Buffer_address + off, len);
+}
+
+JAVA_LONG java_util_zip_ZipFile_open___java_lang_String_java_util_ArrayList_R_long(CODENAME_ONE_THREAD_STATE, JAVA_OBJECT path, JAVA_OBJECT entries) {
+    zzip_error_t errorCode;
+    ZZIP_DIR *zip = zzip_dir_open(toNativeString(threadStateData, path), &errorCode);
+    if (errorCode)
+        return -1;
+    ZZIP_DIRENT dirent;
+    while (zzip_dir_read(zip, &dirent)) {
+        struct obj__java_util_zip_ZipEntry *entry = (struct obj__java_util_zip_ZipEntry *)__NEW_INSTANCE_java_util_zip_ZipEntry(threadStateData);
+        entry->java_util_zip_ZipEntry_name = fromNativeString(threadStateData, dirent.d_name);
+        entry->java_util_zip_ZipEntry_csize = dirent.d_csize;
+        entry->java_util_zip_ZipEntry_size = dirent.st_size;
+        entry->java_util_zip_ZipEntry_method = dirent.d_compr;
+        java_util_ArrayList_add___java_lang_Object_R_boolean(threadStateData, entries, (JAVA_OBJECT)entry);
+    }
+    return (JAVA_LONG)zip;
+}
+
+JAVA_VOID java_util_zip_ZipFile_close0___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG handle) {
+    zzip_dir_close((ZZIP_DIR *) handle);
+}
+
+JAVA_LONG java_util_zip_ZipFile_openEntry___long_java_lang_String_R_long(CODENAME_ONE_THREAD_STATE, JAVA_LONG handle, JAVA_OBJECT name) {
+    return (JAVA_LONG)zzip_file_open((ZZIP_DIR *)handle, toNativeString(threadStateData, name), 0);
+}
+
+JAVA_INT java_util_zip_ZipFile_readEntry___long_R_int(CODENAME_ONE_THREAD_STATE, JAVA_LONG handle) {
+    unsigned char val;
+    zzip_ssize_t count = zzip_file_read((ZZIP_FILE *) handle, &val, 1);
+    return count > 0 ? val : -1;
+}
+
+JAVA_VOID java_util_zip_ZipFile_closeEntry___long(CODENAME_ONE_THREAD_STATE, JAVA_LONG handle) {
+    zzip_file_close((ZZIP_FILE *) handle);
 }

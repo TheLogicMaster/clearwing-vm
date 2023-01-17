@@ -23,6 +23,7 @@
 package java.text;
 
 import java.util.Date;
+import java.util.TimeZone;
 
 
 /**
@@ -35,7 +36,6 @@ import java.util.Date;
  * 
  * @author Eric Coolman
  * @see http://docs.oracle.com/javase/6/docs/api/java/text/DateFormat.html
- * @deprecated this class has many issues in iOS and other platforms, please use the L10NManager
  */
 public class DateFormat extends Format {
 	/**
@@ -206,6 +206,14 @@ public class DateFormat extends Format {
 	 */
 	public static final DateFormat getDateTimeInstance(int dateStyle, int timeStyle) {
 		return new DateFormat(dateStyle, timeStyle);
+	}
+
+	public static final DateFormat getDateTimeInstance() {
+		return new DateFormat(MEDIUM, MEDIUM);
+	}
+
+	public void setTimeZone(TimeZone zone) {
+
 	}
 
 	/*

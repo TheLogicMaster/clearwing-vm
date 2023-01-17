@@ -41,4 +41,11 @@ public class IllegalArgumentException extends java.lang.RuntimeException{
          super(s);
     }
 
+    public IllegalArgumentException(java.lang.String s, Throwable t){
+        super(s, t);
+    }
+
+    public IllegalArgumentException(Throwable cause) {
+        super(cause);
+    }
 }

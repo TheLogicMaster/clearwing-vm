@@ -26,6 +26,7 @@
 package java.lang.reflect;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 
 /**
  * A {@code Field} provides information about, and dynamic access to, a
@@ -48,35 +49,78 @@ import java.lang.annotation.Annotation;
  */
 public final class Field {
 
-    private final int index;
+    private final long getter;
+    private final long setter;
     private final Class<?> declaringClass;
     private final Class<?> type;
     private final Type genericType;
     private final String name;
     private final int modifiers;
+    private Annotation[] annotations = new Annotation[0];
 
-    private Field(int index, Class<?> declaringClass, Class<?> type, Class<?>[] genericTypes, String name, int modifiers) {
-        this.index = index;
+    private Field(long getter, long setter, Class<?> declaringClass, Class<?> type, String signature, String name, int modifiers) {
+        this.getter = getter;
+        this.setter = setter;
         this.declaringClass = declaringClass;
         this.type = type;
-        this.genericType = genericTypes == null ? type : new ParameterizedType() {
-            @Override
-            public Type[] getActualTypeArguments () {
-                return genericTypes;
-            }
-
-            @Override
-            public Type getRawType () {
-                return null;
-            }
-
-            @Override
-            public Type getOwnerType () {
-                return null;
-            }
-        };
         this.name = name;
         this.modifiers = modifiers;
+        try {
+            genericType = signature == null || signature.isEmpty() ? type : parseSignature(signature);
+        } catch (ClassNotFoundException e) {
+            throw new MalformedParameterizedTypeException();
+        }
+    }
+
+    private Type parseSignature(String signature) throws ClassNotFoundException {
+        int index = 0;
+        int dimensions = 0;
+        int end = signature.endsWith(";") ? signature.length() - 2 : signature.length() - 1;
+        if (signature.charAt(0) == '+' || signature.charAt(0) == '-')
+            index++;
+        while (signature.charAt(index) == '[') {
+            dimensions++;
+            index++;
+        }
+        if (signature.charAt(index) == '*' || signature.charAt(index) == 'T')
+            return dimensions > 0 ? new GenericArrayTypeImpl(Object.class) : Object.class;
+        int start = ++index;
+        int genericStart = -1;
+        int depth = 0;
+        Type type = null;
+        StringBuilder builder = new StringBuilder();
+        for (; index <= end; index++) {
+            if (signature.charAt(index) == '<') {
+                if (depth++ == 0)
+                    genericStart = index;
+            } else if (signature.charAt(index) == '>') {
+                if (--depth == 0) {
+                    builder.append(signature, start, genericStart);
+                    start = index + 1;
+                    ArrayList<String> args = new ArrayList<>();
+                    for (int i = genericStart + 1, argDepth = 0, argOffset = i; i < index; i++) {
+                        if (signature.charAt(i) == '<')
+                            argDepth++;
+                        else if (signature.charAt(i) == '>')
+                            argDepth--;
+                        else if (signature.charAt(i) == ';' && argDepth == 0) {
+                            args.add(signature.substring(argOffset, i + 1));
+                            argOffset = i + 1;
+                        }
+                    }
+                    String[] argStrings = args.toArray(new String[0]);
+                    Type[] argTypes = new Type[argStrings.length];
+                    for (int i = 0; i < argStrings.length; i++)
+                        argTypes[i] = parseSignature(argStrings[i]);
+                    type = new ParameterizedTypeImpl(argTypes, Class.forName(builder.toString()), type);
+                }
+            }
+        }
+        if (start <= end) {
+            builder.append(signature, start, end + 1);
+            type = Class.forName(builder.toString());
+        }
+        return dimensions > 0 ? new GenericArrayTypeImpl(type) : type;
     }
 
     public Class<?> getDeclaringClass() {
@@ -103,6 +147,10 @@ public final class Field {
         return (modifiers & Modifier.ENUM) != 0;
     }
 
+    public boolean isStatic() {
+        return (modifiers & Modifier.STATIC) != 0;
+    }
+
     public boolean isSynthetic() {
         return Modifier.isSynthetic(modifiers);
     }
@@ -115,16 +163,60 @@ public final class Field {
         return genericType;
     }
 
-    // Todo: type checking?
     public native Object get(Object obj) throws IllegalArgumentException, IllegalAccessException;
 
     public native void set(Object obj, Object value) throws IllegalArgumentException, IllegalAccessException;
 
     public Annotation[] getDeclaredAnnotations() {
-        return new Annotation[0];
+        return annotations;
     }
 
     public boolean isAnnotationPresent(Class<?> annotation) {
+        for (Annotation a: annotations)
+            if (annotation == a.getClass())
+                return true;
         return false;
+    }
+
+    private static class GenericArrayTypeImpl implements GenericArrayType {
+
+        private Type componentType;
+
+        public GenericArrayTypeImpl(Type componentType) {
+            this.componentType = componentType;
+        }
+
+        @Override
+        public Type getGenericComponentType() {
+            return componentType;
+        }
+    }
+
+    private static class ParameterizedTypeImpl implements ParameterizedType {
+
+        private Type[] args;
+        private Type raw;
+        private Type owner;
+
+        public ParameterizedTypeImpl(Type[] args, Type raw, Type owner) {
+            this.args = args;
+            this.raw = raw;
+            this.owner = owner;
+        }
+
+        @Override
+        public Type[] getActualTypeArguments() {
+            return args;
+        }
+
+        @Override
+        public Type getRawType() {
+            return raw;
+        }
+
+        @Override
+        public Type getOwnerType() {
+            return owner;
+        }
     }
 }

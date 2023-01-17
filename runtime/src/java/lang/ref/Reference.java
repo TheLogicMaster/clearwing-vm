@@ -30,21 +30,12 @@ public abstract class Reference<T>{
     /**
      * Clears this reference object.
      */
-    public void clear(){
-        clearImpl();
-    }
+    public abstract void clear();
 
     /**
      * Returns this reference object's referent. If this reference object has been cleared, either by the program or by the garbage collector, then this method returns null.
      */
-    public java.lang.Object get(){
-        return getImpl();
-    }
+    public abstract T get();
 
-    Object getImpl() {
-        return null;
-    }
-    
-    void clearImpl() {
-    }
+    public abstract boolean refersTo(T obj);
 }

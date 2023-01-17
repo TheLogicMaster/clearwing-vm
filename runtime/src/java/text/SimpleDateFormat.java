@@ -22,11 +22,7 @@
  */
 package java.text;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * A class for parsing and formatting dates with a given pattern, compatible
@@ -34,7 +30,6 @@ import java.util.Vector;
  * 
  * @see http://docs.oracle.com/javase/6/docs/api/java/text/DateFormat.html
  * @author Eric Coolman
- * @deprecated this class has many issues in iOS and other platforms, please use the L10NManager
  */
 public class SimpleDateFormat extends DateFormat {
 	/**
@@ -185,6 +180,10 @@ public class SimpleDateFormat extends DateFormat {
 	public SimpleDateFormat(String pattern) {
 		super();
 		this.pattern = pattern;
+	}
+
+	public SimpleDateFormat(String pattern, Locale locale) {
+		this(pattern);
 	}
 
 	/**

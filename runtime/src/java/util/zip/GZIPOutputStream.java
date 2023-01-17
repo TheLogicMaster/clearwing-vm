@@ -182,7 +182,7 @@ class GZIPOutputStream extends DeflaterOutputStream {
         out.write(new byte[] {
                       (byte) GZIP_MAGIC,        // Magic number (short)
                       (byte)(GZIP_MAGIC >> 8),  // Magic number (short)
-                      Deflater.DEFLATED,        // Compression method (CM)
+                      (byte)Deflater.DEFLATED,        // Compression method (CM)
                       0,                        // Flags (FLG)
                       0,                        // Modification time MTIME (int)
                       0,                        // Modification time MTIME (int)

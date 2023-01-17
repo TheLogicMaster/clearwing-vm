@@ -662,6 +662,48 @@ public abstract class ShortBuffer extends Buffer implements Comparable<ShortBuff
 		return offset;
 	}
 
+	@Override
+	public native ShortBuffer position(int newPosition);/* {
+		super.position(newPosition);
+		return this;
+	}*/
+
+	@Override
+	public native ShortBuffer limit(int newLimit);/* {
+		super.limit(newLimit);
+		return this;
+	}*/
+
+	@Override
+	public ShortBuffer mark() {
+		super.mark();
+		return this;
+	}
+
+	@Override
+	public ShortBuffer reset() {
+		super.reset();
+		return this;
+	}
+
+	@Override
+	public ShortBuffer clear() {
+		super.clear();
+		return this;
+	}
+
+	@Override
+	public ShortBuffer flip() {
+		super.flip();
+		return this;
+	}
+
+	@Override
+	public ShortBuffer rewind() {
+		super.rewind();
+		return this;
+	}
+
 	/**
 	 * Compacts this buffer&nbsp;&nbsp;<i>(optional operation)</i>.
 	 *

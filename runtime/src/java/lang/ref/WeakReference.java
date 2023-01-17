@@ -27,20 +27,26 @@ package java.lang.ref;
  * Since: JDK1.2, CLDC 1.1
  */
 public class WeakReference<T> extends java.lang.ref.Reference<T>{
-    private Object objReference;
+    private long reference;
     
     /**
      * Creates a new weak reference that refers to the given object.
      */
-    public WeakReference(java.lang.Object ref){
-         this.objReference = ref;
+    public WeakReference(T ref){
+         reference = create(ref);
     }
 
-    Object getImpl() {
-        return objReference;
-    }
-    
-    void clearImpl() {
-        objReference = null;
-    }
+    private native long create(T ref);
+
+    @Override
+    public native T get();
+
+    @Override
+    public native void clear();
+
+    @Override
+    public native boolean refersTo(T o);
+
+    @Override
+    protected native void finalize() throws Throwable;
 }

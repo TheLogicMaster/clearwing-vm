@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  * The Byte class is the standard wrapper for byte values.
@@ -31,7 +31,7 @@ import com.thelogicmaster.clearwing.NativeUtils;
  */
 public final class Byte extends Number implements Comparable<Byte> {
     
-    public static final Class<Byte> TYPE = (Class<Byte>)NativeUtils.getPrimitive("byte");
+    public static final Class<Byte> TYPE = (Class<Byte>)NativeUtils.getPrimitive("B");
     public static final int SIZE = 8;
     
     /**
@@ -101,6 +101,10 @@ public final class Byte extends Number implements Comparable<Byte> {
      */
     public java.lang.String toString(){
         return Integer.toString(value);
+    }
+
+    public static String toString(byte b) {
+        return Integer.toString(b);
     }
 
     /**

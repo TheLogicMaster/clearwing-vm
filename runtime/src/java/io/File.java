@@ -42,10 +42,17 @@ public class File {
 	private final String path;
 
 	public File (File parent, String child) {
-		this(parent.path.isEmpty() ? child : (parent.path + separator + child).replace("//", "/"));
+		if (child == null)
+			throw new NullPointerException();
+		if (parent == null || parent.path.isEmpty())
+			path = child;
+		else
+			path = (parent.path + separator + child).replace("//", "/");
 	}
 
 	public File (String pathname) {
+		if (pathname == null)
+			throw new NullPointerException();
 		this.path = pathname;
 	}
 
@@ -106,7 +113,7 @@ public class File {
 	}
 
 	public String getAbsolutePath () {
-		return null;
+		return path;
 	}
 
 	public String getCanonicalPath () {
@@ -185,7 +192,7 @@ public class File {
 			return null;
 		File[] files = new File[filenames.length];
 		for (int i = 0; i < filenames.length; i++)
-			files[i] = new File(filenames[i]);
+			files[i] = new File(this, filenames[i]);
 		return files;
 	}
 

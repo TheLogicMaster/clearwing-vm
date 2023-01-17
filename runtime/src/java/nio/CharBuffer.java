@@ -857,6 +857,48 @@ public abstract class CharBuffer extends Buffer implements Comparable<CharBuffer
 		return offset;
 	}
 
+	@Override
+	public CharBuffer position(int newPosition) {
+		super.position(newPosition);
+		return this;
+	}
+
+	@Override
+	public CharBuffer limit(int newLimit) {
+		super.limit(newLimit);
+		return this;
+	}
+
+	@Override
+	public CharBuffer mark() {
+		super.mark();
+		return this;
+	}
+
+	@Override
+	public CharBuffer reset() {
+		super.reset();
+		return this;
+	}
+
+	@Override
+	public CharBuffer clear() {
+		super.clear();
+		return this;
+	}
+
+	@Override
+	public CharBuffer flip() {
+		super.flip();
+		return this;
+	}
+
+	@Override
+	public CharBuffer rewind() {
+		super.rewind();
+		return this;
+	}
+
 	/**
 	 * Compacts this buffer&nbsp;&nbsp;<i>(optional operation)</i>.
 	 *

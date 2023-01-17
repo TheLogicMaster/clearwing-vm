@@ -24,11 +24,7 @@
 package java.lang;
 
 import java.lang.annotation.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -42,8 +38,31 @@ import java.util.Arrays;
  * an object: Since: JDK1.0, CLDC 1.0
  */
 public final class Class<T> implements java.lang.reflect.Type {
-    
-    
+
+    private String name;
+    private int access;
+    private Class<?> parent;
+    private Class<?>[] interfaces;
+    private Field[] fields;
+    private Method[] methods;
+    private Constructor<T>[] constructors;
+    private Annotation[] annotations;
+    private boolean anonymous;
+    private boolean synthetic;
+    private boolean primitive;
+    private int size; // Native size for array items
+    private int arrayDimensions;
+    private Class<?> arrayItemType;
+
+    private long nativeData;
+
+    private String javaName;
+
+    private Class() {
+    }
+
+    private native void ensureInitialized();
+
     public ClassLoader getClassLoader() {
         return ClassLoader.getSystemClassLoader();
     }
@@ -55,17 +74,8 @@ public final class Class<T> implements java.lang.reflect.Type {
      * following code fragment returns the runtime Class descriptor for the
      * class named java.lang.Thread: Classt= Class.forName("java.lang.Thread")
      */
-    public static java.lang.Class forName(java.lang.String className) throws java.lang.ClassNotFoundException {
-        className = className.replace('$', '.');
-        Class c = forNameImpl(className);
-        if(c == null) {
-            throw new ClassNotFoundException(className);
-        }
-        return c;
-    }
+    public native static java.lang.Class<?> forName(java.lang.String className) throws java.lang.ClassNotFoundException;
 
-    private native static java.lang.Class forNameImpl(java.lang.String className) throws java.lang.ClassNotFoundException;
-    
     /**
      * Returns the fully-qualified name of the entity (class, interface, array
      * class, primitive type, or void) represented by this Class object, as a
@@ -80,51 +90,13 @@ public final class Class<T> implements java.lang.reflect.Type {
      * interface name is given in fully qualified form as shown in the example
      * above.
      */
-    public native java.lang.String getName();/* {
-        if (this.name == null) {
-            String name = getNameImpl();
-            if (name.endsWith("[]")) {
-                String componentType = name.substring(name.indexOf("["));
-                int dimension = (name.length() - componentType.length())/2;
-                String type = null;
-                StringBuilder sb = new StringBuilder();
-                while (dimension-- > 0) {
-                    sb.append("[");
-                }
-                if (componentType.indexOf(".") != -1) {
-                    sb.append("L").append(componentType).append(";");
-                    
-                } else if ("int".equals(componentType)) {
-                    sb.append("I");
-                    
-                } else if ("float".equals(componentType)) {
-                    sb.append("F");
-                } else if ("boolean".equals(componentType)) {
-                    sb.append("Z");
-                } else if ("byte".equals(componentType)) {
-                    sb.append("B");
-                } else if ("char".equals(componentType)) {
-                    sb.append("C");
-                } else if ("short".equals(componentType)) {
-                    sb.append("S");
-                } else if ("long".equals(componentType)) {
-                    sb.append("J");
-                } else if ("double".equals(componentType)) {
-                    sb.append("D");
-                } else {
-                    sb.append(name);
-                }
-                this.name = sb.toString();
-            } else {
-                this.name = name;
-            }
-            
-        }
-        return this.name;
+    public java.lang.String getName() {
+        if (javaName == null)
+            javaName = getName0();
+        return javaName;
     }
-    
-    native java.lang.String getNameImpl();
-    */
+
+    private native String getName0();
 
     /**
      * Finds a resource with a given name in the application's JAR file. This
@@ -185,7 +157,10 @@ public final class Class<T> implements java.lang.reflect.Type {
     /**
      * Determines if this Class object represents an array class.
      */
-    public native boolean isArray();
+    public boolean isArray() {
+        ensureInitialized();
+        return arrayDimensions > 0;
+    }
 
     /**
      * Determines if the class or interface represented by this Class object is
@@ -199,7 +174,24 @@ public final class Class<T> implements java.lang.reflect.Type {
      * via an identity conversion or via a widening reference conversion. See
      * The Java Language Specification, sections 5.1.1 and 5.1.4 , for details.
      */
-    public native boolean isAssignableFrom(java.lang.Class cls);
+    public native boolean isAssignableFrom(java.lang.Class<?> cls);/* {
+        // Todo: Make native for efficiency if needed
+        ensureInitialized();
+        if (cls == null)
+            throw new NullPointerException();
+        cls.ensureInitialized();
+        if (cls == this || name.equals(cls.name)) // Todo: Why would class pointers be different?
+            return true;
+        // Todo: Handle primitives? Or are primitive classes sufficient?
+        if (cls.parent != null && isAssignableFrom(cls.parent))
+            return true;
+        if (cls.isArray() && isArray() && arrayItemType.isAssignableFrom(cls.arrayItemType))
+            return true;
+        for (Class<?> clazz : cls.interfaces)
+            if (isAssignableFrom(clazz))
+                return true;
+        return false;
+    }*/
 
     /**
      * Determines if the specified Object is assignment-compatible with the
@@ -219,26 +211,32 @@ public final class Class<T> implements java.lang.reflect.Type {
      * Object argument implements this interface; it returns false otherwise. If
      * this Class object represents a primitive type, this method returns false.
      */
-    public native boolean isInstance(java.lang.Object obj);
+    public native boolean isInstance(java.lang.Object obj);/* {
+        if (obj == null)
+            return false;
+        return isAssignableFrom(obj.getClass());
+    }*/
 
     /**
      * Determines if the specified Class object represents an interface type.
      */
-    public native boolean isInterface();
+    public boolean isInterface() {
+        ensureInitialized();
+        return Modifier.isInterface(access);
+    }
 
     /**
      * Creates a new instance of a class.
      */
     public java.lang.Object newInstance() throws java.lang.InstantiationException, java.lang.IllegalAccessException {
-        Object o = newInstanceImpl();
-        if(o == null) {
+        ensureInitialized();
+        try {
+            return getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException e) {
             throw new InstantiationException();
         }
-        return o; 
     }
 
-    private native java.lang.Object newInstanceImpl();
-    
     /**
      * Converts the object to a string. The string representation is the string
      * "class" or "interface", followed by a space, and then by the fully
@@ -248,10 +246,17 @@ public final class Class<T> implements java.lang.reflect.Type {
      * returns "void".
      */
     public java.lang.String toString() {
-        return getName() + " class";
+        if (primitive)
+            return getName();
+        if (isInterface())
+            return "interface " + getName();
+        return "class " + getName();
     }
 
-    public native boolean isAnnotation();
+    public boolean isAnnotation() {
+        ensureInitialized();
+        return Modifier.isAnnotation(access);
+    }
 
     /**
      * Returns this element's annotation for the specified type if such an
@@ -259,7 +264,8 @@ public final class Class<T> implements java.lang.reflect.Type {
      *
      */
     public <A extends Annotation> A getAnnotation(Class<?> annotationType) {
-        for (Annotation annotation: getAnnotations())
+        ensureInitialized();
+        for (Annotation annotation: annotations)
             if (annotationType == annotation.annotationType())
                 return (A)annotation;
         return null;
@@ -278,7 +284,10 @@ public final class Class<T> implements java.lang.reflect.Type {
     /**
      * Returns all annotations that are directly present on this element.
      */
-    public native Annotation[] getDeclaredAnnotations();
+    public Annotation[] getDeclaredAnnotations() {
+        ensureInitialized();
+        return annotations;
+    }
 
     /**
      * Returns true if an annotation for the specified type is present on this
@@ -308,12 +317,15 @@ public final class Class<T> implements java.lang.reflect.Type {
     /**
      * Replacement for Class.asSubclass(Class).
      *
-     * @param superclass another Class which must be a superclass of <i>c</i>
+     * @param clazz another Class which must be a superclass of <i>c</i>
      * @return <i>c</i>
      * @throws java.lang.ClassCastException if <i>c</i> is
      */
-    public Class asSubclass(Class superclass) {
-        return null;
+    public <U> Class<? extends U> asSubclass(Class<U> clazz) {
+        if (clazz.isAssignableFrom(this))
+            return (Class<? extends U>) this;
+        else
+            throw new ClassCastException(this.toString());
     }
 
     /**
@@ -342,16 +354,42 @@ public final class Class<T> implements java.lang.reflect.Type {
      *
      * @return true if the class was declared as an Enum.
      */
-    public native boolean isEnum();
+    public boolean isEnum() {
+        ensureInitialized();
+        return Modifier.isEnum(access);
+    }
 
-    public native Object[] getEnumConstants();
+    public Object[] getEnumConstants() {
+        try {
+            Field valuesField = getDeclaredField("$VALUES");
+            valuesField.setAccessible(true);
+            return (Object[]) valuesField.get(null);
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+        return new Object[0];
+    }
 
     /**
      * replacement for Class.isAnonymousClass()
      */
-    public native boolean isAnonymousClass();    
-    
-    public native Field[] getDeclaredFields();
+    public boolean isAnonymousClass() {
+        ensureInitialized();
+        return anonymous;
+    }
+
+    public Class<?>[] getDeclaredClasses() {
+        // Todo
+        return new Class[0];
+    }
+
+    public Class<?> getDeclaringClass() {
+        // Todo
+        return null;
+    }
+
+    public Field[] getDeclaredFields() {
+        ensureInitialized();
+        return fields;
+    }
 
     public Field[] getFields() {
         ArrayList<Field> fields = new ArrayList<>();
@@ -378,11 +416,8 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public Constructor[] getDeclaredConstructors() {
-        ArrayList<Constructor> constructors = new ArrayList<>();
-        for (Method method: getNativeMethods())
-            if (method.getName().equals("__INIT__"))
-                constructors.add(new Constructor(method));
-        return constructors.toArray(new Constructor[0]);
+        ensureInitialized();
+        return constructors;
     }
 
     public Constructor[] getConstructors() {
@@ -410,11 +445,8 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public Method[] getDeclaredMethods() {
-        ArrayList<Method> methods = new ArrayList<>();
-        for (Method method: getNativeMethods())
-            if (!method.getName().equals("__INIT__") && !method.getName().equals("__CLINIT__"))
-                methods.add(method);
-        return methods.toArray(new Method[0]);
+        ensureInitialized();
+        return methods;
     }
 
     public Method[] getMethods() {
@@ -427,37 +459,50 @@ public final class Class<T> implements java.lang.reflect.Type {
         return methods.toArray(new Method[0]);
     }
 
-    public native Method[] getNativeMethods();
-
-    public native Class<?> getSuperclass();
+    public Class<?> getSuperclass() {
+        ensureInitialized();
+        return parent;
+    }
 
     public int getModifiers() {
-        return 0;
+        ensureInitialized();
+        return access;
     }
 
     public boolean isMemberClass() {
-        return false;
+        return !isAnonymousClass() && name.contains("$");
     }
 
     /**
      * replacement for Class.getSimpleName()
      */
     public String getSimpleName() {
+        // Todo: Primitive simple names
+        ensureInitialized();
         String n = getName();
-        return n.substring(n.lastIndexOf('.') + 1);
+        int index = Math.max(n.lastIndexOf('['), Math.max(n.lastIndexOf('.'), n.lastIndexOf('$')));
+        StringBuilder builder = new StringBuilder(n.substring(index + 1));
+        for (int i = 0; i < arrayDimensions; i++)
+            builder.append("[]");
+        return builder.toString();
     }
 
     /**
      * replacement for Class.isSynthetic()
      */
-    public native boolean isSynthetic();
+    public boolean isSynthetic() {
+        ensureInitialized();
+        return synthetic;
+    }
 
     public String getCanonicalName() {
         return getName();
     }
 
     @Override
-    public native int hashCode();
+    public int hashCode() {
+        return super.hashCode();
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -468,23 +513,31 @@ public final class Class<T> implements java.lang.reflect.Type {
         return false;
     }
     
-    public native Class getComponentType();
+    public Class<?> getComponentType() {
+        ensureInitialized();
+        return arrayItemType;
+    }
 
-    public Class[] getInterfaces() {
-        return new Class[0];
+    public Class<?>[] getInterfaces() {
+        ensureInitialized();
+        return interfaces;
     }
 
     public java.lang.reflect.Type[] getGenericInterfaces() {
+        // Todo
         throw new UnsupportedOperationException("Class.getGenericInterfaces() not supported on this platform");
     }
     
-    public native boolean isPrimitive();
+    public boolean isPrimitive() {
+        ensureInitialized();
+        return primitive;
+    }
     
     public Method getEnclosingMethod() {
         return null;
     }
     
-    public Constructor getEnclosingConstructor() {
+    public Constructor<?> getEnclosingConstructor() {
         return null;
     }
     

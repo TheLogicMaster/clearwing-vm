@@ -62,8 +62,10 @@ public final class ByteOrder {
 	 *          virtual machine is running
 	 */
 	public static ByteOrder nativeOrder() {
-		return ByteOrder.LITTLE_ENDIAN;
+		return isLittleEndian() ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN;
 	}
+
+	private static native boolean isLittleEndian();
 
 	/**
 	 * Constructs a string describing this object.

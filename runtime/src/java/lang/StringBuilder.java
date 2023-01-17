@@ -95,6 +95,14 @@ public final class StringBuilder implements CharSequence, Appendable {
         value[count++] = 'l';
     }
 
+    public int indexOf(java.lang.String string) {
+        return toString().indexOf(string);
+    }
+
+    public int indexOf(java.lang.String string, int index) {
+        return toString().indexOf(string, index);
+    }
+
     /**
      * Appends the string representation of the boolean argument to the string builder.
      * The argument is converted to a string as if by the method String.valueOf, and the characters of that string are then appended to this string builder.

@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  * The Integer class wraps a value of the primitive type int in an object. An object of type Integer contains a single field whose type is int.
@@ -32,7 +32,7 @@ import com.thelogicmaster.clearwing.NativeUtils;
  */
 public final class Integer extends Number implements Comparable<Integer> {
 
-	public static final Class<Integer> TYPE = (Class<Integer>)NativeUtils.getPrimitive("int");
+	public static final Class<Integer> TYPE = (Class<Integer>)NativeUtils.getPrimitive("I");
 
 	public static final char[] DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
@@ -264,8 +264,8 @@ public final class Integer extends Number implements Comparable<Integer> {
 			buf[--cursor] = DIGITS[i & 1];
 		} while ((i >>>= 1) != 0);
 
-		//return new String(cursor, bufLen - cursor, buf);
-		return new String(cursor, bufLen - cursor, buf);
+		return new String(buf, cursor, bufLen - cursor);
+//		return new String(cursor, bufLen - cursor, buf);
 	}
 
 	/**
@@ -291,7 +291,7 @@ public final class Integer extends Number implements Comparable<Integer> {
 			buf[--cursor] = digits[i & 0xf];
 		} while ((i >>>= 4) != 0 || (bufLen - cursor < minWidth));
 
-		return new String(cursor, bufLen - cursor, buf);
+		return new String(buf, cursor, bufLen - cursor);
 	}
 
 	public static String intToOctalString (int i) {
@@ -303,7 +303,7 @@ public final class Integer extends Number implements Comparable<Integer> {
 			buf[--cursor] = DIGITS[i & 7];
 		} while ((i >>>= 3) != 0);
 
-		return new String(cursor, bufLen - cursor, buf);
+		return new String(buf, cursor, bufLen - cursor);
 	}
 
 	/**
@@ -330,7 +330,9 @@ public final class Integer extends Number implements Comparable<Integer> {
 	 * Returns a new String object representing the specified integer. The argument is converted to signed decimal representation and returned as a string, exactly as if the argument and radix 10 were given as arguments to the
 	 * method.
 	 */
-	public native static java.lang.String toString (int i);
+	public static java.lang.String toString (int i) {
+		return toString(i, 10);
+	}
 
 	/**
 	 * Creates a string representation of the first argument in the radix specified by the second argument.

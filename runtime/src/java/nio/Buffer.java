@@ -58,33 +58,33 @@ public abstract class Buffer {
 		return position;
 	}
 
-	public final Buffer position(int newPosition) {
+	public native Buffer position(int newPosition);/* {
 		if ((newPosition > limit) || (newPosition < 0))
 			throw new IllegalArgumentException();
 		if (mark > newPosition) mark = -1;
 		position = newPosition;
 		return this;
-	}
+	}*/
 
 	public final int limit() {
 		return limit;
 	}
 
-	public final Buffer limit(int newLimit) {
+	public native Buffer limit(int newLimit);/* {
 		if ((newLimit > capacity) || (newLimit < 0))
 			throw new IllegalArgumentException();
 		limit = newLimit;
 		if (position > newLimit) position = newLimit;
 		if (mark > newLimit) mark = -1;
 		return this;
-	}
+	}*/
 
-	public final Buffer mark() {
+	public Buffer mark() {
 		mark = position;
 		return this;
 	}
 
-	public final Buffer reset() {
+	public Buffer reset() {
 		int m = mark;
 		if (m < 0)
 			throw new InvalidMarkException();
@@ -99,14 +99,14 @@ public abstract class Buffer {
 		return this;
 	}
 
-	public final Buffer flip() {
+	public Buffer flip() {
 		limit = position;
 		position = 0;
 		mark = -1;
 		return this;
 	}
 
-	public final Buffer rewind() {
+	public Buffer rewind() {
 		position = 0;
 		mark = -1;
 		return this;
@@ -131,49 +131,49 @@ public abstract class Buffer {
 
 	public abstract boolean isDirect();
 
-	final int nextGetIndex() {                          // package-private
+	final native int nextGetIndex();/* {                          // package-private
 		int p = position;
 		if (p >= limit)
 			throw new BufferUnderflowException();
 		position = p + 1;
 		return p;
-	}
+	}*/
 
-	final int nextGetIndex(int nb) {                    // package-private
+	final native int nextGetIndex(int nb);/* {                    // package-private
 		int p = position;
 		if (limit - p < nb)
 			throw new BufferUnderflowException();
 		position = p + nb;
 		return p;
-	}
+	}*/
 
-	final int nextPutIndex() {                          // package-private
+	final native int nextPutIndex();/* {                          // package-private
 		int p = position;
 		if (p >= limit)
 			throw new BufferOverflowException();
 		position = p + 1;
 		return p;
-	}
+	}*/
 
-	final int nextPutIndex(int nb) {                    // package-private
+	final native int nextPutIndex(int nb);/* {                    // package-private
 		int p = position;
 		if (limit - p < nb)
 			throw new BufferOverflowException();
 		position = p + nb;
 		return p;
-	}
+	}*/
 
-	final int checkIndex(int i) {                       // package-private
+	final native int checkIndex(int i);/* {                       // package-private
 		if ((i < 0) || (i >= limit))
 			throw new IndexOutOfBoundsException();
 		return i;
-	}
+	}*/
 
-	final int checkIndex(int i, int nb) {               // package-private
+	final native int checkIndex(int i, int nb);/* {               // package-private
 		if ((i < 0) || (nb > limit - i))
 			throw new IndexOutOfBoundsException();
 		return i;
-	}
+	}*/
 
 	final int markValue() {                             // package-private
 		return mark;

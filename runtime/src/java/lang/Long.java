@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  * The Long class wraps a value of the primitive type long in an object. An object of type Long contains a single field whose type is long.
@@ -32,7 +32,7 @@ import com.thelogicmaster.clearwing.NativeUtils;
  */
 public final class Long extends Number implements Comparable<Long> {
 
-	public static Class<Long> TYPE = (Class<Long>)NativeUtils.getPrimitive("long");
+	public static final Class<Long> TYPE = (Class<Long>)NativeUtils.getPrimitive("L");
 
 	/**
 	 * The largest value of type long.

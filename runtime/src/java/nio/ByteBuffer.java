@@ -23,11 +23,12 @@
 
 package java.nio;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 
 	private final ByteBuffer owner;
+	private final byte[] array;
 	private final boolean isOwner;
 
 	ByteBuffer (ByteBuffer owner, int mark, int pos, int lim, int cap, int off) {
@@ -35,6 +36,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		this.owner = owner;
 		isOwner = false;
 		address = owner.address + off;
+		array = null;
 	}
 
 	ByteBuffer (long address, int cap) {
@@ -42,10 +44,15 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 	}
 
 	ByteBuffer (long address, int cap, boolean isOwner) {
+		this(address, cap, isOwner, null);
+	}
+
+	ByteBuffer (long address, int cap, boolean isOwner, byte[] array) {
 		super(-1, 0, cap, cap);
 		owner = null;
 		this.address = address;
 		this.isOwner = isOwner;
+		this.array = array;
 	}
 
 	private native static void deallocate(long address);
@@ -64,7 +71,7 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 	}
 
 	public static ByteBuffer wrap (byte[] array, int offset, int length) {
-		throw new UnsupportedOperationException();
+		return new ByteBuffer(NativeUtils.getArrayAddress(array) + offset, length, false, array);
 	}
 
 	public static ByteBuffer wrap (byte[] array) {
@@ -110,23 +117,23 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		NativeUtils.putByte(ix(i), b);
 	}
 
-	public byte get () {
+	public native byte get ();/* {
 		return NativeUtils.getByte(ix(nextGetIndex()));
-	}
+	}*/
 
-	public ByteBuffer put (byte b) {
+	public native ByteBuffer put (byte b);/* {
 		NativeUtils.putByte(ix(nextPutIndex()), b);
 		return this;
-	}
+	}*/
 
-	public byte get (int index) {
+	public native byte get (int index);/* {
 		return NativeUtils.getByte(ix(checkIndex(index)));
-	}
+	}*/
 
-	public ByteBuffer put (int index, byte b) {
+	public native ByteBuffer put (int index, byte b);/* {
 		NativeUtils.putByte(ix(checkIndex(index)), b);
 		return this;
-	}
+	}*/
 
 	public ByteBuffer get (byte[] dst, int offset, int length) {
 		checkBounds(offset, length, dst.length);
@@ -179,6 +186,42 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 
 	public final int arrayOffset () {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public native ByteBuffer position(int newPosition);/* {
+		super.position(newPosition);
+		return this;
+	}*/
+
+	@Override
+	public native ByteBuffer limit(int newLimit);/* {
+		super.limit(newLimit);
+		return this;
+	}*/
+
+	@Override
+	public ByteBuffer mark() {
+		super.mark();
+		return this;
+	}
+
+	@Override
+	public ByteBuffer reset() {
+		super.reset();
+		return this;
+	}
+
+	@Override
+	public ByteBuffer flip() {
+		super.flip();
+		return this;
+	}
+
+	@Override
+	public ByteBuffer rewind() {
+		super.rewind();
+		return this;
 	}
 
 	public ByteBuffer compact () {
@@ -308,6 +351,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 1;
+		if (nativeByteOrder)
+			return new DirectCharBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsCharBufferB(this, -1, 0, size, size, off) : new ByteBufferAsCharBufferL(this, -1, 0, size, size, off);
 	}
 
@@ -343,6 +388,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 1;
+		if (nativeByteOrder)
+			return new DirectShortBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsShortBufferB(this, -1, 0, size, size, off) : new ByteBufferAsShortBufferL(this, -1, 0, size, size, off);
 	}
 
@@ -378,6 +425,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 2;
+		if (nativeByteOrder)
+			return new DirectIntBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsIntBufferB(this, -1, 0, size, size, off) : new ByteBufferAsIntBufferL(this, -1, 0, size, size, off);
 	}
 
@@ -413,6 +462,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 3;
+		if (nativeByteOrder)
+			return new DirectLongBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsLongBufferB(this, -1, 0, size, size, off) : new ByteBufferAsLongBufferL(this, -1, 0, size, size, off);
 	}
 
@@ -449,6 +500,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 2;
+		if (nativeByteOrder)
+			return new DirectFloatBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsFloatBufferB(this, -1, 0, size, size, off) : new ByteBufferAsFloatBufferL(this, -1, 0, size, size, off);
 	}
 
@@ -485,6 +538,8 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		assert (off <= lim);
 		int rem = (off <= lim ? lim - off : 0);
 		int size = rem >> 3;
+		if (nativeByteOrder)
+			return new DirectDoubleBuffer(this, -1, 0, size, size, off);
 		return bigEndian ? new ByteBufferAsDoubleBufferB(this, -1, 0, size, size, off) : new ByteBufferAsDoubleBufferL(this, -1, 0, size, size, off);
 	}
 }

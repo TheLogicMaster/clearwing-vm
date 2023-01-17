@@ -1,9 +1,8 @@
-repositories {
-    maven { url 'https://jitpack.io' }
-}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
-    implementation('com.github.tommyettinger:RegExodus:0.1.13')
+    implementation('com.github.tommyettinger:RegExodus:0.1.14')
 }
 
 sourceSets {

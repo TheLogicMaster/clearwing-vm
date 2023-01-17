@@ -160,6 +160,14 @@ public class Modifier {
         return (mod & INTERFACE) != 0;
     }
 
+    public static boolean isAnnotation(int mod) {
+        return (mod & ANNOTATION) != 0;
+    }
+
+    public static boolean isEnum(int mod) {
+        return (mod & ENUM) != 0;
+    }
+
     /**
      * Return {@code true} if the integer argument includes the
      * {@code abstract} modifier, {@code false} otherwise.

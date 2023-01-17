@@ -45,9 +45,11 @@ public class Throwable{
      * Constructs a new Throwable with null as its error message string.
      */
     public Throwable(){
+        fillInStack();
     }
 
     public Throwable(Throwable cause) {
+        fillInStack();
         this.cause = cause;
         this.message = cause == null ? null : cause.toString();
     }
@@ -58,6 +60,10 @@ public class Throwable{
     public Throwable initCause(Throwable cause) {
         this.cause = cause;
         return this;
+    }
+
+    public String getStack() {
+        return stack;
     }
     
     public Throwable getCause() {
@@ -70,10 +76,12 @@ public class Throwable{
      * method.
      */
     public Throwable(java.lang.String message){
+        fillInStack();
         this.message = message;
     }
     
     public Throwable(java.lang.String message, Throwable cause) {
+        fillInStack();
         this.message = message;
         this.cause = cause;
     }
@@ -86,11 +94,7 @@ public class Throwable{
         return message;
     }
 
-    /**
-     * Invoked from native!
-     */
     private native void fillInStack();
-    private native String getStack();
     
     /**
      * Prints this Throwable and its backtrace to the standard error stream. This method prints a stack trace for this Throwable object on the error output stream that is the value of the field System.err. The first line of output contains the result of the

@@ -1,11 +1,13 @@
 plugins {
+    id 'java'
     id 'application'
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
-repositories {
-    mavenCentral()
-}
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.14
+targetCompatibility = 1.14
 
 sourceSets {
     main {
@@ -16,18 +18,39 @@ sourceSets {
 }
 
 application {
-    mainClass = 'com.thelogicmaster.clearwing.translator.ByteCodeTranslator'
+    mainClass = 'com.thelogicmaster.clearwing.Transpiler'
 }
 
 dependencies {
-    implementation group: 'org.ow2.asm', name: 'asm-all', version: '5.2'
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.4'
+    implementation group: 'org.ow2.asm', name: 'asm-util', version: '9.4'
+    implementation group: 'org.ow2.asm', name: 'asm-commons', version: '9.4'
     implementation group: 'org.json', name: 'json', version: '20220320'
+    implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.9.0'
+    implementation group: 'io.github.classgraph', name: 'classgraph', version: '4.8.151'
+    implementation 'com.github.javaparser:javaparser-core:3.24.9'
+    implementation 'com.github.javaparser:javaparser-symbol-solver-core:3.24.9'
+
+    runtimeOnly project('::runtime')
 }
 
 shadowJar {
     archiveClassifier.set('')
 }
 
-artifacts {
-    archives shadowJar
+publishing {
+    publications {
+        shadow(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            version project.version + (System.env.JITPACK ? "" : "-dev")
+            artifact shadowJar
+        }
+        maven(MavenPublication) {
+            groupId project.group
+            artifactId project.name + "-lib"
+            version project.version + (System.env.JITPACK ? "" : "-dev")
+            artifact jar
+        }
+    }
 }

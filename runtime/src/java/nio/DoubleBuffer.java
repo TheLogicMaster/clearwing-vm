@@ -662,6 +662,48 @@ public abstract class DoubleBuffer extends Buffer implements Comparable<DoubleBu
 		return offset;
 	}
 
+	@Override
+	public DoubleBuffer position(int newPosition) {
+		super.position(newPosition);
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer limit(int newLimit) {
+		super.limit(newLimit);
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer mark() {
+		super.mark();
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer reset() {
+		super.reset();
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer clear() {
+		super.clear();
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer flip() {
+		super.flip();
+		return this;
+	}
+
+	@Override
+	public DoubleBuffer rewind() {
+		super.rewind();
+		return this;
+	}
+
 	/**
 	 * Compacts this buffer&nbsp;&nbsp;<i>(optional operation)</i>.
 	 *

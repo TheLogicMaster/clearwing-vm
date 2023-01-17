@@ -29,7 +29,7 @@ import java.lang.annotation.Annotation;
  *
  * @author shannah
  */
-public class Constructor {
+public class Constructor<T> {
 
     private Method method;
 

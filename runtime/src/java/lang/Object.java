@@ -117,7 +117,9 @@ public class Object{
      */
     public native final void wait(long timeout, int nanos) throws java.lang.InterruptedException;
     
-    protected Object clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException();
+    public native Object clone() throws CloneNotSupportedException;
+
+    protected void finalize() throws Throwable {
+
     }
 }

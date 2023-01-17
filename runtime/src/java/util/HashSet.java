@@ -21,7 +21,7 @@ package java.util;
  * HashSet is an implementation of a Set. All optional operations (adding and
  * removing) are supported. The elements can be any objects.
  */
-public class HashSet<E> extends AbstractSet<E> implements Set<E> {
+public class HashSet<E> extends AbstractSet<E> implements Set<E>, Cloneable {
 
     transient HashMap<E, HashSet<E>> backingMap;
 
@@ -160,5 +160,12 @@ public class HashSet<E> extends AbstractSet<E> implements Set<E> {
 
     HashMap<E, HashSet<E>> createBackingMap(int capacity, float loadFactor) {
         return new HashMap<E, HashSet<E>>(capacity, loadFactor);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        HashSet<E> cloned = (HashSet<E>) super.clone();
+        cloned.backingMap = (HashMap<E, HashSet<E>>) backingMap.clone();
+        return cloned;
     }
 }

@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import java.io.NSLogOutputStream;
+import java.io.NativeOutputStream;
 import java.io.PrintStream;
 
 /**
@@ -35,7 +35,7 @@ public final class System {
      * The "standard" error output stream. This stream is already open and ready to accept output data.
      * Typically this stream corresponds to display output or another output destination specified by the host environment or user. By convention, this output stream is used to display error messages or other information that should come to the immediate attention of a user even if the principal output stream, the value of the variable out, has been redirected to a file or other destination that is typically not continuously monitored.
      */
-    public static final java.io.PrintStream err = new PrintStream(new NSLogOutputStream());
+    public static final java.io.PrintStream err = new PrintStream(new NativeOutputStream());
 
     /**
      * The "standard" output stream. This stream is already open and ready to accept output data. Typically this stream corresponds to display output or another output destination specified by the host environment or user.
@@ -44,7 +44,7 @@ public final class System {
      * See the println methods in class PrintStream.
      * See Also:PrintStream.println(), PrintStream.println(boolean), PrintStream.println(char), PrintStream.println(char[]), PrintStream.println(int), PrintStream.println(long), PrintStream.println(java.lang.Object), PrintStream.println(java.lang.String)
      */
-    public static final java.io.PrintStream out = new PrintStream(new NSLogOutputStream());
+    public static final java.io.PrintStream out = new PrintStream(new NativeOutputStream());
 
     /**
      * Copies an array from the specified source array, beginning at the specified position, to the specified position of the destination array. A subsequence of array components are copied from the source array referenced by src to the destination array referenced by dst. The number of components copied is equal to the length argument. The components at positions srcOffset through srcOffset+length-1 in the source array are copied into positions dstOffset through dstOffset+length-1, respectively, of the destination array.
@@ -57,67 +57,16 @@ public final class System {
      */
     public static native void arraycopy(java.lang.Object src, int srcOffset, java.lang.Object dst, int dstOffset, int length);
 
-    // prevents the GC from collecting the GC thread itself... Since the GC doesn't traverse itself the GC object is 
-    // invisible and can be collected by the GC, however this static field places it in the GC (recursion much...).
-    private static Thread gcThreadInstance;
-    
-    private static final Object LOCK = new Object();
-    private static boolean startedGc;
-    private static boolean forceGc;
-    private static boolean gcShouldLoop = true;
-    // invoked from native code
-    private static void startGCThread() {
-        if(!startedGc) {
-            startedGc = true;
-            // not ideal but does the job for now, since gc is pretty efficient the cost is very low
-            gcThreadInstance = new Thread("GC Thread") {
-                public void run() {
-                    synchronized(LOCK) {
-                        // wait two seconds initially so startup won't be hindered by slow waits
-                        try {
-                            LOCK.wait(2000);
-                        } catch (InterruptedException ex) {
-                        }
-                    }
-//                    gcShouldLoop = true;
-                    while(gcShouldLoop) {
-                        try {
-                            System.gcMarkSweep();
-                            synchronized(LOCK) {
-                                if(forceGc || isHighFrequencyGC()) {
-                                    forceGc = false;
-                                    LOCK.wait(200);
-                                } else {
-                                    LOCK.wait(30000);
-                                }
-                            }
-                        } catch (InterruptedException ex) {
-                        }
-                    }
-                    startedGc = false;
-                    gcThreadInstance = null;
-                }
-            };
-            gcThreadInstance.start();
-        }
-    }
-
-    /**
-     * Invoked from native code
-     */
-    private static void stopGC() {
-        gcShouldLoop = false;
-        synchronized(LOCK) {
-            LOCK.notify();
-        }
-    }
-    
-    private native static boolean isHighFrequencyGC();
-    
     /**
      * Returns the current time in milliseconds.
      */
     public native static long currentTimeMillis();
+
+    public static void load(String lib) {
+    }
+
+    public static void loadLibrary(String lib) {
+    }
 
     /**
      * Terminates the currently running Java application. The argument serves as a status code; by convention, a nonzero status code indicates abnormal termination.
@@ -126,11 +75,11 @@ public final class System {
      * Runtime.getRuntime().exit(n)
      */
     public static void exit(int status) {
-        stopGC();
+        Thread.cleanup();
         exit0(status);
     }
 
-    private static native void exit0(int status);
+    public native static void exit0(int status);
 
     /**
      * Runs the garbage collector.
@@ -139,21 +88,7 @@ public final class System {
      * Runtime.getRuntime().gc()
      */
     public static void gc() {
-        if(startedGc) {
-            forceGc = true;
-            gcShouldLoop = true;
-        }
-        startGCThread();
-        synchronized(LOCK) {
-            LOCK.notify();
-        }
-        try {
-            Thread.sleep(2);
-        } catch(InterruptedException er) {}
     }
-    
-    private native static void gcLight();
-    private native static void gcMarkSweep();
 
     /**
      * Gets the system property indicated by the specified key.

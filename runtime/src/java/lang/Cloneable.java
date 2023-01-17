@@ -26,7 +26,6 @@ package java.lang;
  * 
  * @see Object#clone
  * @see CloneNotSupportedException
- * @deprecated clone isn't supported in Codename One, this interface is here strictly for compilation purposes
  */
 public interface Cloneable {
     // Marker interface

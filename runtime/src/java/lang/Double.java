@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  * The Double class wraps a value of the primitive type double in an object. An object of type Double contains a single field whose type is double.
@@ -32,7 +32,7 @@ import com.thelogicmaster.clearwing.NativeUtils;
  */
 public final class Double extends Number implements Comparable<Double> {
     
-    public static final Class<Double> TYPE = (Class<Double>)NativeUtils.getPrimitive("double");
+    public static final Class<Double> TYPE = (Class<Double>)NativeUtils.getPrimitive("D");
     /**
      * The largest positive finite value of type double. It is equal to the value returned by Double.longBitsToDouble(0x7fefffffffffffffL)
      * See Also:Constant Field Values

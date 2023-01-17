@@ -21,7 +21,7 @@ package java.util;
  * HashMap is an implementation of Map. All optional operations (adding and
  * removing) are supported. Keys and values can be any objects.
  */
-public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
+public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Cloneable {
 
     private static final long serialVersionUID = 362498820763181265L;
 
@@ -761,6 +761,9 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 }
 
     native static boolean areEqualKeys(Object key1, Object key2);
-        
-    
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return new HashMap<>(this);
+    }
 }

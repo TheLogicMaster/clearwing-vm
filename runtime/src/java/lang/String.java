@@ -45,7 +45,7 @@ import java.util.regex.PatternSyntaxException;
  */
 public final class String implements java.lang.CharSequence, Comparable<String> {
     
-    public static final Comparator<String> CASE_INSENSITIVE_ORDER = new Comparator<String>() {
+    public static Comparator<String> CASE_INSENSITIVE_ORDER = new Comparator<String>() {
         public int compare(String o1, String o2){
             return o1.compareToIgnoreCase(o2);
         }
@@ -54,8 +54,6 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     private static ArrayList<String> str = new ArrayList<String>();
     
     private final char[] value;
-
-    private final int offset;
 
     private final int count;
 
@@ -70,8 +68,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      */
     public String(){
         value = ZERO_CHAR;
-        offset = 0;
-        count = 0;        
+        count = 0;
     }
 
     public String(int[] codePoints, int offset, int count) {
@@ -124,7 +121,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         this(bytesToChars(bytes, 0, bytes.length, enc));
     }
 
-    private static native char[] bytesToChars(byte[] b, int off, int len, String encoding); 
+    public static native char[] bytesToChars(byte[] b, int off, int len, String encoding);
     
     /**
      * Allocates a new String so that it represents the sequence of characters currently contained in the character array argument. The contents of the character array are copied; subsequent modification of the character array does not affect the newly created string.
@@ -149,27 +146,16 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         if ((offset | charCount) < 0 || charCount > data.length - offset) {
             throw failedBoundsCheck(data.length, offset, charCount);
         }
-        this.offset = 0;
         this.value = new char[charCount];
         this.count = charCount;
         System.arraycopy(data, offset, value, 0, count);
     }
 
-    String(int offset, int charCount, char[] data) {
-        if ((offset | charCount) < 0 || charCount > data.length - offset) {
-            throw failedBoundsCheck(data.length, offset, charCount);
-        }
-        this.offset = offset;
-        this.value = data;
-        this.count = charCount;
-    }
-    
     /**
      * Initializes a newly created String object so that it represents the same sequence of characters as the argument; in other words, the newly created string is a copy of the argument string.
      * value - a String.
      */
     public String(java.lang.String value){
-        this.offset = value.offset;
         this.value = value.value;
         this.count = value.count;
     }
@@ -180,14 +166,12 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * - If buffer is null.
      */
     public String(java.lang.StringBuffer buffer){
-        this.offset = 0;
         this.count = buffer.length();
         this.value = new char[count];
         buffer.getChars(0, count, value, 0);
     }
     
     public String(java.lang.StringBuilder buffer) {
-        this.offset = 0;
         this.count = buffer.length();
         this.value = new char[count];
         buffer.getChars(0, count, value, 0);
@@ -311,9 +295,9 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     /**
      * Returns the character at the specified index. An index ranges from 0 to length() - 1. The first character of the sequence is at index 0, the next at index 1, and so on, as for array indexing.
      */
-    public final native char charAt(int index);//{
-//        return value[offset + index];
-//    }
+    public final char charAt(int index) {
+        return value[index];
+    }
 
     /**
      * Compares two strings lexicographically. The comparison is based on the Unicode value of each character in the strings. The character sequence represented by this String object is compared lexicographically to the character sequence represented by the argument string. The result is a negative integer if this String object lexicographically precedes the argument string. The result is a positive integer if this String object lexicographically follows the argument string. The result is zero if the strings are equal; compareTo returns 0 exactly when the
@@ -327,8 +311,8 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         }
         int minL = Math.min(anotherString.length(), length());
         for(int iter = 0 ; iter < minL ; iter++) {
-            char a = value[offset + iter];
-            char b = anotherString.value[anotherString.offset + iter];
+            char a = value[iter];
+            char b = anotherString.value[iter];
             if(a != b) {
                 return a - b;
             }
@@ -369,8 +353,8 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      */
     public java.lang.String concat(java.lang.String str){
         char[] n = new char[length() + str.length()];
-        System.arraycopy(value, offset, n, 0, count);
-        System.arraycopy(str.value, str.offset, n, count, str.count);
+        System.arraycopy(value, 0, n, 0, count);
+        System.arraycopy(str.value, 0, n, count, str.count);
         return new String(n); 
     }
 
@@ -383,7 +367,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         }
         int offset = suffix.length() - 1;
         for(int iter = length() - 1 ; offset >= 0 ; iter--) {
-            if(value[this.offset + iter] != suffix.value[suffix.offset + offset]) {
+            if(value[iter] != suffix.value[offset]) {
                 return false;
             }
             offset--;
@@ -395,24 +379,24 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * Compares this string to the specified object. The result is true if and only if the argument is not null and is a String object that represents the same sequence of characters as this object.
      */
     public native boolean equals(java.lang.Object anObject);
-    /*public boolean equals(java.lang.Object anObject){
-        if(anObject == this) {
-            return true;
-        }
-        if(anObject == null || anObject.getClass() != getClass()) {
-            return false;
-        }
-        String s = (String)anObject;
-        if(s.length() != length()) {
-            return false;
-        }
-        for(int iter = 0 ; iter < count ; iter++) {
-            if(value[offset + iter] != s.value[s.offset + iter]) {
-                return false;
-            }
-        }
-        return true;
-    }*/
+//    public boolean equals(java.lang.Object anObject){
+//        if(anObject == this) {
+//            return true;
+//        }
+//        if(anObject == null || anObject.getClass() != getClass()) {
+//            return false;
+//        }
+//        String s = (String)anObject;
+//        if(s.length() != length()) {
+//            return false;
+//        }
+//        for(int iter = 0 ; iter < count ; iter++) {
+//            if(value[iter] != s.value[iter]) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
 
     /**
      * Compares this String to another String, ignoring case considerations. Two strings are considered equal ignoring case if they are of the same length, and corresponding characters in the two strings are equal ignoring case.
@@ -432,23 +416,10 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         }
     }
 
-    private static native byte[] charsToBytes(char[] arr, char[] encoding);
-    
     /**
      * Convert this String into bytes according to the specified character encoding, storing the result into a new byte array.
      */
-    public byte[] getBytes(java.lang.String enc) throws java.io.UnsupportedEncodingException{
-        if(offset == 0 && value.length == count) {
-            if(enc == null) {
-                return charsToBytes(toCharNoCopy(), null); 
-            }
-            return charsToBytes(toCharNoCopy(), enc.toCharNoCopy()); 
-        } 
-        if(enc == null) {
-            return charsToBytes(toCharArray(), null); 
-        }
-        return charsToBytes(toCharArray(), enc.toCharNoCopy()); 
-    }
+    public native byte[] getBytes(java.lang.String enc) throws java.io.UnsupportedEncodingException;
     
     public byte[] getBytes(Charset charset) throws java.io.UnsupportedEncodingException {
         return getBytes(charset.displayName());
@@ -459,12 +430,12 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * The first character to be copied is at index srcBegin; the last character to be copied is at index srcEnd-1 (thus the total number of characters to be copied is srcEnd-srcBegin). The characters are copied into the subarray of dst starting at index dstBegin and ending at index:
      * dstbegin + (srcEnd-srcBegin) - 1
      */
-    public native void getChars(int srcBegin, int srcEnd, char[] dst, int dstBegin);//{
-//        for(int iter = srcBegin ; iter < srcEnd ; iter++) {
-//            dst[dstBegin] = value[offset + iter];
-//            dstBegin++;
-//        }
-//    }
+    public void getChars(int srcBegin, int srcEnd, char[] dst, int dstBegin) {
+        for(int iter = srcBegin ; iter < srcEnd ; iter++) {
+            dst[dstBegin] = value[iter];
+            dstBegin++;
+        }
+    }
 
     void getChars(char dst[], int dstBegin) {
         System.arraycopy(value, 0, dst, dstBegin, value.length);
@@ -492,9 +463,9 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         return Pattern.compile(a).matcher(this).replaceFirst(b);
     }
 
-    public String replace(CharSequence a, CharSequence b) {
+    public native String replace(CharSequence a, CharSequence b);/* {
         return Pattern.compile(a.toString(), Pattern.LITERAL).matcher(this).replaceAll(b.toString());
-    }
+    }*/
 
     public boolean matches(String regex) {
         return Pattern.matches(regex, this);
@@ -517,14 +488,14 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * >= fromIndex) is true. If no such character occurs in this string at or after position fromIndex, then -1 is returned.
      * There is no restriction on the value of fromIndex. If it is negative, it has the same effect as if it were zero: this entire string may be searched. If it is greater than the length of this string, it has the same effect as if it were equal to the length of this string: -1 is returned.
      */
-    public native int indexOf(int ch, int fromIndex);//{
-//        for(int iter = offset + fromIndex ; iter < count + offset ; iter++) {
-//            if(value[iter] == ch) {
-//                return iter - offset;
-//            }
-//        }
-//        return -1; 
-//    }
+    public int indexOf(int ch, int fromIndex) {
+        for(int iter = fromIndex ; iter < count ; iter++) {
+            if(value[iter] == ch) {
+                return iter;
+            }
+        }
+        return -1;
+    }
 
     /**
      * Returns the index within this string of the first occurrence of the specified substring. The integer returned is the smallest value
@@ -540,15 +511,14 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
                 return -1;
             }
             char[] target = string.value;
-            int subOffset = string.offset;
-            char firstChar = target[subOffset];
-            int end = subOffset + subCount;
+            char firstChar = target[0];
+            int end = subCount;
             while (true) {
                 int i = indexOf(firstChar, start);
                 if (i == -1 || subCount + i > _count) {
                     return -1; // handles subCount > count || start >= count
                 }
-                int o1 = offset + i, o2 = subOffset;
+                int o1 = i, o2 = 0;
                 char[] _value = value;
                 while (++o2 < end && _value[++o1] == target[o2]) {
                     // Intentionally empty
@@ -580,7 +550,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
                 return -1;
             }
             char[] target = subString.value;
-            int subOffset = subString.offset;
+            int subOffset = 0;
             char firstChar = target[subOffset];
             int end = subOffset + subCount;
             while (true) {
@@ -588,7 +558,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
                 if (i == -1 || subCount + i > _count) {
                     return -1; // handles subCount > count || start >= count
                 }
-                int o1 = offset + i, o2 = subOffset;
+                int o1 = i, o2 = subOffset;
                 char[] _value = value;
                 while (++o2 < end && _value[++o1] == target[o2]) {
                     // Intentionally empty
@@ -624,9 +594,9 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * ) == ch is true. The String is searched backwards starting at the last character.
      */
     public int lastIndexOf(int ch){
-        for(int iter = count + offset - 1 ; iter >= offset ; iter--) {
+        for(int iter = count - 1 ; iter >= 0 ; iter--) {
             if(value[iter] == ch) {
-                return iter - offset;
+                return iter;
             }
         }
         return -1; 
@@ -638,15 +608,14 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      */
     public int lastIndexOf(int ch, int start){
         int _count = count;
-        int _offset = offset;
         char[] _value = value;
         if (start >= 0) {
             if (start >= _count) {
                 start = _count - 1;
             }
-            for (int i = _offset + start; i >= _offset; --i) {
+            for (int i = start; i >= 0; --i) {
                 if (_value[i] == ch) {
-                    return i - _offset;
+                    return i;
                 }
             }
         }
@@ -702,7 +671,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
                         return -1;
                     }
                     int o1 = i, o2 = subOffset;
-                    while (++o2 < end && value[offset + (++o1)] == target[o2]) {
+                    while (++o2 < end && value[(++o1)] == target[o2]) {
                         // Intentionally empty
                     }
                     if (o2 == end) {
@@ -754,7 +723,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         if (length <= 0) {
             return true;
         }
-        int o1 = offset + thisStart, o2 = string.offset + start;
+        int o1 = thisStart, o2 = start;
         char[] value1 = value;
         char[] value2 = string.value;
         for (int i = 0; i < length; ++i) {
@@ -784,8 +753,6 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         if (start < 0 || length > string.count - start) {
             return false;
         }
-        thisStart += offset;
-        start += string.offset;
         int end = thisStart + length;
         char[] target = string.value;
         while (thisStart < end) {
@@ -820,20 +787,16 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      */
     public java.lang.String replace(char oldChar, char newChar){
         char[] buffer = value;
-        int _offset = offset;
         int _count = count;
 
-        int idx = _offset;
-        int last = _offset + _count;
+        int idx = 0;
         boolean copied = false;
-        while (idx < last) {
+        while (idx < _count) {
             if (buffer[idx] == oldChar) {
                 if (!copied) {
                     char[] newBuffer = new char[_count];
-                    System.arraycopy(buffer, _offset, newBuffer, 0, _count);
+                    System.arraycopy(buffer, 0, newBuffer, 0, _count);
                     buffer = newBuffer;
-                    idx -= _offset;
-                    last -= _offset;
                     copied = true;
                 }
                 buffer[idx] = newChar;
@@ -859,7 +822,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
             return false;
         }
         for(int iter = 0 ; iter < prefix.count ; iter++) {
-            if(prefix.value[iter+prefix.offset] != value[iter + toffset + offset]) {
+            if(prefix.value[iter] != value[iter + toffset]) {
                 return false;
             }
         }
@@ -877,7 +840,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         }
         if (start >= 0 && start <= count) {
             //return new String(offset + start, count - start, value);
-            return new String(value, offset + start, count - start);
+            return new String(value, start, count - start);
         }
         throw new ArrayIndexOutOfBoundsException(start);
     }
@@ -895,24 +858,17 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         // Fast range check.
         if (start >= 0 && start <= end && end <= count) {
             //return new String(offset + start, end - start, value);
-            return new String(value, offset + start, end - start);
+            return new String(value, start, end - start);
         }
         throw new ArrayIndexOutOfBoundsException(start);
     }
 
-    private char[] toCharNoCopy() {
-        if(offset == 0 && value.length == count) {
-            return value;
-        }
-        return toCharArray();
-    }
-    
     /**
      * Converts this string to a new character array.
      */
     public char[] toCharArray(){
         char[] buffer = new char[count];
-        System.arraycopy(value, offset, buffer, 0, count);
+        System.arraycopy(value, 0, buffer, 0, count);
         return buffer;
     }
 
@@ -922,7 +878,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     public java.lang.String toLowerCase(){
         char[] c = new char[length()];
         for(int iter = 0 ; iter < count ; iter++) {
-            c[iter] = Character.toLowerCase(value[offset + iter]);
+            c[iter] = Character.toLowerCase(value[iter]);
         }
         return new String(c);
     }
@@ -944,7 +900,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
     public java.lang.String toUpperCase(){
         char[] c = new char[length()];
         for(int iter = 0 ; iter < count ; iter++) {
-            c[iter] = Character.toUpperCase(value[offset + iter]);
+            c[iter] = Character.toUpperCase(value[iter]);
         }
         return new String(c);
     }
@@ -963,7 +919,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * This method may be used to trim whitespace from the beginning and end of a string; in fact, it trims all ASCII control characters as well.
      */
     public java.lang.String trim(){
-        int start = offset, last = offset + count - 1;
+        int start = 0, last = count - 1;
         int end = last;
         while ((start <= end) && (value[start] <= ' ')) {
             start++;
@@ -971,7 +927,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         while ((end >= start) && (value[end] <= ' ')) {
             end--;
         }
-        if (start == offset && end == last) {
+        if (start == 0 && end == last) {
             return this;
         }
         //return new String(start, end - start + 1, value);
@@ -989,7 +945,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
      * Returns the string representation of the char argument.
      */
     public static java.lang.String valueOf(char value){
-        String s = new String(0, 1, new char[] { value });
+        String s = new String(new char[] { value });
         s.hashCode = value;
         return s;
     }
@@ -1050,15 +1006,7 @@ public final class String implements java.lang.CharSequence, Comparable<String> 
         return substring(start, end);
     }
 
-    protected void finalize() {
-        if(nativeString != 0) {
-            releaseNativeString(nativeString);
-        }
-        nativeString = 0;
-    }
-    
-    private native static void releaseNativeString(long ns);
-
+    protected native void finalize();
 
     public static String format(String format, Object... args) {
         return new Formatter().format(format, args).toString();

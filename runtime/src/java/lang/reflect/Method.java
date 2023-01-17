@@ -12,15 +12,16 @@ import java.lang.annotation.Annotation;
  * @author shannah
  */
 public class Method {
-    private final int index;
+    private final long ptr;
     private final Class<?> declaringClass;
     private final Class<?>[] parameterTypes;
     private final Class<?> returnType;
     private final String name;
     private final int modifiers;
+    private Annotation[] annotations = new Annotation[0];
 
-    private Method (int index, Class<?> declaringClass, Class<?>[] parameterTypes, Class<?> returnType, String name, int modifiers) {
-        this.index = index;
+    private Method (long ptr, Class<?> declaringClass, Class<?>[] parameterTypes, Class<?> returnType, String name, int modifiers) {
+        this.ptr = ptr;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
@@ -55,10 +56,13 @@ public class Method {
     public native Object invoke(Object obj, Object ... args);
 
     public Annotation[] getDeclaredAnnotations() {
-        return new Annotation[0];
+        return annotations;
     }
 
     public boolean isAnnotationPresent(Class<?> annotation) {
+        for (Annotation a: annotations)
+            if (annotation == a.getClass())
+                return true;
         return false;
     }
 

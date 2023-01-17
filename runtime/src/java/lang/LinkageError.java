@@ -46,4 +46,8 @@ public class LinkageError extends Error {
     public LinkageError(String detailMessage) {
         super(detailMessage);
     }
+
+    public LinkageError(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

@@ -14,10 +14,10 @@ public class Formatter {
 	private static final char[] DIGITS_UPPER = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
 
 	private final Pattern pattern = Pattern.compile(
-		"%(?:({=esc}%)|({=str}s)" +
-			"|({=int}({=flags}[ 0-]+)?({=width}[1-9][0-9]*)?d)" +
+		"%(?:({=index}\\d+)\\$)?(?:({=esc}%)|({=str}({=flags}[ 0-]+)?({=width}[1-9][0-9]*)?s)" +
+			"|({=int}({=flags}[ +0-]+)?({=width}[1-9][0-9]*)?d)" +
 			"|({=hex}({=flags}[0-]+)?({=width}[1-9][0-9]*)?({=case}[xX]))" +
-			"|({=float}({=flags}[ 0-]+)?({=width}[1-9][0-9]*)?({=pre}\\.({=precise}[0-9]+))?f)" +
+			"|({=float}({=flags}[ +0-]+)?({=width}[1-9][0-9]*)?({=pre}\\.({=precise}[0-9]+))?f)" +
 			")");
 
 	private String formatted;
@@ -50,16 +50,33 @@ public class Formatter {
 
 		@Override
 		public void appendSubstitution (MatchResult match, TextBuffer dest) {
+			int argIndex = -1;
+			if (match.isCaptured("index"))
+				argIndex = Integer.parseInt(match.group("index")) - 1;
+
 			if (match.isCaptured("str")) {
-				dest.append(arguments[index++].toString());
+				boolean leftJustified = match.isCaptured("flags") && match.group("flags").contains("-");
+				int width = -1;
+				if (match.isCaptured("width"))
+					width = Integer.parseInt(match.group("width"));
+				StringBuilder isb = new StringBuilder(arguments[argIndex >= 0 ? argIndex : index++].toString());
+				if (leftJustified)
+					while (isb.length() < width)
+						isb.append(' ');
+				else
+					while (isb.length() < width)
+						isb.insert(0, ' ');
+				dest.append(isb.toString());
 			} else if (match.isCaptured("int")) {
-				long n = ((Number)arguments[index++]).longValue();
+				long n = ((Number)arguments[argIndex >= 0 ? argIndex : index++]).longValue();
 				StringBuilder isb = new StringBuilder(Long.toString(n));
 				int width = -1;
 				if (match.isCaptured("width"))
 					width = Integer.parseInt(match.group("width"));
 				char pad = ' ';
 				if (match.isCaptured("flags")) {
+					if (match.group("flags").contains("+") && n >= 0)
+						isb.append("+");
 					if (match.group("flags").contains("0"))
 						pad = '0';
 					if (n >= 0L && match.group("flags").contains(" "))
@@ -77,7 +94,7 @@ public class Formatter {
 				}
 				dest.append(isb.toString());
 			} else if (match.isCaptured("hex")) {
-				Object arg = arguments[index++];
+				Object arg = arguments[argIndex >= 0 ? argIndex : index++];
 				long n = ((Number)arg).longValue();
 				int width = -1;
 				if (match.isCaptured("width"))
@@ -109,7 +126,7 @@ public class Formatter {
 				}
 				dest.append(isb.toString());
 			} else if (match.isCaptured("float")) {
-				double f = ((Number)arguments[index++]).doubleValue();
+				double f = ((Number)arguments[argIndex >= 0 ? argIndex : index++]).doubleValue();
 				String is;
 				if (match.isCaptured("pre")) {
 					int p = Integer.parseInt(match.group("precise"));
@@ -121,6 +138,9 @@ public class Formatter {
 				} else
 					is = Double.toString(f);
 				StringBuilder isb = new StringBuilder(is);
+				if (match.isCaptured("flags") && match.group("flags").contains("+") && isb.charAt(0) != '-')
+					isb.insert(0, '+');
+
 				int precision = -1;
 				if (match.isCaptured("width"))
 					precision = Integer.parseInt(match.group("width"));

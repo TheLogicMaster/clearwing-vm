@@ -1,7 +1,2 @@
-include 'runtime'
-include 'transpiler'
-include 'jnigen'
-
-if (!System.env.JITPACK) {
-    include 'example'
-}
+rootProject.name = 'Clearwing'
+include 'transpiler', 'runtime', 'example'

@@ -508,6 +508,7 @@ public class Deflater {
     public void end() {
         if (address != 0) {
             end(address);
+            address = 0;
             buf = null;
         }
     }

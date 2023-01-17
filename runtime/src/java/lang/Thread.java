@@ -23,7 +23,9 @@
 
 package java.lang;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * A thread is a thread of execution in a program. The Java Virtual Machine allows an application to have multiple threads of execution running concurrently.
@@ -49,23 +51,36 @@ public class Thread implements java.lang.Runnable{
      */
     public static final int NORM_PRIORITY=5;
 
+    private static long currentId;
     private Runnable target;
-    private boolean alive;
-    private String name = "Unnamed";
+    private volatile Object currentMonitor;
+    private volatile boolean alive;
+    private String name;
     private int priority = NORM_PRIORITY;
-    private long nativeThreadId;
-    private static int activeThreads = 0;
-    private boolean interrupted;
+    private volatile long nativeThread;
+    private long entryPoint;
+    private static volatile int activeThreads = 0;
+    private volatile boolean interrupted;
+    private long id;
 
     private volatile UncaughtExceptionHandler uncaughtExceptionHandler;
     private static volatile UncaughtExceptionHandler defaultUncaughtExceptionHandler;
+    private static final List<Thread> threads = new ArrayList<>();
     
     /**
      * Allocates a new Thread object.
      * Threads created this way must have overridden their run() method to actually do anything.
      */
     public Thread(){
-        target = this;
+        this(null, null);
+    }
+
+    /**
+     * Main thread entrypoint (Takes main function pointer)
+     */
+    public Thread(long entryPoint) {
+        this(null, "main");
+        this.entryPoint = entryPoint;
     }
 
     /**
@@ -73,7 +88,7 @@ public class Thread implements java.lang.Runnable{
      * target - the object whose run method is called.
      */
     public Thread(java.lang.Runnable target){
-         this.target = target;
+         this(target, null);
     }
 
     /**
@@ -83,6 +98,11 @@ public class Thread implements java.lang.Runnable{
     public Thread(java.lang.Runnable target, java.lang.String name){
          this.target = target;
          this.name = name;
+         synchronized (Thread.class) {
+             id = currentId++;
+         }
+         if (this.name == null)
+             this.name = "Unnamed " + id;
     }
 
     /**
@@ -91,8 +111,9 @@ public class Thread implements java.lang.Runnable{
      */
     public Thread(java.lang.String name){
          this.name = name;
-         target = this;
     }
+
+    public static native void cleanup();
 
     /**
      * Returns the current number of active threads in the virtual machine.
@@ -101,13 +122,15 @@ public class Thread implements java.lang.Runnable{
         return activeThreads;
     }
 
+    public long getId() {
+        return id;
+    }
+
     /**
      * Returns a reference to the currently executing Thread object.
      */
     public native static java.lang.Thread currentThread();
 
-    private static native long getNativeThreadId();
-    
     /**
      * Returns this thread's name. Note that in CLDC the name of the thread can only be set when creating the thread.
      */
@@ -160,39 +183,27 @@ public class Thread implements java.lang.Runnable{
     /**
      * Waits for this thread to die.
      */
-    public final void join() throws java.lang.InterruptedException{
-        // not very efficient but we don't use this method much...
-        while(alive) {
-            sleep(30);
-        }
+    public final synchronized void join() throws java.lang.InterruptedException {
+        while (alive)
+            wait();
     }
 
-    public final void join(long millis, int nanos) {
-        throw new UnsupportedOperationException();
+    public final synchronized void join(final long millis) throws java.lang.InterruptedException {
+        if (millis == 0) {
+            join();
+            return;
+        }
+        long delay = millis;
+        long start = System.currentTimeMillis();
+        do {
+            wait(delay);
+        } while (alive && (delay = millis - (System.currentTimeMillis() - start)) > 0);
     }
 
-    /**
-     * Invoked from native code...
-     */
-    private void runImpl(long tid) {
-        alive = true;
-        nativeThreadId = tid;
-        Long nid = new Long(nativeThreadId);
-        activeThreads++;
-        try {
-            target.run();
-        } catch(Throwable t) {
-            if (uncaughtExceptionHandler != null)
-                uncaughtExceptionHandler.uncaughtException(this, t);
-            else if (defaultUncaughtExceptionHandler != null)
-                defaultUncaughtExceptionHandler.uncaughtException(this, t);
-            else
-                t.printStackTrace();
-        }
-        activeThreads--;
-        alive = false;
+    public final void join(long millis, int nanos) throws java.lang.InterruptedException {
+        join(millis);
     }
-    
+
     /**
      * If this thread was constructed using a separate Runnable run object, then that Runnable object's run method is called; otherwise, this method does nothing and returns.
      * Subclasses of Thread should override this method.
@@ -208,15 +219,14 @@ public class Thread implements java.lang.Runnable{
      */
     public final void setPriority(int newPriority){
         this.priority = newPriority;
-        setPriorityImpl(priority);
     }
-    
-    private native void setPriorityImpl(int p);
 
     /**
      * Causes the currently executing thread to sleep (temporarily cease execution) for the specified number of milliseconds. The thread does not lose ownership of any monitors.
      */
-    public static native void sleep(long millis) throws java.lang.InterruptedException;
+    public static void sleep(long millis) throws java.lang.InterruptedException {
+        sleep(millis, 0);
+    }
 
     public static void sleep(long millis, int nanos)
         throws InterruptedException {
@@ -229,12 +239,10 @@ public class Thread implements java.lang.Runnable{
                 "nanosecond timeout value out of range");
         }
 
-        if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
-            millis++;
-        }
-
-        sleep(millis);
+        sleepImpl(millis, nanos);
     }
+
+    private static native void sleepImpl(long millis, int nanos);
 
     /**
      * Causes this thread to begin execution; the Java Virtual Machine calls the run method of this thread.
@@ -248,7 +256,8 @@ public class Thread implements java.lang.Runnable{
     public java.lang.String toString(){
         return "Thread " + name; 
     }
-    
+
+    // Todo: Improve stack traces
     public StackTraceElement[] getStackTrace() {
         return new StackTraceElement[0];
     }
@@ -261,6 +270,8 @@ public class Thread implements java.lang.Runnable{
             sleep(1); 
         } catch(InterruptedException i) {}
     }
+
+    protected final native void finalize() throws Throwable;
 
     public ClassLoader getContextClassLoader() {
         return ClassLoader.getSystemClassLoader();
@@ -281,12 +292,6 @@ public class Thread implements java.lang.Runnable{
     public static UncaughtExceptionHandler getDefaultUncaughtExceptionHandler () {
         return defaultUncaughtExceptionHandler;
     }
-
-    protected void finalize() {
-        releaseThreadNativeResources(nativeThreadId);
-    }
-    
-    private static native void releaseThreadNativeResources(long nativeThreadId);
 
     public interface UncaughtExceptionHandler {
 

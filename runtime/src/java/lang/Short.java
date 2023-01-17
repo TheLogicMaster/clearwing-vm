@@ -23,7 +23,7 @@
 
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  * The Short class is the standard wrapper for short values.
@@ -42,7 +42,7 @@ public final class Short extends Number implements Comparable<Short> {
      */
     public static final short MIN_VALUE=-32768;
 
-    public static final Class<Short> TYPE = (Class<Short>)NativeUtils.getPrimitive("short");
+    public static final Class<Short> TYPE = (Class<Short>)NativeUtils.getPrimitive("S");
 
     private short value;
     

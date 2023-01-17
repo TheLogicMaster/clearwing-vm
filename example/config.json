@@ -1,7 +1,4 @@
 {
-    "nonOptimized": [
-        "java.nio.DoubleBuffer",
-        "java.lang.reflect.Field",
-        "java.lang.reflect.Type"
-    ]
+    "reflective": [],
+    "useValueChecks": true
 }

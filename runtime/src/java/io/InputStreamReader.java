@@ -51,7 +51,7 @@ public class InputStreamReader extends java.io.Reader{
 
     private void complete() throws IOException{
         byte[] b = readInputStream(internal);
-        cbuffer = bytesToChars(b, 0, b.length, enc);
+        cbuffer = String.bytesToChars(b, 0, b.length, enc);
     }
 
     private static byte[] readInputStream(InputStream i) throws IOException {
@@ -80,8 +80,6 @@ public class InputStreamReader extends java.io.Reader{
          internal = is;
          this.enc = enc.intern();
     }
-
-    private static native char[] bytesToChars(byte[] b, int off, int len, String encoding); 
 
     /**
      * Close the stream. Closing a previously closed stream has no effect.

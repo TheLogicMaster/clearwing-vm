@@ -22,12 +22,12 @@
  */
 package java.lang;
 
-import com.thelogicmaster.clearwing.NativeUtils;
+import java.nio.NativeUtils;
 
 /**
  *
  * @author Shai Almog
  */
 public final class Void {
-    public static final Class TYPE = NativeUtils.getPrimitive("void");
+    public static final Class TYPE = NativeUtils.getPrimitive("V");
 }

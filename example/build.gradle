@@ -4,6 +4,9 @@ plugins {
     id 'java'
 }
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 group 'com.thelogicmaster'
 version '1.0'
 
@@ -20,53 +23,24 @@ configurations {
 }
 
 dependencies {
-    // Use latest GitHub commit
-    implementation 'com.thelogicmaster.clearwing-vm:runtime:-SNAPSHOT'
-    transpiler 'com.thelogicmaster.clearwing-vm:transpiler:-SNAPSHOT'
-
-    // Use specified release
-//    implementation 'com.thelogicmaster.clearwing-vm:runtime:0.1'
-//    transpiler 'com.thelogicmaster.clearwing-vm:transpiler:0.1'
+    transpiler 'com.thelogicmaster.clearwing-vm:transpiler:2.0.0'
 }
 
 task transpile(dependsOn: 'build') {
     doLast {
-        delete "$buildDir/transpiler_input"
-        delete "$buildDir/transpiler_output"
         delete "$buildDir/dist"
-
-        copy {
-            from sourceSets.main.output
-            from { configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)} }
-            into "$buildDir/transpiler_input"
-            exclude "META-INF", "META-INF/**"
-            includeEmptyDirs = false
-        }
 
         javaexec {
             main = "-jar"
             args = [
                     "$configurations.transpiler.singleFile.absolutePath",
-                    "$buildDir/transpiler_input",
-                    "$buildDir/transpiler_output",
-                    "$projectDir/config.json",
-                    "com.thelogicmaster.example.Example"
+                    "--input", "$buildDir/classes",
+                    "--output", "$buildDir/dist",
+                    "--source", "$projectDir/src/main/java",
+                    "--config", "$projectDir/config.json",
+                    "--main", "com.thelogicmaster.example.Example",
+                    "--project", "true"
             ]
-        }
-
-        copy {
-            from ("$buildDir/transpiler_output") {
-                include "*.h"
-            }
-            into "$buildDir/dist/include"
-        }
-
-        copy {
-            from ("$buildDir/transpiler_output") {
-                include "*.c"
-                include "*.cpp"
-            }
-            into "$buildDir/dist/source"
         }
 
         copy {
@@ -75,34 +49,38 @@ task transpile(dependsOn: 'build') {
         }
 
         exec {
-            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
-                commandLine 'cmd', '/c', "rsync -crh --delete --checksum --exclude 'cmake-build-debug' --exclude 'build' --exclude 'build-run' --exclude '.idea' dist/ ${project.name}"
-            } else {
-                commandLine 'bash', '-c', "rsync -crh --delete --checksum --exclude 'cmake-build-debug' --exclude 'build' --exclude 'build-run' --exclude '.idea' dist/ ${project.name}"
-            }
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows())
+                commandLine 'cmd', '/c', "rsync -crh --delete --checksum --exclude '/cmake-build-*' --exclude '/data' --exclude '/.idea' dist/ ${project.name}"
+            else
+                commandLine 'bash', '-c', "rsync -crh --delete --checksum --exclude '/cmake-build-*' --exclude '/data' --exclude '/.idea' dist/ ${project.name}"
             workingDir "$buildDir"
         }
     }
 }
 
-task run(dependsOn: 'transpile') {
+task run(dependsOn: transpile) {
     doLast {
         exec {
-            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
-                // Todo: Might not work
-                commandLine 'C:\\msys64\\msys2_shell.cmd', '-mingw64', '-where', "$buildDir/${project.name}", '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build-run -G \'MSYS Makefiles\' && cmake --build build-run || sleep 50000'
-            } else {
-                commandLine 'bash', '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build-run -G Ninja && cmake --build build-run'
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows())
+                commandLine 'C:\\devkitPro\\msys2\\msys2_shell.cmd', '-mingw64', '-where', "$buildDir${File.separator}${project.name}", '-c',
+                        'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G \'MSYS Makefiles\' && cmake --build cmake-build-run || sleep 50000'
+            else
+                commandLine 'bash', '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G Ninja && cmake --build cmake-build-run'
+            workingDir "$buildDir${File.separator}${project.name}"
+        }
+        if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
+            copy { // Todo: Copy only needed
+                from "C:\\devkitPro\\msys2\\mingw64\\bin"
+                include "*.dll"
+                into "$buildDir\\${project.name}\\cmake-build-run"
             }
-            workingDir "$buildDir/${project.name}"
         }
         exec {
-            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {
-                commandLine 'cmd', '/c', 'build-run\\dist.exe'
-            } else {
-                commandLine 'bash', '-c', './build-run/dist'
-            }
-            workingDir "$buildDir/${project.name}"
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows())
+                commandLine 'cmd', '/c', 'cmake-build-run\\dist.exe'
+            else
+                commandLine 'bash', '-c', './cmake-build-run/dist'
+            workingDir "$buildDir${File.separator}${project.name}"
         }
     }
 }

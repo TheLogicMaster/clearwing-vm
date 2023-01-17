@@ -22,6 +22,7 @@
  */
 package java.lang;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 
 /**
@@ -40,7 +41,7 @@ public class Enum<E extends Enum<E>> implements Comparable<E> {
         this.ordinal = ordinal;
     }
 
-    protected Object clone() {
+    public Object clone() {
         return new RuntimeException("Clone not supported");
     }
 
@@ -51,7 +52,17 @@ public class Enum<E extends Enum<E>> implements Comparable<E> {
         return null;
     }
 
-    public native static <T extends Enum<T>> T valueOf(final Class<T> enumType, final String name);
+    public static <T extends Enum<T>> T valueOf(final Class<T> enumType, final String name) {
+        try {
+            Field valuesField = enumType.getDeclaredField("$VALUES");
+            valuesField.setAccessible(true);
+            T[] values = (T[]) valuesField.get(null);
+            for (T value: values)
+                if (value.name().equals(name))
+                    return value;
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+        return null;
+    }
     
     public final boolean equals(final Object other) {
         return other == this;

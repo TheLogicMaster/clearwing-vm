@@ -45,6 +45,10 @@ public class Runtime {
         return freeMemoryImpl();
     }
 
+    public long maxMemory() {
+        return 0;
+    }
+
     /**
      * Runs the garbage collector. Calling this method suggests that the Java Virtual Machine expend effort toward recycling unused objects in order to make the memory they currently occupy available for quick reuse. When control returns from the method call, the Java Virtual Machine has made its best effort to recycle all discarded objects.
      * The name gc stands for "garbage collector". The Java Virtual Machine performs this recycling process automatically as needed even if the gc method is not invoked explicitly.

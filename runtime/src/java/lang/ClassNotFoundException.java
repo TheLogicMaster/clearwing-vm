@@ -41,4 +41,7 @@ public class ClassNotFoundException extends java.lang.Exception{
          super(s);
     }
 
+    public ClassNotFoundException(String s, Throwable t) {
+        super(s, t);
+    }
 }

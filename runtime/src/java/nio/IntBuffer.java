@@ -662,6 +662,48 @@ public abstract class IntBuffer extends Buffer implements Comparable<IntBuffer> 
 		return offset;
 	}
 
+	@Override
+	public native IntBuffer position(int newPosition);/* {
+		super.position(newPosition);
+		return this;
+	}*/
+
+	@Override
+	public native IntBuffer limit(int newLimit);/* {
+		super.limit(newLimit);
+		return this;
+	}*/
+
+	@Override
+	public IntBuffer mark() {
+		super.mark();
+		return this;
+	}
+
+	@Override
+	public IntBuffer reset() {
+		super.reset();
+		return this;
+	}
+
+	@Override
+	public IntBuffer clear() {
+		super.clear();
+		return this;
+	}
+
+	@Override
+	public IntBuffer flip() {
+		super.flip();
+		return this;
+	}
+
+	@Override
+	public IntBuffer rewind() {
+		super.rewind();
+		return this;
+	}
+
 	/**
 	 * Compacts this buffer&nbsp;&nbsp;<i>(optional operation)</i>.
 	 *

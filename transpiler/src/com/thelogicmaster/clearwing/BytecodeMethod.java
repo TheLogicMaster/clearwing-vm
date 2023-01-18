@@ -87,6 +87,11 @@ public class BytecodeMethod {
 			annotation.collectDependencies(dependencies, classMap);
 	}
 
+	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
+		for (Instruction instruction: instructions)
+			instruction.processHierarchy(classMap);
+	}
+
 	/**
 	 * Allocates a new try-catch bypass and returns the index
 	 */

@@ -3,10 +3,7 @@ package com.thelogicmaster.clearwing.bytecode;
 import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.Opcodes;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An instruction that gets or sets a field
@@ -21,10 +18,11 @@ public class FieldInstruction extends Instruction {
     private final JavaType type;
     private final JavaType ownerType;
     private boolean onThis;
+    private boolean weak;
 
     public FieldInstruction(BytecodeMethod method, int opcode, String owner, String name, String desc) {
         super(method, opcode);
-        this.owner = owner;
+        this.owner = Utils.sanitizeName(owner);
         this.qualifiedOwner = Utils.getQualifiedClassName(owner);
         originalName = name;
         this.name = Utils.sanitizeField(name, opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC);
@@ -34,20 +32,35 @@ public class FieldInstruction extends Instruction {
     }
 
     @Override
+    public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
+        if (!classMap.containsKey(owner))
+            return;
+        BytecodeClass clazz = classMap.get(owner);
+        while (clazz != null && !clazz.getName().equals("java/lang/Object")) {
+            for (BytecodeField field: clazz.getFields())
+                if (field.getOriginalName().equals(originalName)) {
+                    weak = field.isWeak();
+                    return;
+                }
+            clazz = classMap.get(clazz.getSuperName());
+        }
+    }
+
+    @Override
     public void appendUnoptimized(StringBuilder builder) {
         if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC)
             builder.append("\t").append(qualifiedOwner).append("::clinit();\n");
 
         switch (opcode) {
             case Opcodes.GETSTATIC ->
-                builder.append("\tvm::push(sp, ").append(type.getArithmeticType()).append("(").append(qualifiedOwner).append("::").append(name).append("));\n");
+                builder.append("\tvm::push(sp, ").append(type.getArithmeticType()).append("(").append(qualifiedOwner).append("::").append(name).append(weak ? ".lock()" : "").append("));\n");
             case Opcodes.PUTSTATIC -> {
                 builder.append("\t").append(qualifiedOwner).append("::").append(name).append(" = ").append(type.getCppType()).append("(");
                 builder.append("vm::pop<").append(type.getArithmeticType()).append(">(sp));\n");
             }
             case Opcodes.GETFIELD -> {
                 builder.append("\tvm::push(sp, ").append(type.getArithmeticType()).append("(object_cast<").append(qualifiedOwner);
-                builder.append(">(vm::nullCheck(vm::pop<jobject>(sp)))->").append(name).append("));\n");
+                builder.append(">(vm::nullCheck(vm::pop<jobject>(sp)))->").append(name).append(weak ? ".lock()" : "").append("));\n");
             }
             case Opcodes.PUTFIELD ->
                 builder.append("\t{\n" + "\tauto &temp = vm::pop<").append(type.getArithmeticType()).append(">(sp);\n")
@@ -105,12 +118,12 @@ public class FieldInstruction extends Instruction {
         switch (opcode) {
             case Opcodes.GETSTATIC ->
                 builder.append("\t\tauto temp").append(temporaries).append(" = ").append(type.isPrimitive() ? type.getArithmeticType() : "object_cast<java::lang::Object>")
-                        .append("(").append(qualifiedOwner).append("::").append(name).append(");\n");
+                        .append("(").append(qualifiedOwner).append("::").append(name).append(weak ? ".lock()" : "").append(");\n");
             case Opcodes.PUTSTATIC ->
                 builder.append("\t\t").append(qualifiedOwner).append("::").append(name).append(" = ").append(getValueOperand(operands.get(0))).append(";\n");
             case Opcodes.GETFIELD ->
                     builder.append("\t\tauto temp").append(temporaries).append(" = ").append(type.isPrimitive() ? type.getArithmeticType() : "object_cast<java::lang::Object>")
-                            .append("(").append(getFieldReference(operands)).append(");\n");
+                            .append("(").append(getFieldReference(operands)).append(weak ? ".lock()" : "").append(");\n");
             case Opcodes.PUTFIELD ->
                 builder.append("\t\t").append(getFieldReference(operands)).append(" = ").append(getValueOperand(operands.get(onThis ? 0 : 1))).append(";\n");
             default -> throw new TranspilerException("Invalid opcode");

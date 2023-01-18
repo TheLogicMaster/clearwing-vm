@@ -77,6 +77,8 @@ public class Parser extends ClassVisitor {
         return new FieldVisitor(Opcodes.ASM5) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                if (Utils.parseClassDescription(descriptor).equals("com/thelogicmaster/clearwing/Weak"))
+                    field.markWeak();
                 if (!visible)
                     return null;
                 BytecodeAnnotation annotation = new BytecodeAnnotation(Utils.parseClassDescription(descriptor));

@@ -30,6 +30,7 @@ dependencies {
     implementation group: 'io.github.classgraph', name: 'classgraph', version: '4.8.151'
     implementation 'com.github.javaparser:javaparser-core:3.24.9'
     implementation 'com.github.javaparser:javaparser-symbol-solver-core:3.24.9'
+    implementation project('::annotations')
 
     runtimeOnly project('::runtime')
 }

@@ -55,6 +55,12 @@ public class InstructionGroup extends Instruction {
     }
 
     @Override
+    public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
+        for (Instruction instruction: instructions)
+            instruction.processHierarchy(classMap);
+    }
+
+    @Override
     public void appendUnoptimized(StringBuilder builder) {
         builder.append("\t{\n");
 

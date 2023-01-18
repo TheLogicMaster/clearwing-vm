@@ -233,6 +233,9 @@ public class BytecodeClass {
 		for (String inter: interfaces)
 			processHierarchyOrWarn(classMap, inter);
 
+		for (BytecodeMethod method: methods)
+			method.processHierarchy(classMap);
+
 		Map<MethodSignature, Set<BytecodeMethod>> methodSignatures = new HashMap<>();
 		collectHierarchyMethods(name, classMap, methodSignatures);
 
@@ -403,7 +406,7 @@ public class BytecodeClass {
 			if (method.isStaticInitializer())
 				continue;
 			builder.append(method.isStatic() ? "\t\tstatic " : "\t\tvirtual ");
-			builder.append(method.getSignature().getReturnType().getCppMemberType()).append(" ").append(method.getName()).append("(");
+			builder.append(method.getSignature().getReturnType().getCppMemberType(false)).append(" ").append(method.getName()).append("(");
 			method.getSignature().appendMethodArgs(builder);
 			builder.append(")");
 			if (method.isAbstract())
@@ -418,7 +421,7 @@ public class BytecodeClass {
 				builder.append("static ");
 			if (field.isVolatile() && field.getType().isPrimitive())
 				builder.append("volatile ");
-			builder.append(field.getType().getCppMemberType()).append(" ").append(field.getName()).append(field.isStatic() ? "" : "{}").append(";\n");
+			builder.append(field.getType().getCppMemberType(field.isWeak())).append(" ").append(field.getName()).append(field.isStatic() ? "" : "{}").append(";\n");
 		}
 		builder.append("\t};\n\n");
 
@@ -438,8 +441,8 @@ public class BytecodeClass {
 					continue;
 				JavaType type = method.getSignature().getReturnType();
 				String fieldName = Utils.sanitizeField(method.getOriginalName(), false);
-				builder.append("\t\tinline virtual ").append(type.getCppMemberType()).append(" ").append(method.getName()).append("() {return ").append(fieldName).append(";}\n");
-				builder.append("\t\t").append(type.getCppMemberType()).append(" ").append(fieldName).append(";\n");
+				builder.append("\t\tinline virtual ").append(type.getCppMemberType(false)).append(" ").append(method.getName()).append("() {return ").append(fieldName).append(";}\n");
+				builder.append("\t\t").append(type.getCppMemberType(false)).append(" ").append(fieldName).append(";\n");
 			}
 			builder.append("\t};\n");
 		}
@@ -585,7 +588,7 @@ public class BytecodeClass {
 			if (field.isStatic()) {
 				if (field.isVolatile() && field.getType().isPrimitive())
 					builder.append("volatile ");
-				builder.append(field.getType().getCppMemberType()).append(" ").append(simpleName).append("::").append(field.getName()).append(";\n");
+				builder.append(field.getType().getCppMemberType(field.isWeak())).append(" ").append(simpleName).append("::").append(field.getName()).append(";\n");
 			}
 		builder.append("\n");
 
@@ -594,7 +597,7 @@ public class BytecodeClass {
 			if (!method.hasBody() || method.isIntrinsic())
 				continue;
 
-			builder.append(method.getSignature().getReturnType().getCppMemberType()).append(" ");
+			builder.append(method.getSignature().getReturnType().getCppMemberType(false)).append(" ");
 			builder.append(simpleName).append("::");
 			builder.append(method.getName()).append("(");
 			method.getSignature().appendMethodArgs(builder);
@@ -747,6 +750,8 @@ public class BytecodeClass {
 					builder.append(simpleName).append("::").append(field.getName());
 				else
 					builder.append("object_cast<").append(simpleName).append(">(object)->").append(field.getName());
+				if (field.isWeak())
+					builder.append(".lock()");
 				builder.append(")");
 				builder.append(";\n");
 				builder.append("}\n\n");
@@ -847,6 +852,10 @@ public class BytecodeClass {
 	 */
 	public String getOriginalSuperName() {
 		return originalSuperName;
+	}
+
+	public String getSuperName() {
+		return superName;
 	}
 
 	public String getQualifiedSuperName() {

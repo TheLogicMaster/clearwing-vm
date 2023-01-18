@@ -1,2 +1,3 @@
-rootProject.name = 'Clearwing'
-include 'transpiler', 'runtime', 'example'
+rootProject.name = 'ClearwingVM'
+include 'transpiler', 'runtime', 'example', 'annotations'
+

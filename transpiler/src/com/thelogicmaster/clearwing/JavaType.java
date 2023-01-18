@@ -79,11 +79,13 @@ public class JavaType {
 	/**
 	 * Get the C++ type name for use as field/param types
 	 */
-	public String getCppMemberType() {
+	public String getCppMemberType(boolean weak) {
 		if (arrayDimensions > 0)
 			return "jarray";
 		else if (type != TypeVariants.OBJECT)
 			return getCppType();
+		else if (weak)
+			return "weak_ptr<" + Utils.getQualifiedClassName(referenceType) + ">";
 		else if ("java/lang/Class".equals(referenceType))
 			return "jclass";
 		else if ("java/lang/Object".equals(referenceType))

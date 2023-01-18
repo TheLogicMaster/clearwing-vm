@@ -17,6 +17,7 @@ public class BytecodeField {
 	private final String signature;
 	private final Object initialValue;
 	private final ArrayList<BytecodeAnnotation> annotations = new ArrayList<>();
+	private boolean weak;
 
 	public BytecodeField (BytecodeClass clazz, String name, int access, String desc, String signature, Object initialValue) {
 		this.owner = clazz;
@@ -86,5 +87,13 @@ public class BytecodeField {
 
 	public ArrayList<BytecodeAnnotation> getAnnotations() {
 		return annotations;
+	}
+
+	public boolean isWeak() {
+		return weak;
+	}
+
+	public void markWeak() {
+		weak = true;
 	}
 }

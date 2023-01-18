@@ -11,7 +11,7 @@ file(GLOB_RECURSE SRCS src/*.cpp)
 include_directories(src)
 add_executable(dist ${SRCS})
 
-target_compile_options(dist PRIVATE -Wno-return-type -Wno-invalid-offsetof)
+target_compile_options(dist PRIVATE -Wno-return-type)
 
 target_include_directories(dist PUBLIC ${ZLIB_INCLUDE_DIRS} ${ZZip_INCLUDE_DIRS})
 target_link_libraries(dist stdc++fs ${ZLIB_LIBRARIES} ${ZZip_LIBRARIES})

@@ -432,6 +432,20 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements
     public void clear() {
         if (size > 0) {
             size = 0;
+            Link<E> link = voidLink.next;
+            while (link != voidLink && link != null) {
+                Link<E> next = link.next;
+                link.next = null;
+                link.previous = null;
+                link = next;
+            }
+            link = voidLink.previous;
+            while (link != voidLink && link != null) {
+                Link<E> prev = link.previous;
+                link.previous = null;
+                link.next = null;
+                link = prev;
+            }
             voidLink.next = voidLink;
             voidLink.previous = voidLink;
             modCount++;
@@ -621,6 +635,8 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements
             next.previous = previous;
             size--;
             modCount++;
+            link.next = null;
+            link.previous = null;
             return link.data;
         }
         throw new IndexOutOfBoundsException();
@@ -650,6 +666,8 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements
             next.previous = voidLink;
             size--;
             modCount++;
+            first.next = null;
+            first.previous = null;
             return first.data;
         }
         throw new NoSuchElementException();
@@ -927,5 +945,11 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements
             contents[index] = null;
         }
         return contents;
+    }
+
+    @Override
+    public void finalize() throws Throwable {
+        clear();
+        voidLink = null;
     }
 }

@@ -7,8 +7,39 @@
 #include <mutex>
 #include <utility>
 #include <algorithm>
+#include <unordered_set>
+#include <fstream>
 #include "Utils.hpp"
 #include "RuntimeTypes.hpp"
+
+#if USE_LEAK_CHECK
+static class LeakObserver {
+public:
+    ~LeakObserver() {
+        std::scoped_lock<std::mutex> l(lock);
+        map<std::string, int> leaks;
+        for (const auto &object : objects)
+            leaks[object->name]++;
+        vector<std::pair<std::string, int>> leakPairs;
+        for (const auto &leak : leaks)
+            leakPairs.emplace_back(leak);
+        std::sort(leakPairs.begin(), leakPairs.end(), [](auto &a, auto &b){ return a.second > b.second; });
+        std::ofstream output("leaks.txt");
+        for (const auto &leak : leakPairs)
+            output << leak.first << ": " << leak.second << std::endl;
+    }
+    void add(Object *object) {
+        std::scoped_lock<std::mutex> l(lock);
+        objects.emplace(object);
+    }
+    void remove(Object *object) {
+        std::scoped_lock<std::mutex> l(lock);
+        objects.erase(object);
+    }
+    std::unordered_set<Object *> objects;
+    mutex lock;
+} leakObserver __attribute__ ((init_priority (200)));
+#endif
 
 const std::string Object::NAME = "java/lang/Object";
 static const ClassData classData{
@@ -33,12 +64,21 @@ const jclass Object::CLASS = vm::registerClass(&classData);
 std::mutex Object::currentMonitorLock;
 
 Object::Object(std::string name) : name(std::move(name)) {
+#if USE_LEAK_CHECK
+    leakObserver.add(this);
+#endif
 }
 
 Object::Object(const Object &other) : enable_shared_from_this(other), name(other.name) {
+#if USE_LEAK_CHECK
+    leakObserver.add(this);
+#endif
 }
 
 Object::~Object() {
+#if USE_LEAK_CHECK
+    leakObserver.remove(this);
+#endif
     // Todo: Potentially just return after System.exit() has been called to prevent using the global callstack after it's disposed
     if (finalized)
         return;

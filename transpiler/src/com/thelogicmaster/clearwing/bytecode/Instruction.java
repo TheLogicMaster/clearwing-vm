@@ -3,6 +3,7 @@ package com.thelogicmaster.clearwing.bytecode;
 import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.util.Printer;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +34,9 @@ public abstract class Instruction {
 			return null;
 		String name = Printer.OPCODES[opcode];
 		return name == null ? null : name.toLowerCase();
+	}
+
+	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
 	}
 
 	/**

@@ -12,6 +12,7 @@ public class TranspilerConfig {
     private List<String> reflective = new ArrayList<>(); // Patterns for classes to generate reflection metadata for
     private List<String> sourceIgnores = new ArrayList<>(); // Patterns for source files to ignore for JNIGen style inlined C++
     private List<String> intrinsics = new ArrayList<>(); // A list of methods to treat as native so that they can be patched (For example, `java.lang.Integer.toString()Ljava/lang/String;`)
+    private List<String> weakFields = new ArrayList<>(); // A list of fields to store with weak references
     private List<String> definitions = new ArrayList<>(); // Custom definitions to add to config.hpp
     private boolean projectFiles = true; // Whether to generate basic project files like the CMake config
     private String mainClass; // An optional "main class" that contains the entrypoint main function
@@ -31,6 +32,7 @@ public class TranspilerConfig {
         reflective = getArray(json, "reflective");
         sourceIgnores = getArray(json, "sourceIgnores");
         intrinsics = getArray(json, "intrinsics");
+        weakFields = getArray(json, "weakFields");
         definitions = getArray(json, "definitions");
         projectFiles = json.optBoolean("generateProjectFiles", false);
         mainClass = json.optString("mainClass");
@@ -40,20 +42,6 @@ public class TranspilerConfig {
         stackCookies = json.optBoolean("useStackCookies", false);
         leakCheck = json.optBoolean("useLeakCheck", false);
         platformOverride = json.optBoolean("platformOverride", false);
-    }
-
-    public TranspilerConfig(List<String> nonOptimized, List<String> reflective, List<String> sourceIgnores, List<String> intrinsics, List<String> definitions, boolean projectFiles, String mainClass, boolean stackTraces, boolean lineNumbers, boolean stackCookies, boolean valueChecks) {
-        this.nonOptimized = nonOptimized;
-        this.reflective = reflective;
-        this.sourceIgnores = sourceIgnores;
-        this.intrinsics = intrinsics;
-        this.definitions = definitions;
-        this.projectFiles = projectFiles;
-        this.mainClass = mainClass;
-        this.stackTraces = stackTraces;
-        this.lineNumbers = lineNumbers;
-        this.stackCookies = stackCookies;
-        this.valueChecks = valueChecks;
     }
 
     private static List<String> getArray(JSONObject json, String name) {
@@ -69,6 +57,7 @@ public class TranspilerConfig {
         reflective.addAll(config.reflective);
         sourceIgnores.addAll(config.sourceIgnores);
         intrinsics.addAll(config.intrinsics);
+        weakFields.addAll(config.weakFields);
         definitions.addAll(config.definitions);
         platformOverride = platformOverride || config.platformOverride;
     }
@@ -103,6 +92,14 @@ public class TranspilerConfig {
 
     public void setIntrinsics(List<String> intrinsics) {
         this.intrinsics = intrinsics;
+    }
+
+    public List<String> getWeakFields() {
+        return weakFields;
+    }
+
+    public void setWeakFields(List<String> weakFields) {
+        this.weakFields = weakFields;
     }
 
     public boolean isWritingProjectFiles() {

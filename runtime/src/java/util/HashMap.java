@@ -345,6 +345,9 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
      */
     @Override
     public void clear() {
+        for (Entry<K, V> entry: elementData)
+            if (entry != null)
+                entry.next = null;
         if (elementCount > 0) {
             elementCount = 0;
             Arrays.fill(elementData, null);
@@ -639,6 +642,7 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
     public V remove(Object key) {
         Entry<K, V> entry = removeEntry(key);
         if (entry != null) {
+            entry.next = null;
             return entry.value;
         }
         return null;
@@ -658,8 +662,8 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
                 m = m.next;
             }
             m.next = entry.next;
-
         }
+        entry.next = null;
         modCount++;
         elementCount--;
     }
@@ -693,6 +697,7 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
         }
         modCount++;
         elementCount--;
+        entry.next = null;
         return entry;
     }
 
@@ -765,5 +770,12 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
     @Override
     public Object clone() throws CloneNotSupportedException {
         return new HashMap<>(this);
+    }
+
+    @Override
+    public void finalize() throws Throwable {
+        for (Entry<K, V> entry: elementData)
+            if (entry != null)
+                entry.next = null;
     }
 }

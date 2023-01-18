@@ -38,7 +38,7 @@ public class MethodSignature {
 				builder.append(", ");
 			if (!paramTypes[i].isPrimitive())
 				builder.append("const ");
-			builder.append(paramTypes[i].getCppMemberType()).append(" ");
+			builder.append(paramTypes[i].getCppMemberType(false)).append(" ");
 			builder.append(paramTypes[i].isPrimitive() ? "param" : "&param").append(i);
 		}
 	}

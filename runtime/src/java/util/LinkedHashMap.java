@@ -599,6 +599,8 @@ public class LinkedHashMap<K, V> extends HashMap<K, V> implements Map<K, V> {
         } else {
             tail = p;
         }
+        m.chainForward = null;
+        m.chainBackward = null;
         return m.value;
     }
 
@@ -624,7 +626,20 @@ public class LinkedHashMap<K, V> extends HashMap<K, V> implements Map<K, V> {
      */
     @Override
     public void clear() {
+        LinkedHashMapEntry<K, V> entry = head;
+        while (entry != null) {
+            LinkedHashMapEntry<K, V> next = entry.chainForward;
+            entry.chainForward = null;
+            entry.chainBackward = null;
+            entry = next;
+        }
+
         super.clear();
         head = tail = null;
+    }
+
+    @Override
+    public void finalize() throws Throwable {
+        clear();
     }
 }

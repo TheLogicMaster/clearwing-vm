@@ -1,0 +1,19 @@
+plugins {
+    id 'java-library'
+}
+
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            version project.version + (System.env.JITPACK ? "" : "-dev")
+            from components.java
+        }
+    }
+}

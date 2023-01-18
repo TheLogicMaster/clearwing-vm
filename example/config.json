@@ -1,4 +1,6 @@
 {
     "reflective": [],
-    "useValueChecks": true
+    "weakFields": [],
+    "useValueChecks": true,
+    "useLeakCheck": false
 }

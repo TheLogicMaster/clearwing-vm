@@ -43,6 +43,12 @@ flowchart LR
 - Annotation helper for WeakReference fields
 - Profile memory leakage
 
+## Dependencies
+- C++ 20
+- ZLib
+- ZZip
+- CMake (If using default project files)
+
 ## Usage
 The transpiler is provided as a fat JAR which can be used as a standalone commandline tool or integrated into a 
 build system. An example is provided for a simple Gradle based project which produces and builds a CMake C++ 

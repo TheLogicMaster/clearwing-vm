@@ -1,3 +1,6 @@
 rootProject.name = 'ClearwingVM'
-include 'transpiler', 'runtime', 'example', 'annotations'
+include 'transpiler', 'runtime', 'annotations'
 
+if (!System.env.JITPACK) {
+    include 'example'
+}

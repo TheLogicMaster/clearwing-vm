@@ -62,11 +62,11 @@ task transpile(dependsOn: 'build') {
 task run(dependsOn: transpile) {
     doLast {
         exec {
-            if (DefaultNativePlatform.currentOperatingSystem.isWindows())
+            if (DefaultNativePlatform.currentOperatingSystem.isWindows()) // Todo: Use non-devKitPro msys2 here
                 commandLine 'C:\\devkitPro\\msys2\\msys2_shell.cmd', '-mingw64', '-where', "$buildDir${File.separator}${project.name}", '-c',
-                        'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G \'MSYS Makefiles\' && cmake --build cmake-build-run || sleep 50000'
+                        'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G \'MinGW Makefiles\' && cmake --build cmake-build-run -j8 || sleep 50000'
             else
-                commandLine 'bash', '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G Ninja && cmake --build cmake-build-run'
+                commandLine 'bash', '-c', 'cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-run -G Ninja && cmake --build cmake-build-run -j8'
             workingDir "$buildDir${File.separator}${project.name}"
         }
         if (DefaultNativePlatform.currentOperatingSystem.isWindows()) {

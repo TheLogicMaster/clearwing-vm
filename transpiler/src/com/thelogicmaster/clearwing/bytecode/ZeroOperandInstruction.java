@@ -23,6 +23,15 @@ public class ZeroOperandInstruction extends Instruction {
         appendStandardInstruction(builder, name, getOpcodeConst(zeroOpcode));
     }
 
+    private void appendThrowReturn(StringBuilder builder) {
+        builder.append("return");
+        if (method.getSignature().getReturnType().getBasicType() == TypeVariants.OBJECT)
+            builder.append(" nullptr");
+        else if (!method.getSignature().getReturnType().isVoid())
+            builder.append(" 0");
+        builder.append(";\n");
+    }
+
     @Override
     public void appendUnoptimized(StringBuilder builder) {
         switch (opcode) {
@@ -62,6 +71,8 @@ public class ZeroOperandInstruction extends Instruction {
             case Opcodes.ARRAYLENGTH:
             case Opcodes.ATHROW:
                 appendStandardInstruction(builder, getOpcodeName());
+                builder.append("\t");
+                appendThrowReturn(builder);
                 break;
             case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN: {
                 TypeVariants type = TypeVariants.values()[opcode - Opcodes.IRETURN + TypeVariants.INT.ordinal()];
@@ -175,7 +186,10 @@ public class ZeroOperandInstruction extends Instruction {
                 builder.append("\t\tauto temp").append(temporaries).append(" = vm::floatCompare(").append(operands.get(0)).append(", ").append(operands.get(1)).append(", 1);\n");
             case Opcodes.ARRAYLENGTH ->
                 builder.append("\t\tauto temp").append(temporaries).append(" = vm::checkedCast<vm::Array>(").append(operands.get(0)).append(")->length;\n");
-            case Opcodes.ATHROW -> builder.append("\t\tvm::throwEx(").append(operands.get(0)).append(");\n");
+            case Opcodes.ATHROW -> {
+                builder.append("\t\tvm::throwEx(").append(operands.get(0)).append("); ");
+                appendThrowReturn(builder);
+            }
             case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN -> builder.append("\t\treturn ").append(operands.get(0)).append(";\n");
             case Opcodes.ARETURN -> {
                 JavaType returnType = getMethod().getSignature().getReturnType();

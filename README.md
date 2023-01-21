@@ -41,7 +41,7 @@ flowchart LR
 - Transpiler logging
 - Method trimming
 - Annotation helper for WeakReference fields
-- Profile memory leakage
+- Profile runtime memory leakage
 
 ## Dependencies
 - C++ 20
@@ -79,6 +79,8 @@ The available options are as follows:
 - __nonOptimized__: Patterns for classes to not optimize out even if unused
 - __reflective__: Patterns for classes to generate reflection metadata for
 - __intrinsics__: A list of methods to treat as native so that they can be patched (For example, `java.lang.Integer.toString()Ljava/lang/String;`)
+- __weakFields__: A list of fields to treat as _weak_ for removing retain cycles in libraries (For example, `java.lang.Throwable.message`)
+- __useLeakCheck__: Records object leaks by class to `leaks.txt` (Has runtime overhead, requires gcc)
 - __sourceIgnores__: Patterns for source files to ignore for jnigen style inlined C++
 - __generateProjectFiles__: Whether to generate basic project files like the CMake config
 - __mainClass__: An optional "main class" that contains the entrypoint main function
@@ -170,7 +172,11 @@ Since they are all types as `jarray`, they don't count as unique types for funct
 function names for methods have array types appended to them. Strings are normal objects, but get constructed
 from C-strings or C++ UTF-8 literals using the custom `_j` suffix. The value is stored as UTF-16 and can be
 retrieved as a C-string using the `getNativeString` function. Classes are also normal objects, but get
-constructed by the VM when registering object classes or creating classes for array types. 
+constructed by the VM when registering object classes or creating classes for array types. To avoid retain 
+cycles with references, the `Weak` annotation is provided in the `annotations` module or in the `weakFields`
+config option to store the specified reference as a `weak_ptr` rather than a shared one. This should only be 
+used where Objects are always stored elsewhere, since it can cause premature object destruction if not used 
+carefully.
 
 ### Object Construction and Destruction
 The C++ constructor for Object takes only the class name as a parameter, with the rest of the constructors

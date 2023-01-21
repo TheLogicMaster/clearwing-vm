@@ -109,6 +109,8 @@ void Object::clinit() {
 
 void Object::acquireMonitor() {
     auto thread = java::lang::Thread::SM_currentThread_R_java_lang_Thread();
+    if (!thread)
+        return;
     {
         std::scoped_lock<std::mutex> lock(monitorLock);
         if (monitorOwner == thread) {
@@ -126,6 +128,9 @@ void Object::acquireMonitor() {
 }
 
 void Object::releaseMonitor() {
+    auto thread = java::lang::Thread::SM_currentThread_R_java_lang_Thread();
+    if (!thread)
+        return;
     // Todo: Throw IllegalMonitorStateException if thread is not the owner
     std::unique_lock<std::mutex> lock(monitorLock);
     if (--monitorUsageCount == 0) {

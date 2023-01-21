@@ -88,7 +88,7 @@ jstring java::lang::String::M_replace_R_java_lang_String(const shared_ptr<java::
         string.replace(pos, target.length(), replacement);
         pos += replacement.length();
     }
-    return vm::createString(string.begin().base(), string.end().base());
+    return vm::createString(string.c_str(), string.c_str() + string.size());
 }
 
 jstring java::lang::String::M_toString_R_java_lang_String() {

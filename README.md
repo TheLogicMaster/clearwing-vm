@@ -35,13 +35,12 @@ flowchart LR
 - There's no GC and reference counting is used instead, so use WeakReference to avoid retain cycles
 
 ## Todo
-- GZip compression doesn't work
 - Testing suite
 - Further runtime library support
 - Transpiler logging
 - Method trimming
-- Annotation helper for WeakReference fields
 - Profile runtime memory leakage
+- Prevent invalid memory accesses to stack data after exit is called
 
 ## Dependencies
 - C++ 20

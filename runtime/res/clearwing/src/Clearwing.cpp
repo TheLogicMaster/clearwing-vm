@@ -112,7 +112,7 @@ jclass &vm::getClass(const char *name) {
             return vm::getArrayClass((*classRegistry)[string], dimensions);
     }
 
-    vm::throwNew<java::lang::ClassNotFoundException>();
+    vm::throwExceptionCause<java::lang::ClassNotFoundException>(name);
 }
 
 jclass &vm::getArrayClass(const jclass &clazzObj, int dimensions) {

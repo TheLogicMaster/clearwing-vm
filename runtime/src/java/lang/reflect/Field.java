@@ -68,11 +68,12 @@ public final class Field {
         try {
             genericType = signature == null || signature.isEmpty() ? type : parseSignature(signature);
         } catch (ClassNotFoundException e) {
-            throw new MalformedParameterizedTypeException();
+            throw new MalformedParameterizedTypeException("Failed to find class: " + e.getMessage());
         }
     }
 
     private Type parseSignature(String signature) throws ClassNotFoundException {
+        signature = signature.replace('.', '$');
         int index = 0;
         int dimensions = 0;
         int end = signature.endsWith(";") ? signature.length() - 2 : signature.length() - 1;

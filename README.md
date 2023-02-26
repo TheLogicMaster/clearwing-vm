@@ -41,6 +41,7 @@ flowchart LR
 - Method trimming
 - Profile runtime memory leakage
 - Prevent invalid memory accesses to stack data after exit is called
+- Crash logs
 
 ## Dependencies
 - C++ 20
@@ -57,8 +58,9 @@ which could be used programmatically. Java 16 is what the transpiler has been te
 
 JitPack Maven artifacts:
 ```
-'com.thelogicmaster.clearwing-vm:transpiler:2.0.0'     // Fat JAR
-'com.thelogicmaster.clearwing-vm:transpiler-lib:2.0.0' // Library JAR
+'com.thelogicmaster.clearwing-vm:transpiler:{version}'     // Fat JAR
+'com.thelogicmaster.clearwing-vm:transpiler-lib:{version}' // Library JAR
+'com.thelogicmaster.clearwing-vm:annotations:{version}'    // Annotations
 ```
 
 The following command line arguments are provided:

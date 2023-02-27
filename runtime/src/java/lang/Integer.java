@@ -60,6 +60,10 @@ public final class Integer extends Number implements Comparable<Integer> {
 		this.value = value;
 	}
 
+	public Integer (String s) {
+		this.value = valueOf(s);
+	}
+
 	/**
 	 * Returns the value of this Integer as a byte.
 	 */

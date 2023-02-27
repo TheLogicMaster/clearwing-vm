@@ -73,7 +73,13 @@ public class MethodInstruction extends Instruction {
     }
 
     private String getOwnerReference(List<StackEntry> operands) {
-        return onThis ? "this->" : operands.get(0).getTypedTemporary(ownerType) + "->";
+        if (onThis)
+            return "this->";
+        if (opcode == Opcodes.INVOKEINTERFACE)
+            for (BytecodeMethod m: BytecodeClass.OBJECT_METHODS)
+                if (m.getSignature().equals(signature))
+                    return "temp" + operands.get(0).getTemporary() + "->";
+        return operands.get(0).getTypedTemporary(ownerType) + "->";
     }
 
     @Override

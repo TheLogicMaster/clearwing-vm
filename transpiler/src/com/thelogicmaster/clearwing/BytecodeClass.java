@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 public class BytecodeClass {
 
 	private final static BytecodeClass OBJECT_CLASS = new BytecodeClass("java/lang/Object", null, null, Opcodes.ACC_PUBLIC);
-	private final static BytecodeMethod[] OBJECT_METHODS = {
+	public final static BytecodeMethod[] OBJECT_METHODS = {
 			new BytecodeMethod(OBJECT_CLASS, "hashCode", Opcodes.ACC_PUBLIC, "()I", null, null),
 			new BytecodeMethod(OBJECT_CLASS, "equals", Opcodes.ACC_PUBLIC, "(Ljava/lang/Object;)Z", null, null),
 			new BytecodeMethod(OBJECT_CLASS, "clone", Opcodes.ACC_PUBLIC, "()Ljava/lang/Object;", null, null),

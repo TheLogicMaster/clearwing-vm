@@ -89,6 +89,7 @@ public class InvokeDynamicInstruction extends Instruction {
     public class Proxy extends Instruction {
 
         private final boolean isStatic;
+        private final boolean isInterface;
         private final String target;
         private final String qualifiedTarget;
         private final String targetMethod;
@@ -97,6 +98,7 @@ public class InvokeDynamicInstruction extends Instruction {
         public Proxy(BytecodeMethod method) {
             super(method, -1);
             isStatic = handle.getTag() == Opcodes.H_INVOKESTATIC;
+            isInterface = handle.getTag() == Opcodes.H_INVOKEINTERFACE;
             target = Utils.sanitizeName(handle.getOwner());
             qualifiedTarget = Utils.getQualifiedClassName(target);
             targetSignature = new MethodSignature(handle.getName(), handle.getDesc());
@@ -120,8 +122,17 @@ public class InvokeDynamicInstruction extends Instruction {
                 builder.append("\t").append(qualifiedTarget).append("::clinit();\n");
                 builder.append("auto object = make_shared<").append(qualifiedTarget).append(">();\n");
                 builder.append("\tobject->");
-            } else
-                builder.append("object_cast<").append(qualifiedTarget).append(">(F_field0)->");
+            } else {
+                boolean objectMethodOnInterface = false;
+                if (isInterface)
+                    for (BytecodeMethod m: BytecodeClass.OBJECT_METHODS)
+                        if (m.getSignature().equals(targetSignature)) {
+                            objectMethodOnInterface = true;
+                            builder.append("jobject(F_field0)->");
+                        }
+                if (!objectMethodOnInterface)
+                    builder.append("object_cast<").append(qualifiedTarget).append(">(F_field0)->");
+            }
 
             builder.append(targetMethod).append("(");
 

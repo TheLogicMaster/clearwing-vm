@@ -1,6 +1,7 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
+import com.thelogicmaster.clearwing.StackEntry;
 import com.thelogicmaster.clearwing.Utils;
 import org.objectweb.asm.Label;
 
@@ -32,27 +33,40 @@ public class TryInstruction extends Instruction {
         catchInstruction = new CatchInstruction();
     }
 
+    // Todo: Switch from TRY macro, it leaks exceptions and makes it impossible to debug
     @Override
     public void appendUnoptimized(StringBuilder builder) {
-        builder.append(LABEL_PREFIX).append(label).append(":\n\ttry {\n");
-        for (Map.Entry<Integer, Bypass> bypass: bypasses.entrySet()) {
-            builder.append("\tif (bypasses[").append(bypass.getValue().index).append("]) { bypasses[").append(bypass.getValue().index).append("] = false; ");
-            if (bypass.getValue().bypassed())
-                builder.append("bypasses[").append(bypass.getValue().index - 1).append("] = true; ");
-            builder.append("goto ").append(LABEL_PREFIX).append(bypass.getKey()).append("; }\n");
-        }
+        builder.append(LABEL_PREFIX).append(label).append(": if (setjmp(*pushExceptionFrame(frameRef, &class_")
+                .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) { sp = stack; PUSH_OBJECT(popExceptionFrame(frameRef)); goto ").append(LABEL_PREFIX).append(handler).append("; }\n");
+
+//        builder.append(LABEL_PREFIX).append(label).append(":\n\tTRY (\n");
+
+//        for (Map.Entry<Integer, Bypass> bypass: bypasses.entrySet()) {
+//            builder.append("\tif (bypasses[").append(bypass.getValue().index).append("]) { bypasses[").append(bypass.getValue().index).append("] = false; ");
+//            if (bypass.getValue().bypassed())
+//                builder.append("bypasses[").append(bypass.getValue().index - 1).append("] = true; ");
+//            builder.append("goto ").append(LABEL_PREFIX).append(bypass.getKey()).append("; }\n");
+//        }
     }
 
     @Override
     public void collectDependencies(Set<String> dependencies) {
         if (type != null)
             dependencies.add(Utils.sanitizeName(type));
+        else
+            dependencies.add("java/lang/Throwable");
     }
 
     public Bypass getBypass(int target, int originalTarget) {
         if (!bypasses.containsKey(target))
             bypasses.put(target, new Bypass(getMethod().allocateTryCatchBypass(), target, originalTarget));
         return bypasses.get(target);
+    }
+
+    @Override
+    public void resolveIO(List<StackEntry> stack) {
+        setBasicInputs();
+        setBasicOutputs();
     }
 
     /**
@@ -98,16 +112,14 @@ public class TryInstruction extends Instruction {
 
         @Override
         public void appendUnoptimized(StringBuilder builder) {
-            builder.append("\t} catch(jobject &ex) {\n");
-            if (qualifiedType != null) {
-                builder.append("\tif (!vm::instanceof<").append(qualifiedType).append(">(ex))\n");
-                builder.append("\t\tthrow ex;\n");
-            }
-            builder.append("\tsp = stack;\n");
-            builder.append("\tvm::push(sp, ex);\n");
-            builder.append("\t");
-            appendGoto(builder, bypass, label, handler);
-            builder.append("\t}\n");
+//            builder.append("\t} CATCH (").append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append(" ex) {\n");
+//            builder.append("\tsp = stack;\n");
+//            builder.append("\tPUSH_OBJECT(ex);\n");
+//            builder.append("\t");
+//            appendGoto(builder, bypass, label, handler);
+//            builder.append("\t)\n");
+
+            builder.append("\tpopExceptionFrame(frameRef);\n");
         }
 
         @Override
@@ -123,6 +135,12 @@ public class TryInstruction extends Instruction {
         @Override
         public List<Integer> getJumpLabels() {
             return Collections.singletonList(label);
+        }
+
+        @Override
+        public void resolveIO(List<StackEntry> stack) {
+            setBasicInputs();
+            setBasicOutputs();
         }
     }
 

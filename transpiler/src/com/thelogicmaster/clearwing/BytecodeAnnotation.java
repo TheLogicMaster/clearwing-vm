@@ -84,7 +84,7 @@ public class BytecodeAnnotation extends AnnotationValue {
 	public void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap) {
 		builder.append("\t").append(target).append(" = make_shared<").append(qualifiedName).append("Impl>();\n");
 		for (AnnotationValue value: values)
-			value.append(builder, "object_cast<" + qualifiedName + "Impl" + ">(" + target + ")->" + Utils.sanitizeField(value.name, false), classMap);
+			value.append(builder, "object_cast<" + qualifiedName + "Impl" + ">(" + target + ")->" + Utils.sanitizeField(qualifiedName, value.name, false), classMap);
 	}
 }
 
@@ -222,7 +222,7 @@ class AnnotationEnumValue extends AnnotationValue {
 	public void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap) {
 		String qualifiedName = Utils.getQualifiedClassName(clazz);
 		builder.append("\t").append(qualifiedName).append("::clinit();\n");
-		builder.append('\t').append(target).append(" = ").append(qualifiedName).append("::").append(Utils.sanitizeField(value, true)).append(";\n");
+		builder.append('\t').append(target).append(" = ").append(qualifiedName).append("::").append(Utils.sanitizeField(qualifiedName, value, true)).append(";\n");
 	}
 
 	public String getClazz() {

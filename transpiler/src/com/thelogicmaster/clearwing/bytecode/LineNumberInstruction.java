@@ -23,7 +23,7 @@ public class LineNumberInstruction extends Instruction {
 
 	@Override
 	public void appendUnoptimized (StringBuilder builder) {
-		builder.append("\tvm::setLineNumber(").append(line).append(");\n");
+		builder.append("\tframeRef->lineNumber = ").append(line).append(";\n");
 	}
 
 	@Override
@@ -32,9 +32,9 @@ public class LineNumberInstruction extends Instruction {
 	}
 
 	@Override
-	public void populateIO(List<StackEntry> stack) {
-		inputs = Collections.emptyList();
-		outputs = Collections.emptyList();
+	public void resolveIO(List<StackEntry> stack) {
+		setBasicInputs();
+		setBasicOutputs();
 	}
 
 	public int getLine () {

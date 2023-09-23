@@ -32,7 +32,7 @@ import java.nio.NativeUtils;
  */
 public final class Long extends Number implements Comparable<Long> {
 
-	public static final Class<Long> TYPE = (Class<Long>)NativeUtils.getPrimitive("L");
+	public static final Class<Long> TYPE = (Class<Long>)NativeUtils.getPrimitive("J");
 
 	/**
 	 * The largest value of type long.

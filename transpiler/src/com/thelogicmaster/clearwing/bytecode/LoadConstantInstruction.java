@@ -15,17 +15,28 @@ import java.util.Set;
 public class LoadConstantInstruction extends Instruction {
 
     private final Object value;
+    private final TypeVariants type;
 
     public LoadConstantInstruction(BytecodeMethod method, Object value) {
         super(method, Opcodes.LDC);
         this.value = value;
+        if (value instanceof Integer)
+            type = TypeVariants.INT;
+        else if (value instanceof Long)
+            type = TypeVariants.LONG;
+        else if (value instanceof Float)
+            type = TypeVariants.FLOAT;
+        else if (value instanceof Double)
+            type = TypeVariants.DOUBLE;
+        else
+            type = TypeVariants.OBJECT;
     }
 
     private String getExpression() {
         if (value instanceof Integer || value instanceof Long || value instanceof Float || value instanceof Double || value instanceof Type)
             return Utils.getObjectValue(value);
         else if (value instanceof String)
-            return Utils.encodeStringLiteral((String)value);
+            return "((jobject) createStringLiteral(ctx, " + Utils.encodeStringLiteral((String)value) + "))";
         else if (value instanceof Handle) {
             throw new TranspilerException("Unsupported value: " + value); // Todo
         }
@@ -34,7 +45,7 @@ public class LoadConstantInstruction extends Instruction {
 
     @Override
     public void appendUnoptimized(StringBuilder builder) {
-        builder.append("\tvm::push(sp, ").append(getExpression()).append(");\n");
+        builder.append("\t(sp++)->").append(type.getStackName()).append(" = ").append(getExpression()).append(";\n");
     }
 
     @Override
@@ -43,18 +54,9 @@ public class LoadConstantInstruction extends Instruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        inputs = Collections.emptyList();
-        if (value instanceof Integer)
-            outputs = Collections.singletonList(TypeVariants.INT);
-        else if (value instanceof Float)
-            outputs = Collections.singletonList(TypeVariants.FLOAT);
-        else if (value instanceof Long)
-            outputs = Collections.singletonList(TypeVariants.LONG);
-        else if (value instanceof Double)
-            outputs = Collections.singletonList(TypeVariants.DOUBLE);
-        else
-            outputs = Collections.singletonList(TypeVariants.OBJECT);
+    public void resolveIO(List<StackEntry> stack) {
+        setInputs();
+        setBasicOutputs(type);
     }
 
     @Override

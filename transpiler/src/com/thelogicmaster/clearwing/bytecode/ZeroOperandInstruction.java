@@ -51,7 +51,7 @@ public class ZeroOperandInstruction extends Instruction {
             case Opcodes.ACONST_NULL:
             case Opcodes.IALOAD, Opcodes.LALOAD, Opcodes.FALOAD, Opcodes.DALOAD, Opcodes.AALOAD, Opcodes.BALOAD, Opcodes.CALOAD, Opcodes.SALOAD:
             case Opcodes.IASTORE, Opcodes.LASTORE, Opcodes.FASTORE, Opcodes.DASTORE, Opcodes.AASTORE, Opcodes.BASTORE, Opcodes.CASTORE, Opcodes.SASTORE:
-            case Opcodes.POP, Opcodes.POP2, Opcodes.DUP, Opcodes.DUP_X1, Opcodes.DUP_X2, Opcodes.DUP2, Opcodes.DUP2_X1, Opcodes.DUP2_X2, Opcodes.SWAP:
+            case Opcodes.POP, Opcodes.DUP, Opcodes.DUP_X1, Opcodes.SWAP:
             case Opcodes.IADD, Opcodes.LADD, Opcodes.FADD, Opcodes.DADD:
             case Opcodes.ISUB, Opcodes.LSUB, Opcodes.FSUB, Opcodes.DSUB:
             case Opcodes.IMUL, Opcodes.LMUL, Opcodes.FMUL, Opcodes.DMUL:
@@ -69,24 +69,31 @@ public class ZeroOperandInstruction extends Instruction {
             case Opcodes.I2B, Opcodes.I2C, Opcodes.I2S:
             case Opcodes.LCMP, Opcodes.FCMPL, Opcodes.FCMPG, Opcodes.DCMPL, Opcodes.DCMPG:
             case Opcodes.ARRAYLENGTH:
+                appendStandardInstruction(builder, Objects.requireNonNull(getOpcodeName()));
+                break;
+            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN:
+                builder.append("\tpopStackFrame(ctx);\n");
+                appendStandardInstruction(builder, Objects.requireNonNull(getOpcodeName()));
+                break;
             case Opcodes.ATHROW:
-                appendStandardInstruction(builder, getOpcodeName());
+                appendStandardInstruction(builder, "athrow");
                 builder.append("\t");
                 appendThrowReturn(builder);
                 break;
-            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN: {
-                TypeVariants type = TypeVariants.values()[opcode - Opcodes.IRETURN + TypeVariants.INT.ordinal()];
-                builder.append("\treturn ").append(type.getCppType()).append("(vm::pop<").append(type.getArithmeticType()).append(">(sp));\n");
-            }
-            break;
-            case Opcodes.ARETURN: {
-                JavaType returnType = getMethod().getSignature().getReturnType();
-                builder.append("\t\treturn object_cast<").append(returnType.getArrayDimensions() > 0 ? "vm::Array" : Utils.getQualifiedClassName(returnType.getReferenceType()));
-                builder.append(">(vm::pop<jobject>(sp));\n");
-            }
-            break;
-            case Opcodes.RETURN:
-                builder.append("\treturn;\n");
+            case Opcodes.DUP_X2, Opcodes.DUP2_X1:
+                if (inputs.size() == 3)
+                    appendStandardInstruction(builder, getOpcodeName() + "_1");
+                else
+                    appendStandardInstruction(builder, getOpcodeName() + "_2");
+                break;
+            case Opcodes.DUP2, Opcodes.POP2:
+                if (inputs.size() == 2)
+                    appendStandardInstruction(builder, getOpcodeName() + "_1");
+                else
+                    appendStandardInstruction(builder, getOpcodeName() + "_2");
+                break;
+            case Opcodes.DUP2_X2:
+                appendStandardInstruction(builder, getOpcodeName() + "_" + switch (outputs.size()){ case 6 -> 1; case 5 -> 3; case 4 -> 2; case 3 -> 4; default -> 0; });
                 break;
             case Opcodes.MONITORENTER:
                 appendStandardInstruction(builder, "monitorenter");
@@ -204,286 +211,271 @@ public class ZeroOperandInstruction extends Instruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        TypeVariants type, type2, type3, type4;
+    public void resolveIO(List<StackEntry> stack) {
+        TypeVariants type, type2, type3;
         switch (opcode) {
             case Opcodes.ICONST_M1, Opcodes.ICONST_0, Opcodes.ICONST_1, Opcodes.ICONST_2, Opcodes.ICONST_3, Opcodes.ICONST_4, Opcodes.ICONST_5:
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.LCONST_0, Opcodes.LCONST_1:
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.LONG);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.LONG);
                 break;
             case Opcodes.FCONST_0, Opcodes.FCONST_1, Opcodes.FCONST_2:
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.FLOAT);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.FLOAT);
                 break;
             case Opcodes.DCONST_0, Opcodes.DCONST_1:
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.DOUBLE);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.DOUBLE);
                 break;
             case Opcodes.NOP:
-                inputs = Collections.emptyList();
-                outputs = Collections.emptyList();
+                setBasicInputs();
+                setBasicOutputs();
                 break;
             case Opcodes.ACONST_NULL:
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.OBJECT);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.OBJECT);
                 break;
             case Opcodes.IALOAD, Opcodes.LALOAD, Opcodes.FALOAD, Opcodes.DALOAD, Opcodes.AALOAD, Opcodes.BALOAD, Opcodes.CALOAD, Opcodes.SALOAD:
-                inputs = Arrays.asList(TypeVariants.OBJECT, TypeVariants.INT);
-                outputs = Collections.singletonList(opcodeType(Opcode.IALOAD));
+                setBasicInputs(TypeVariants.OBJECT, TypeVariants.INT);
+                setBasicOutputs(opcodeType(Opcode.IALOAD));
                 break;
             case Opcodes.IASTORE, Opcodes.LASTORE, Opcodes.FASTORE, Opcodes.DASTORE, Opcodes.AASTORE, Opcodes.BASTORE, Opcodes.CASTORE, Opcodes.SASTORE:
-                inputs = Arrays.asList(TypeVariants.OBJECT, TypeVariants.INT, opcodeType(Opcode.IASTORE));
-                outputs = Collections.emptyList();
+                setBasicInputs(TypeVariants.OBJECT, TypeVariants.INT, opcodeType(Opcode.IASTORE));
+                setBasicOutputs();
                 break;
             case Opcodes.POP:
                 if (stack.isEmpty())
                     break;
-                inputs = Collections.singletonList(stack.get(stack.size() - 1).getType());
-                outputs = Collections.emptyList();
+                setInputsFromStack(stack, 1);
+                setBasicOutputs();
                 break;
             case Opcodes.POP2:
                 if (stack.isEmpty())
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                if (!type.isWide() && stack.size() == 1)
-                    break;
-                if (type.isWide())
-                    inputs = Collections.singletonList(type);
-                else
-                    inputs = Arrays.asList(stack.get(stack.size() - 2).getType(), type);
-                outputs = Collections.emptyList();
+                type = stack.get(stack.size() - 1).getBasicType();
+                setInputsFromStack(stack, type.isWide() ? 1 : 2);
+                setBasicOutputs();
                 break;
             case Opcodes.DUP:
                 if (stack.isEmpty())
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                inputs = Collections.singletonList(type);
-                outputs = Arrays.asList(type, type);
+                setInputsFromStack(stack, 1);
+                setOutputs(inputs.get(0), inputs.get(0));
                 break;
             case Opcodes.DUP_X1:
                 if (stack.size() < 2)
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                type2 = stack.get(stack.size() - 2).getType();
-                inputs = Arrays.asList(type2, type);
-                outputs = Arrays.asList(type, type2, type);
+                setInputsFromStack(stack, 2);
+                setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
                 break;
             case Opcodes.DUP_X2:
                 if (stack.size() < 2)
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                type2 = stack.get(stack.size() - 2).getType();
+                type2 = stack.get(stack.size() - 2).getBasicType();
                 if (type2.isWide()) { // Form 2
-                    inputs = Arrays.asList(type2, type);
-                    outputs = Arrays.asList(type, type2, type);
+                    setInputsFromStack(stack, 2);
+                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
                 } else { // Form 1
                     if (stack.size() < 3)
                         break;
-                    type3 = stack.get(stack.size() - 3).getType();
-                    inputs = Arrays.asList(type3, type2, type);
-                    outputs = Arrays.asList(type, type3, type2, type);
+                    setInputsFromStack(stack, 3);
+                    setOutputs(inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
                 }
                 break;
             case Opcodes.DUP2:
                 if (stack.isEmpty())
                     break;
-                type = stack.get(stack.size() - 1).getType();
+                type = stack.get(stack.size() - 1).getBasicType();
                 if (type.isWide()) { // Form 2
-                    inputs = Collections.singletonList(type);
-                    outputs = Arrays.asList(type, type);
+                    setInputsFromStack(stack, 1);
+                    setOutputs(inputs.get(0), inputs.get(0));
                 } else { // Form 1
                     if (stack.size() < 2)
                         break;
-                    type2 = stack.get(stack.size() - 2).getType();
-                    inputs = Arrays.asList(type2, type);
-                    outputs = Arrays.asList(type2, type, type2, type);
+                    setInputsFromStack(stack, 2);
+                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(1), inputs.get(0));
                 }
                 break;
             case Opcodes.DUP2_X1:
                 if (stack.size() < 2)
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                type2 = stack.get(stack.size() - 2).getType();
+                type = stack.get(stack.size() - 1).getBasicType();
                 if (type.isWide()) { // Form 2
-                    inputs = Arrays.asList(type2, type);
-                    outputs = Arrays.asList(type, type2, type);
+                    setInputsFromStack(stack, 2);
+                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
                 } else { // Form 1
                     if (stack.size() < 3)
                         break;
-                    type3 = stack.get(stack.size() - 3).getType();
-                    inputs = Arrays.asList(type3, type2, type);
-                    outputs = Arrays.asList(type2, type, type3, type2, type);
+                    setInputsFromStack(stack, 3);
+                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
                 }
                 break;
             case Opcodes.DUP2_X2:
                 if (stack.size() < 2)
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                type2 = stack.get(stack.size() - 2).getType();
+                type = stack.get(stack.size() - 1).getBasicType();
+                type2 = stack.get(stack.size() - 2).getBasicType();
                 if (type.isWide() && type2.isWide()) { // Form 4
-                    inputs = Arrays.asList(type2, type);
-                    outputs = Arrays.asList(type, type2, type);
+                    setInputsFromStack(stack, 2);
+                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
                 } else {
                     if (stack.size() < 3)
                         break;
-                    type3 = stack.get(stack.size() - 3).getType();
+                    type3 = stack.get(stack.size() - 3).getBasicType();
                     if (type.isWide()) { // Form 2
-                        inputs = Arrays.asList(type3, type2, type);
-                        outputs = Arrays.asList(type, type3, type2, type);
+                        setInputsFromStack(stack, 3);
+                        setOutputs(inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
                     } else if (type3.isWide()) { // Form 3
-                        inputs = Arrays.asList(type3, type2, type);
-                        outputs = Arrays.asList(type2, type, type3, type2, type);
+                        setInputsFromStack(stack, 3);
+                        setOutputs(inputs.get(1), inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
                     } else { // Form 1
                         if (stack.size() < 4)
                             break;
-                        type4 = stack.get(stack.size() - 4).getType();
-                        inputs = Arrays.asList(type4, type3, type2, type);
-                        outputs = Arrays.asList(type2, type, type4, type3, type2, type);
+                        setInputsFromStack(stack, 4);
+                        setOutputs(inputs.get(1), inputs.get(0), inputs.get(3), inputs.get(2), inputs.get(1), inputs.get(0));
                     }
                 }
                 break;
             case Opcodes.SWAP:
                 if (stack.size() < 2)
                     break;
-                type = stack.get(stack.size() - 1).getType();
-                type2 = stack.get(stack.size() - 2).getType();
-                inputs = Arrays.asList(type2, type);
-                outputs = Arrays.asList(type, type2);
+                setInputsFromStack(stack, 2);
+                setOutputs(inputs.get(1), inputs.get(0));
                 break;
             case Opcodes.IADD, Opcodes.LADD, Opcodes.FADD, Opcodes.DADD:
                 type = opcodeType(Opcodes.IADD);
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.ISUB, Opcodes.LSUB, Opcodes.FSUB, Opcodes.DSUB:
                 type = opcodeType(Opcodes.ISUB);
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.IMUL, Opcodes.LMUL, Opcodes.FMUL, Opcodes.DMUL:
                 type = opcodeType(Opcodes.IMUL);
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.IDIV, Opcodes.LDIV, Opcodes.FDIV, Opcodes.DDIV:
                 type = opcodeType(Opcodes.IDIV);
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.IREM, Opcodes.LREM, Opcodes.FREM, Opcodes.DREM:
                 type = opcodeType(Opcodes.IREM);
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.INEG, Opcodes.LNEG, Opcodes.FNEG, Opcodes.DNEG:
                 type = opcodeType(Opcodes.INEG);
-                inputs = Collections.singletonList(type);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.ISHL, Opcodes.LSHL, Opcodes.ISHR, Opcodes.LSHR, Opcodes.IUSHR, Opcodes.LUSHR:
                 type = (opcode - Opcodes.ISHL) % 2 == 0 ? TypeVariants.INT : TypeVariants.LONG;
-                inputs = Arrays.asList(type, TypeVariants.INT);
-                outputs = Collections.singletonList(type);
+                setBasicInputs(type, TypeVariants.INT);
+                setBasicOutputs(type);
                 break;
             case Opcodes.IAND, Opcodes.LAND:
             case Opcodes.IOR, Opcodes.LOR:
             case Opcodes.IXOR, Opcodes.LXOR:
-                type = (opcode - Opcodes.ISHL) % 2 == 0 ? TypeVariants.INT : TypeVariants.LONG;
-                inputs = Arrays.asList(type, type);
-                outputs = Collections.singletonList(type);
+                type = (opcode - Opcodes.IAND) % 2 == 0 ? TypeVariants.INT : TypeVariants.LONG;
+                setBasicInputs(type, type);
+                setBasicOutputs(type);
                 break;
             case Opcodes.I2L:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.LONG);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.LONG);
                 break;
             case Opcodes.I2F:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.FLOAT);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.FLOAT);
                 break;
             case Opcodes.I2D:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.DOUBLE);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.DOUBLE);
                 break;
             case Opcodes.L2I:
-                inputs = Collections.singletonList(TypeVariants.LONG);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.LONG);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.L2F:
-                inputs = Collections.singletonList(TypeVariants.LONG);
-                outputs = Collections.singletonList(TypeVariants.FLOAT);
+                setBasicInputs(TypeVariants.LONG);
+                setBasicOutputs(TypeVariants.FLOAT);
                 break;
             case Opcodes.L2D:
-                inputs = Collections.singletonList(TypeVariants.LONG);
-                outputs = Collections.singletonList(TypeVariants.DOUBLE);
+                setBasicInputs(TypeVariants.LONG);
+                setBasicOutputs(TypeVariants.DOUBLE);
                 break;
             case Opcodes.F2I:
-                inputs = Collections.singletonList(TypeVariants.FLOAT);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.FLOAT);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.F2L:
-                inputs = Collections.singletonList(TypeVariants.FLOAT);
-                outputs = Collections.singletonList(TypeVariants.LONG);
+                setBasicInputs(TypeVariants.FLOAT);
+                setBasicOutputs(TypeVariants.LONG);
                 break;
             case Opcodes.F2D:
-                inputs = Collections.singletonList(TypeVariants.FLOAT);
-                outputs = Collections.singletonList(TypeVariants.DOUBLE);
+                setBasicInputs(TypeVariants.FLOAT);
+                setBasicOutputs(TypeVariants.DOUBLE);
                 break;
             case Opcodes.D2I:
-                inputs = Collections.singletonList(TypeVariants.DOUBLE);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.DOUBLE);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.D2L:
-                inputs = Collections.singletonList(TypeVariants.DOUBLE);
-                outputs = Collections.singletonList(TypeVariants.LONG);
+                setBasicInputs(TypeVariants.DOUBLE);
+                setBasicOutputs(TypeVariants.LONG);
                 break;
             case Opcodes.D2F:
-                inputs = Collections.singletonList(TypeVariants.DOUBLE);
-                outputs = Collections.singletonList(TypeVariants.FLOAT);
+                setBasicInputs(TypeVariants.DOUBLE);
+                setBasicOutputs(TypeVariants.FLOAT);
                 break;
             case Opcodes.I2B:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.BOOLEAN);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.BOOLEAN);
                 break;
             case Opcodes.I2C:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.CHAR);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.CHAR);
                 break;
             case Opcodes.I2S:
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.SHORT);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.SHORT);
                 break;
             case Opcodes.LCMP:
-                inputs = Arrays.asList(TypeVariants.LONG, TypeVariants.LONG);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.LONG, TypeVariants.LONG);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.FCMPL, Opcodes.FCMPG:
-                inputs = Arrays.asList(TypeVariants.FLOAT, TypeVariants.FLOAT);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.FLOAT, TypeVariants.FLOAT);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.DCMPL, Opcodes.DCMPG:
-                inputs = Arrays.asList(TypeVariants.DOUBLE, TypeVariants.DOUBLE);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.DOUBLE, TypeVariants.DOUBLE);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.ARRAYLENGTH:
-                inputs = Collections.singletonList(TypeVariants.OBJECT);
-                outputs = Collections.singletonList(TypeVariants.INT);
+                setBasicInputs(TypeVariants.OBJECT);
+                setBasicOutputs(TypeVariants.INT);
                 break;
             case Opcodes.ATHROW:
-                inputs = Collections.singletonList(TypeVariants.OBJECT);
+                setBasicInputs(TypeVariants.OBJECT);
                 break;
             case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN:
-                inputs = Collections.singletonList(opcodeType(Opcodes.IRETURN));
+                setBasicInputs(opcodeType(Opcodes.IRETURN));
             break;
             case Opcodes.RETURN:
+                setInputs();
                 break;
             case Opcodes.MONITORENTER:
             case Opcodes.MONITOREXIT:
-                inputs = Collections.singletonList(TypeVariants.OBJECT);
-                outputs = Collections.emptyList();
+                setBasicInputs(TypeVariants.OBJECT);
+                setBasicOutputs();
                 break;
             default:
                 throw new TranspilerException("Invalid opcode");

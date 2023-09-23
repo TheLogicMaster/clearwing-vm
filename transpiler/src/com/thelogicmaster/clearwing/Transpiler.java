@@ -37,6 +37,7 @@ public class Transpiler {
 			"java/lang/Class",
 			"java/lang/ClassNotFoundException",
 			"java/lang/reflect/Constructor",
+			"java/lang/reflect/InvocationTargetException",
 			"java/text/DateFormat",
 			"java/lang/Double",
 			"java/lang/Enum",
@@ -53,6 +54,8 @@ public class Transpiler {
 			"java/util/Locale",
 			"java/lang/Long",
 			"java/lang/Math",
+			"java/lang/NoSuchMethodError",
+			"java/lang/OutOfMemoryError",
 			"java/lang/reflect/Method",
 			"java/io/NativeOutputStream",
 			"java/nio/NativeUtils",
@@ -61,6 +64,7 @@ public class Transpiler {
 			"java/lang/String",
 			"java/lang/StringBuilder",
 			"java/lang/StringToReal",
+			"java/lang/StackOverflowError",
 			"java/lang/System",
 			"java/lang/Thread",
 			"java/lang/Thread$UncaughtExceptionHandler",
@@ -136,9 +140,7 @@ public class Transpiler {
 				return "void";
 			if (type.isPrimitiveType())
 				return "j" + type.asPrimitiveType().getType().name().toLowerCase().replaceAll("ean", "");
-			if (type.isArrayType())
-				return "jarray";
-			return "shared_ptr<" + Utils.getQualifiedClassName(Utils.parseClassDescription(type.asClassOrInterfaceType().toDescriptor())) + ">";
+			return "jobject";
 		};
 
 		JavaMethodParser parser = new RobustJavaMethodParser();
@@ -153,9 +155,8 @@ public class Transpiler {
 				continue;
 
 			StringBuilder builder = new StringBuilder();
-			builder.append("#include \"Clearwing.hpp\"\n");
-			builder.append("#include \"Utils.hpp\"\n");
-			builder.append("#include \"RuntimeTypes.hpp\"\n");
+			builder.append("#include \"Clearwing.h\"\n");
+			builder.append("#include \"java/nio/Buffer.h\"\n");
 
 			HashSet<String> includes = new HashSet<>();
 			includes.add(name);
@@ -163,7 +164,7 @@ public class Transpiler {
 				if (segment instanceof JavaMethodParser.JavaMethod)
 					includes.add(((JavaMethodParser.JavaMethod) segment).getSanitizedName(name));
 			for (String include: includes)
-				builder.append("#include <").append(Utils.getClassFilename(include)).append(".hpp>\n");
+				builder.append("#include <").append(Utils.getClassFilename(include)).append(".h>\n");
 			builder.append("\n");
 
 			for (JavaMethodParser.JavaSegment segment: segments)
@@ -176,19 +177,17 @@ public class Transpiler {
 						System.err.println("Warning: No native method body for: " + method.getName());
 						continue;
 					}
-					MethodSignature signature = new MethodSignature(method.getName(), method.getDescriptor());
-					String methodName = Utils.sanitizeMethod(method.getName(), signature, method.isStatic(), false);
+					MethodSignature signature = new MethodSignature(method.getName(), method.getDescriptor(), null);
+					String methodName = Utils.sanitizeMethod(method.getSanitizedName(name), signature, method.isStatic());
 
-					builder.append(typeToCpp.apply(method.getReturnType())).append(" ").append(Utils.getQualifiedClassName(method.getSanitizedName(name)));
-					builder.append("::").append(methodName).append("(");
+					builder.append(typeToCpp.apply(method.getReturnType())).append(" ").append(methodName);
+					builder.append("(jcontext ctx");
+					if (!method.isStatic())
+						builder.append(", jobject self");
 					for (int i = 0; i < method.getArguments().size(); i++) {
 						Parameter arg = method.getArguments().get(i);
 						JavaMethodParser.ArgumentType type = method.getArgumentTypes().get(i);
-						if (i > 0)
-							builder.append(", ");
-						if (!arg.getType().isPrimitiveType())
-							builder.append("const ");
-						builder.append(typeToCpp.apply(arg.getType())).append(" ").append(arg.getType().isPrimitiveType() ? "" : "&").append(arg.getName());
+						builder.append(", ").append(typeToCpp.apply(arg.getType())).append(" ").append(arg.getName());
 						if (type.isPrimitiveArray() || type.isBuffer() ||type.isString())
 							builder.append("_object");
 					}
@@ -200,11 +199,11 @@ public class Transpiler {
 							continue;
 						builder.append("\tauto ").append(arg.getName()).append(" = ");
 						if (type.isBuffer())
-							builder.append("(").append(type.getPointerType()).append(")").append(arg.getName()).append("_object->F_address;\n");
+							builder.append("(").append(type.getPointerType()).append(")((java_nio_Buffer *)").append(arg.getName()).append("_object)->F_address;\n");
 						else if (type.isString())
-							builder.append("vm::getNativeString(").append(arg.getName()).append("_object);\n");
+							builder.append("stringToNative((jstring) ").append(arg.getName()).append("_object);\n");
 						else if (type.isPrimitiveArray())
-							builder.append("(").append(type.getPointerType()).append(")").append(arg.getName()).append("_object->data;\n");
+							builder.append("(").append(type.getPointerType()).append(")((jarray)").append(arg.getName()).append("_object)->data;\n");
 					}
 					builder.append("\n");
 
@@ -290,6 +289,10 @@ public class Transpiler {
 		for (BytecodeClass clazz: classes)
 			clazz.processHierarchy(classMap);
 
+		// Resolve symbols like methods once the entire hierarchy is generated
+		for (BytecodeClass clazz : classes)
+			clazz.resolveSymbols();
+
 		// Collect dependencies for class trimming
 		for (BytecodeClass clazz: classes)
 			clazz.collectDependencies(classMap);
@@ -313,7 +316,7 @@ public class Transpiler {
 				continue;
 			}
 			String name = intrinsic.substring(separator + 1, descIndex);
-			MethodSignature signature = new MethodSignature(name, intrinsic.substring(descIndex));
+			MethodSignature signature = new MethodSignature(name, intrinsic.substring(descIndex), null);
 			boolean found = false;
 			for (BytecodeMethod method: clazz.getMethods())
 				if (signature.equals(method.getSignature())) {
@@ -326,29 +329,29 @@ public class Transpiler {
 			collect(clazz, required, classMap);
 		}
 
-		// Mark weak fields
-		for (String weakField: config.getWeakFields()) {
-			int separator = weakField.lastIndexOf('.');
-			if (separator <= 0 || separator >= weakField.length() - 1) {
-				System.out.println("Warning: Invalid field format: '" + weakField + "'");
-				continue;
-			}
-			BytecodeClass clazz = classMap.get(Utils.sanitizeName(weakField.substring(0, separator)));
-			if (clazz == null) {
-				System.out.println("Warning: Failed to find class for field: '" + weakField + "'");
-				continue;
-			}
-			String name = weakField.substring(separator + 1);
-			boolean found = false;
-			for (var field: clazz.getFields())
-				if (field.getOriginalName().equals(name)) {
-					field.markWeak();
-					found = true;
-					break;
-				}
-			if (!found)
-				System.out.println("Warning: Failed to mark field as weak for: '" + weakField + "'");
-		}
+//		// Mark weak fields
+//		for (String weakField: config.getWeakFields()) {
+//			int separator = weakField.lastIndexOf('.');
+//			if (separator <= 0 || separator >= weakField.length() - 1) {
+//				System.out.println("Warning: Invalid field format: '" + weakField + "'");
+//				continue;
+//			}
+//			BytecodeClass clazz = classMap.get(Utils.sanitizeName(weakField.substring(0, separator)));
+//			if (clazz == null) {
+//				System.out.println("Warning: Failed to find class for field: '" + weakField + "'");
+//				continue;
+//			}
+//			String name = weakField.substring(separator + 1);
+//			boolean found = false;
+//			for (var field: clazz.getFields())
+//				if (field.getOriginalName().equals(name)) {
+//					field.markWeak();
+//					found = true;
+//					break;
+//				}
+//			if (!found)
+//				System.out.println("Warning: Failed to mark field as weak for: '" + weakField + "'");
+//		}
 
 		// Find main class
 		BytecodeClass mainClass = null;
@@ -358,6 +361,8 @@ public class Transpiler {
 				continue;
 			for (BytecodeMethod method: c.getMethods())
 				if (method.isMain()) {
+					if (mainClass != null)
+						throw new TranspilerException("Multiple main classes found");
 					mainClass = c;
 					break;
 				}
@@ -380,8 +385,9 @@ public class Transpiler {
 
 		// Write transpiled output
 		File srcDir = new File(outputDir, "src");
+		File includeDir = srcDir;//new File(outputDir, "include");
 		for (BytecodeClass clazz: required) {
-			File header = new File(srcDir, Utils.getClassFilename(clazz.getName()) + ".hpp");
+			File header = new File(includeDir, Utils.getClassFilename(clazz.getName()) + ".h");
 			Paths.get(header.getAbsolutePath()).getParent().toFile().mkdirs();
 			FileWriter writer = new FileWriter(header);
 			StringBuilder builder = new StringBuilder();
@@ -390,6 +396,7 @@ public class Transpiler {
 			writer.close();
 
 			File cpp = new File(srcDir, Utils.getClassFilename(clazz.getName()) + ".cpp");
+			Paths.get(cpp.getAbsolutePath()).getParent().toFile().mkdirs();
 			writer = new FileWriter(cpp);
 			builder = new StringBuilder();
 			clazz.generateCpp(builder, config, classMap);
@@ -398,26 +405,20 @@ public class Transpiler {
 		}
 
 		// Write main.cpp
-		// Todo: main args
 		if (mainClass != null)
 			try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(new File(outputDir.getPath(), "src/main.cpp")))) {
 				writer.write("" +
-						"#include <" + Utils.getClassFilename(mainClass.getName()) + ".hpp>\n" +
-						"#include <java/lang/Thread.hpp>\n" +
-						"#include \"Clearwing.hpp\"\n" +
+						"#include \"" + Utils.getClassFilename(mainClass.getName()) + ".h\"\n" +
+						"#include \"Clearwing.h\"\n" +
 						"\n" +
 						"int main() {\n" +
-						"\tvm::init();\n" +
-						"\tauto thread = make_shared<java::lang::Thread>();\n" +
-						"\tthread->init((jlong)&" + mainClass.getQualifiedName() + "::SM_main_Array1_java_lang_String);\n" +
-						"\tthread->M_start();\n" +
-						"\treturn 0;\n" +
+						"\trunVM(SM_" + mainClass.getQualifiedName() + "_main_Array1_java_lang_String);\n" +
 						"}\n"
 				);
 			}
 
 		// Write config header
-		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(new File(outputDir.getPath(), "src/Config.hpp")))) {
+		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(new File(outputDir.getPath(), "src/Config.h")))) {
 			writer.write("" +
 					"#pragma once\n\n" +
 					"#define USE_STACK_TRACES " + config.hasStackTraces() + "\n" +
@@ -434,6 +435,7 @@ public class Transpiler {
 
 		// Copy resources to output
 		copyResources("clearwing/src/", "clearwing/", outputDir);
+		copyResources("clearwing/include/", "clearwing/", outputDir);
 		if (config.isWritingProjectFiles())
 			copyResources("clearwing/project/", "clearwing/project/", outputDir);
 	}

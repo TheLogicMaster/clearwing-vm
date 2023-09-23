@@ -6,16 +6,16 @@ import java.lang.reflect.Type;
  * A representation and helper for the various Java types
  */
 public enum TypeVariants {
-	BOOLEAN(Boolean.TYPE, Boolean.class, "jbool", "jint", "vm::classBoolean", "Z"),
-	BYTE(Byte.TYPE, Byte.class, "jbyte", "jint", "vm::classByte", "B"),
-	CHAR(Character.TYPE, Character.class, "jchar", "jint", "vm::classChar", "C"),
-	SHORT(Short.TYPE, Short.class, "jshort", "jint", "vm::classShort", "S"),
-	INT(Integer.TYPE, Integer.class, "jint", "jint", "vm::classInt", "I"),
-	LONG(Long.TYPE, Long.class, "jlong", "jlong", "vm::classLong", "L"),
-	FLOAT(Float.TYPE, Float.class, "jfloat", "jfloat", "vm::classFloat", "F"),
-	DOUBLE(Double.TYPE, Double.class, "jdouble", "jdouble", "vm::classDouble", "D"),
-	OBJECT(Object.class, Object.class, "jobject", "jobject", "java::lang::Object", "java/lang/Object"),
-	VOID(Void.TYPE, Void.class, "void", "void", null, "V");
+	BOOLEAN(Boolean.TYPE, Boolean.class, "jbool", "jint", "class_boolean", "Z", "i"),
+	BYTE(Byte.TYPE, Byte.class, "jbyte", "jint", "class_byte", "B", "i"),
+	CHAR(Character.TYPE, Character.class, "jchar", "jint", "class_char", "C", "i"),
+	SHORT(Short.TYPE, Short.class, "jshort", "jint", "class_short", "S", "i"),
+	INT(Integer.TYPE, Integer.class, "jint", "jint", "class_int", "I", "i"),
+	LONG(Long.TYPE, Long.class, "jlong", "jlong", "class_long", "J", "l"),
+	FLOAT(Float.TYPE, Float.class, "jfloat", "jfloat", "class_float", "F", "f"),
+	DOUBLE(Double.TYPE, Double.class, "jdouble", "jdouble", "class_double", "D", "d"),
+	OBJECT(Object.class, Object.class, "jobject", "jobject", "class_java_lang_Object", "java/lang/Object", "o"),
+	VOID(Void.TYPE, Void.class, "void", "void", "class_java_lang_Void", "V", null);
 
 	private final Class<?> javaType;
 	private final Class<?> wrapper;
@@ -23,14 +23,16 @@ public enum TypeVariants {
 	private final String arithmeticType;
 	private final String cppClass;
 	private final String registryName;
+	private final String stackName;
 
-	TypeVariants (Class<?> javaType, Class<?> wrapper, String cppType, String arithmeticType, String cppClass, String registryName) {
+	TypeVariants (Class<?> javaType, Class<?> wrapper, String cppType, String arithmeticType, String cppClass, String registryName, String stackName) {
 		this.javaType = javaType;
 		this.wrapper = wrapper;
 		this.cppType = cppType;
 		this.arithmeticType = arithmeticType;
 		this.cppClass = cppClass;
 		this.registryName = registryName;
+		this.stackName = stackName;
 	}
 
 	/**
@@ -73,6 +75,10 @@ public enum TypeVariants {
 	 */
 	public String getRegistryName() {
 		return registryName;
+	}
+
+	public String getStackName() {
+		return stackName;
 	}
 
 	public boolean isWide() {

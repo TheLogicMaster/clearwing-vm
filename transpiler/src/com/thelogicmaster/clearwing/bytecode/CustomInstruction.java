@@ -1,6 +1,9 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
+import com.thelogicmaster.clearwing.StackEntry;
+
+import java.util.List;
 
 public class CustomInstruction extends Instruction {
 
@@ -9,6 +12,12 @@ public class CustomInstruction extends Instruction {
     public CustomInstruction(BytecodeMethod method, String code) {
         super(method, -1);
         this.code = code;
+    }
+
+    @Override
+    public void resolveIO(List<StackEntry> stack) {
+        setBasicInputs();
+        setBasicOutputs();
     }
 
     @Override

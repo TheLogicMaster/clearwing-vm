@@ -75,7 +75,6 @@ public final class System {
      * Runtime.getRuntime().exit(n)
      */
     public static void exit(int status) {
-        Thread.cleanup();
         exit0(status);
     }
 

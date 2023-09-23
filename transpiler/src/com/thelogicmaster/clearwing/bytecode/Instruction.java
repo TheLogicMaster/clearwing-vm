@@ -3,9 +3,7 @@ package com.thelogicmaster.clearwing.bytecode;
 import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.util.Printer;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The base class for all instructions and pseudo-instructions
@@ -16,9 +14,8 @@ public abstract class Instruction {
 
 	protected final int opcode;
 	protected final BytecodeMethod method;
-	protected List<TypeVariants> inputs;
-	protected List<JavaType> typedInputs;
-	protected List<TypeVariants> outputs;
+	protected List<JavaType> inputs;
+	protected List<JavaType> outputs;
 	private boolean markedForRemoval;
 
 	public Instruction (BytecodeMethod method, int opcode) {
@@ -39,6 +36,9 @@ public abstract class Instruction {
 	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
 	}
 
+	public void resolveSymbols() {
+	}
+
 	/**
 	 * Append the raw instruction to the method output
 	 */
@@ -52,17 +52,24 @@ public abstract class Instruction {
 	}
 
 	/**
-	 * A simple check for the last instruction to push the field/method's owner to see if it's `this`. Doesn't work for DUP and such.
-	 * Marks the source instruction for removal if successful
+	 * Whether the instruction can be inlined into another (In general, no side effects on stack and such)
 	 */
-	protected boolean onThisCheck(Instruction source, String owner) {
-		if (getMethod().isStatic() || !(source instanceof VariableInstruction) || !Utils.sanitizeName(owner).equals(getMethod().getOwner().getName()))
-			return false;
-		VariableInstruction instruction = ((VariableInstruction) source);
-		if (instruction.getLocal() != 0)
-			return false;
-		instruction.markForRemoval();
-		return true;
+	public boolean inlineable() {
+		return false;
+	}
+
+	/**
+	 * Append as an inline expression (Todo: API)
+	 */
+	public void appendInlined(StringBuilder builder) {
+
+	}
+
+	/**
+	 * Append instruction with parameters inlined (Todo: API)
+	 */
+	public void appendWithInlining(StringBuilder builder) {
+
 	}
 
 	/**
@@ -86,7 +93,7 @@ public abstract class Instruction {
 		operands.clear();
 		if (outputs == null)
 			return 0;
-		for (TypeVariants output : outputs)
+		for (JavaType output : outputs)
 			operands.add(new StackEntry(output, temporaries++));
 		return outputs.size();
 	}
@@ -94,27 +101,47 @@ public abstract class Instruction {
 	/**
 	 * Populate inputs and outputs
 	 */
-	public void populateIO(List<StackEntry> stack) {
+	public abstract void resolveIO(List<StackEntry> stack);
+
+	protected void setInputsFromStack(List<StackEntry> stack, int args) {
+		if (stack.size() < args)
+			return;
+		inputs = new ArrayList<>();
+		for (int i = stack.size() - args; i < stack.size(); i++)
+			inputs.add(stack.get(i).getType());
+	}
+
+	protected void setBasicInputs(TypeVariants ... types) {
+		inputs = new ArrayList<>();
+		for (TypeVariants type : types)
+			inputs.add(new JavaType(type));
+	}
+
+	protected void setInputs(JavaType ... types) {
+		inputs = Arrays.asList(types);
+	}
+
+	protected void setBasicOutputs(TypeVariants ... types) {
+		outputs = new ArrayList<>();
+		for (TypeVariants type : types)
+			outputs.add(new JavaType(type));
+	}
+
+	protected void setOutputs(JavaType ... types) {
+		outputs = Arrays.asList(types);
 	}
 
 	/**
 	 * Get the input types (Null means unspecified)
 	 */
-	public final List<TypeVariants> getInputs() {
+	public final List<JavaType> getInputs() {
 		return inputs;
-	}
-
-	/**
-	 * Get the reference types of the inputs, if known (Null means unspecified, null values mean unknown)
-	 */
-	public final List<JavaType> getTypedInputs() {
-		return typedInputs;
 	}
 
 	/**
 	 * Get the output types (Null means unspecified)
 	 */
-	public final List<TypeVariants> getOutputs() {
+	public final List<JavaType> getOutputs() {
 		return outputs;
 	}
 
@@ -142,9 +169,14 @@ public abstract class Instruction {
 	 * Append the default ending for unoptimized instructions
 	 */
 	protected static void appendStandardInstruction(StringBuilder builder, String name, String ... args) {
-		builder.append("\tinst::").append(name).append("(sp");
-		for (String arg: args)
-			builder.append(", ").append(arg);
+		builder.append("\tINST_").append(name.toUpperCase()).append("(");
+		boolean first = true;
+		for (String arg: args) {
+			if (!first)
+				builder.append(", ");
+			builder.append(arg);
+			first = false;
+		}
 		builder.append(");\n");
 	}
 }

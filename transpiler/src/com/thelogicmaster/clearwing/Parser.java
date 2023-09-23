@@ -77,8 +77,8 @@ public class Parser extends ClassVisitor {
         return new FieldVisitor(Opcodes.ASM5) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                if (Utils.parseClassDescription(descriptor).equals("com/thelogicmaster/clearwing/Weak"))
-                    field.markWeak();
+//                if (Utils.parseClassDescription(descriptor).equals("com/thelogicmaster/clearwing/Weak"))
+//                    field.markWeak();
                 if (!visible)
                     return null;
                 BytecodeAnnotation annotation = new BytecodeAnnotation(Utils.parseClassDescription(descriptor));
@@ -194,18 +194,18 @@ public class Parser extends ClassVisitor {
 
         @Override
         public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-            // Todo: Group classes into a single cpp file to improve compile times?
             if (!bsm.getOwner().contains("LambdaMetafactory"))
                 throw new TranspilerException("Unsupported InvokeDynamic call: " + bsm.getOwner());
             Handle handle = (Handle)bsmArgs[1];
             if (handle.getTag() < Opcodes.H_INVOKEVIRTUAL)
                 throw new TranspilerException("Unsupported InvokeDynamic handle type: " + handle.getTag());
             Type proxyMethodType = (Type)bsmArgs[0];
-            JavaType[] proxyFields = new MethodSignature("", desc).getParamTypes();
+            JavaType[] proxyFields = new MethodSignature("", desc, null).getParamTypes();
             String interfaceClass = Utils.sanitizeName(Type.getMethodType(desc).getReturnType().getClassName());
 
-            MethodSignature handleSignature = new MethodSignature(handle.getName(), handle.getDesc());
-            String handleName = Utils.sanitizeMethod(handle.getName(), handleSignature, handle.getTag() == Opcodes.H_INVOKESTATIC, false);
+            MethodSignature handleSignature = new MethodSignature(handle.getName(), handle.getDesc(), null);
+//            String handleName = Utils.sanitizeMethod(handle.getOwner(), handleSignature, handle.getTag() == Opcodes.H_INVOKESTATIC);
+            String handleName = Utils.sanitizeName(handle.getName());
             String handlePrefix = Utils.sanitizeName(handle.getOwner()) + "_invoke_" + handleName + "_";
             if (!invokeDynamicCounts.containsKey(currentClass.getName()))
                 invokeDynamicCounts.put(currentClass.getName(), new HashMap<>());
@@ -307,12 +307,16 @@ public class Parser extends ClassVisitor {
         @Override
         public void visitEnd() {
             // Todo: Move to BytecodeMethod
-            insertTryCatchBlocks();
+
+            insertTryCatchBlocks(); // Todo: Maybe insert exception push/pop instructions directly instead
+            resolveInstructionIO();
+            // Todo: Inline instructions from bottom to top
             trimLabels();
-            insertTryCatchBypasses();
-            optimizeInstructions();
-            discoverLocals();
-            groupInstructions();
+//            insertTryCatchBypasses();
+//            optimizeInstructions();
+//            discoverLocals();
+//            groupInstructions();
+
 //            trimStack();
         }
 
@@ -353,34 +357,78 @@ public class Parser extends ClassVisitor {
             }
         }
 
-        /**
-         * Calculate instruction I/O where known and perform optimizations
-         */
-        private void optimizeInstructions() {
+        public void resolveInstructionIO() {
+            resolveInstructionIO(0, new ArrayList<>());
+            for (int i = 0; i < method.getInstructions().size(); i++)
+                if (method.getInstructions().get(i).getInputs() == null && !(method.getInstructions().get(i) instanceof LabelInstruction))
+                    throw new TranspilerException("Failed to resolve instruction I/O: " + method.getInstructions().get(i));
+//            for (Instruction instruction : method.getInstructions())
+//                if (instruction.getInputs() == null && !(instruction instanceof LabelInstruction))
+//                    throw new TranspilerException("Failed to resolve instruction I/O: " + instruction);
+        }
+
+        private void resolveInstructionIO(int offset, List<StackEntry> stack) {
             List<Instruction> instructions = method.getInstructions();
 
-            // Calculate instruction I/O where types are known
-            ArrayList<StackEntry> stack = new ArrayList<>();
-            for (Instruction instruction : instructions) {
-                instruction.populateIO(stack);
+            // Todo: Ensure types are using arithmetic variants with pushed onto the stack, if it becomes an issue
+            while (offset < instructions.size()) {
+                Instruction instruction = instructions.get(offset);
+                if (instruction.getInputs() != null)
+                    return;
+                instruction.resolveIO(stack);
+
+                // Todo: Store instruction dependencies for use when determining inline-ability
+
                 if (instruction.getInputs() != null && !stack.isEmpty())
                     stack.subList(Math.max(0, stack.size() - instruction.getInputs().size()), stack.size()).clear();
-                if (instruction.getOutputs() == null)
-                    stack.clear();
-                else {
-                    for (int i = 0; i < stack.size(); i++)
-                        if (stack.get(i).getSource().isMarkedForRemoval())
-                            stack.remove(i--);
-                    for (TypeVariants type : instruction.getOutputs())
-                        stack.add(new StackEntry(type, instruction));
-                }
-            }
 
-            // Remove optimized out instructions and cast checks if configured
-            for (int i = 0; i < instructions.size(); i++)
-                if (instructions.get(i).isMarkedForRemoval() || (!config.hasValueChecks() && instructions.get(i).getOpcode() == Opcodes.CHECKCAST))
-                    instructions.remove(i--);
+                if (instruction.getOutputs() != null)
+                    for (JavaType type : instruction.getOutputs())
+                        stack.add(new StackEntry(type, instruction));
+
+                if (instruction instanceof TryInstruction)
+                    resolveInstructionIO(method.findLabelInstruction(((TryInstruction) instruction).getEnd()),
+                            new ArrayList<>(List.of(new StackEntry(new JavaType(TypeVariants.OBJECT), instruction))));
+
+                if (instruction instanceof JumpingInstruction) {
+                    for (int label : ((JumpingInstruction) instruction).getJumpLabels())
+                        resolveInstructionIO(method.findLabelInstruction(label), new ArrayList<>(stack));
+                    if (instruction.getOutputs() == null)
+                        return;
+                }
+
+                offset++;
+            }
         }
+
+//        /**
+//         * Calculate instruction I/O where known and perform optimizations
+//         */
+//        private void optimizeInstructions() {
+//            List<Instruction> instructions = method.getInstructions();
+//
+//            // Calculate instruction I/O where types are known
+//            ArrayList<StackEntry> stack = new ArrayList<>();
+//            for (Instruction instruction : instructions) {
+//                instruction.resolveIO(stack);
+//                if (instruction.getInputs() != null && !stack.isEmpty())
+//                    stack.subList(Math.max(0, stack.size() - instruction.getInputs().size()), stack.size()).clear();
+//                if (instruction.getOutputs() == null)
+//                    stack.clear();
+//                else {
+//                    for (int i = 0; i < stack.size(); i++)
+//                        if (stack.get(i).getSource().isMarkedForRemoval())
+//                            stack.remove(i--);
+//                    for (TypeVariants type : instruction.getOutputs())
+//                        stack.add(new StackEntry(type, instruction));
+//                }
+//            }
+//
+//            // Remove optimized out instructions and cast checks if configured
+//            for (int i = 0; i < instructions.size(); i++)
+//                if (instructions.get(i).isMarkedForRemoval() || (!config.hasValueChecks() && instructions.get(i).getOpcode() == Opcodes.CHECKCAST))
+//                    instructions.remove(i--);
+//        }
 
         /**
          * Group optimizable instructions into InstructionGroup objects to convert stack accesses into local variables
@@ -424,7 +472,7 @@ public class Parser extends ClassVisitor {
                 Instruction instruction = instructions.get(i);
                 if (instruction instanceof TryInstruction.CatchInstruction) {
                     ArrayList<StackEntry> newStack = new ArrayList<>();
-                    newStack.add(new StackEntry(TypeVariants.OBJECT, null));
+                    newStack.add(new StackEntry(new JavaType(TypeVariants.OBJECT), null));
                     int branch = labels.get(((TryInstruction.CatchInstruction) instruction).getJumpLabels().get(0));
                     if (branches.contains(branch))
                         return max;

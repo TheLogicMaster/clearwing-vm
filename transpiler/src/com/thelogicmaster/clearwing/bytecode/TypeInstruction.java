@@ -28,8 +28,8 @@ public class TypeInstruction extends Instruction {
     public void appendUnoptimized(StringBuilder builder) {
         switch (opcode) {
             case Opcodes.NEW -> {
-                builder.append("\t").append(qualifiedType).append("::").append("clinit();\n");
-                builder.append("\tvm::push(sp, make_shared<").append(qualifiedType).append(">());\n");
+                builder.append("\tclinit_").append(qualifiedType).append("(ctx);\n");
+                builder.append("\tPUSH_OBJECT(gcAlloc(ctx, &class_").append(qualifiedType).append("));\n");
             }
             case Opcodes.ANEWARRAY -> appendStandardInstruction(builder, "anewarray", javaType.generateClassFetch());
             case Opcodes.CHECKCAST -> appendStandardInstruction(builder, "checkcast", javaType.generateClassFetch());
@@ -60,23 +60,23 @@ public class TypeInstruction extends Instruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
+    public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
             case Opcodes.NEW -> {
-                inputs = Collections.emptyList();
-                outputs = Collections.singletonList(TypeVariants.OBJECT);
+                setBasicInputs();
+                setBasicOutputs(TypeVariants.OBJECT);
             }
             case Opcodes.ANEWARRAY -> {
-                inputs = Collections.singletonList(TypeVariants.INT);
-                outputs = Collections.singletonList(TypeVariants.OBJECT);
+                setBasicInputs(TypeVariants.INT);
+                setBasicOutputs(TypeVariants.OBJECT);
             }
             case Opcodes.CHECKCAST -> {
-                inputs = Collections.singletonList(TypeVariants.OBJECT);
-                outputs = Collections.singletonList(TypeVariants.OBJECT);
+                setBasicInputs(TypeVariants.OBJECT);
+                setBasicOutputs(TypeVariants.OBJECT);
             }
             case Opcodes.INSTANCEOF -> {
-                inputs = Collections.singletonList(TypeVariants.OBJECT);
-                outputs = Collections.singletonList(TypeVariants.BOOLEAN);
+                setBasicInputs(TypeVariants.OBJECT);
+                setBasicOutputs(TypeVariants.BOOLEAN);
             }
             default -> throw new TranspilerException("Invalid opcode: " + opcode);
         }

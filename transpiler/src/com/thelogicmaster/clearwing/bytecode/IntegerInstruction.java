@@ -41,21 +41,24 @@ public class IntegerInstruction extends Instruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        outputs = Collections.singletonList(opcode == Opcodes.NEWARRAY ? TypeVariants.OBJECT : TypeVariants.INT);
-        inputs = opcode == Opcodes.NEWARRAY ? Collections.singletonList(TypeVariants.INT) : Collections.emptyList();
+    public void resolveIO(List<StackEntry> stack) {
+        if (opcode == Opcodes.NEWARRAY)
+            setBasicInputs(TypeVariants.INT);
+        else
+            setBasicInputs();
+        setBasicOutputs(opcode == Opcodes.NEWARRAY ? TypeVariants.OBJECT : TypeVariants.INT);
     }
 
     private String getArrayType() {
         return switch (operand) {
-            case Opcodes.T_BOOLEAN -> "vm::classBoolean";
-            case Opcodes.T_CHAR -> "vm::classChar";
-            case Opcodes.T_FLOAT -> "vm::classFloat";
-            case Opcodes.T_DOUBLE -> "vm::classDouble";
-            case Opcodes.T_BYTE -> "vm::classByte";
-            case Opcodes.T_SHORT -> "vm::classShort";
-            case Opcodes.T_INT -> "vm::classInt";
-            case Opcodes.T_LONG -> "vm::classLong";
+            case Opcodes.T_BOOLEAN -> "&class_boolean";
+            case Opcodes.T_CHAR -> "&class_char";
+            case Opcodes.T_FLOAT -> "&class_float";
+            case Opcodes.T_DOUBLE -> "&class_double";
+            case Opcodes.T_BYTE -> "&class_byte";
+            case Opcodes.T_SHORT -> "&class_short";
+            case Opcodes.T_INT -> "&class_int";
+            case Opcodes.T_LONG -> "&class_long";
             default -> throw new TranspilerException("Invalid array type");
         };
     }

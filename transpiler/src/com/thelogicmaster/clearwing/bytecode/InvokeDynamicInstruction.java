@@ -4,10 +4,7 @@ import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class InvokeDynamicInstruction extends Instruction {
 
@@ -23,38 +20,33 @@ public class InvokeDynamicInstruction extends Instruction {
         this.className = proxyClassName;
         this.proxyFields = proxyFields;
         qualifiedProxyClassName = Utils.getQualifiedClassName(proxyClassName);
-        proxyMethodSignature = new MethodSignature("", proxyMethodDesc);
+        proxyMethodSignature = new MethodSignature("", proxyMethodDesc, null);
     }
 
     @Override
     public void appendUnoptimized(StringBuilder builder) {
         builder.append("\t{ /* InvokeDynamic */\n");
-        builder.append("\t\t").append(qualifiedProxyClassName).append("::clinit();\n");
-        builder.append("\t\tauto proxy").append(" = make_shared<").append(qualifiedProxyClassName).append(">();\n");
+        builder.append("\t\tclinit_").append(qualifiedProxyClassName).append("(ctx);\n");
+        builder.append("\t\tauto proxy").append(" = (").append(qualifiedProxyClassName).append(" *) gcAlloc(ctx, &class_").append(qualifiedProxyClassName).append(");\n");
         for (int i = proxyFields.length - 1; i >= 0; i--)
-            builder.append("\t\tproxy->F_field").append(i).append(" = vm::pop<").append(proxyFields[i].getCppType()).append(">(sp);\n");
-        builder.append("\t\tvm::push(sp, proxy);\n");
+            builder.append("\t\tproxy->F_field").append(i).append(" = ").append(proxyFields[i].isPrimitive() ? "" : "(jref) ").append("(--sp)->").append(proxyFields[i].getBasicType().getStackName()).append(";\n");
+        builder.append("\t\tPUSH_OBJECT((jobject) proxy);\n");
         builder.append("\t}\n");
     }
 
     @Override
     public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-        builder.append("\t\t").append(qualifiedProxyClassName).append("::clinit();\n");
-        builder.append("\t\tauto temp").append(temporaries).append(" = make_shared<").append(qualifiedProxyClassName).append(">();\n");
-        for (int i = 0; i < proxyFields.length; i++)
-            builder.append("\t\ttemp").append(temporaries).append("->F_field").append(i).append(" = ")
-                    .append(proxyFields[i].isPrimitive() ? operands.get(i) : operands.get(i).getTypedTemporary(proxyFields[i])).append(";\n");
+//        builder.append("\t\t").append(qualifiedProxyClassName).append("::clinit();\n");
+//        builder.append("\t\tauto temp").append(temporaries).append(" = make_shared<").append(qualifiedProxyClassName).append(">();\n");
+//        for (int i = 0; i < proxyFields.length; i++)
+//            builder.append("\t\ttemp").append(temporaries).append("->F_field").append(i).append(" = ")
+//                    .append(proxyFields[i].isPrimitive() ? operands.get(i) : operands.get(i).getTypedTemporary(proxyFields[i])).append(";\n");
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        inputs = new ArrayList<>();
-        typedInputs = new ArrayList<>();
-        for (JavaType type: proxyFields) {
-            inputs.add(type.getBasicType().getArithmeticVariant());
-            typedInputs.add(type.isPrimitive() ? null : type);
-        }
-        outputs = Collections.singletonList(TypeVariants.OBJECT);
+    public void resolveIO(List<StackEntry> stack) {
+        setInputs(proxyFields);
+        setBasicOutputs(TypeVariants.OBJECT);
     }
 
     @Override
@@ -101,13 +93,19 @@ public class InvokeDynamicInstruction extends Instruction {
             isInterface = handle.getTag() == Opcodes.H_INVOKEINTERFACE;
             target = Utils.sanitizeName(handle.getOwner());
             qualifiedTarget = Utils.getQualifiedClassName(target);
-            targetSignature = new MethodSignature(handle.getName(), handle.getDesc());
-            targetMethod = Utils.sanitizeMethod(handle.getName(), targetSignature, isStatic, false);
+            targetSignature = new MethodSignature(handle.getName(), handle.getDesc(), null);
+            targetMethod = Utils.sanitizeMethod(handle.getOwner(), targetSignature, isStatic);
+        }
+
+        @Override
+        public void resolveSymbols() {
+            // Todo: Resolve methods the same way as MethodInstruction, if needed
         }
 
         @Override
         public void appendUnoptimized(StringBuilder builder) {
             boolean isConstructor = handle.getName().equals("<init>");
+            builder.append("auto proxy = (").append(qualifiedProxyClassName).append(" *) self;\n");
 
             builder.append("\t");
             boolean returnWrapped = false;
@@ -117,39 +115,26 @@ public class InvokeDynamicInstruction extends Instruction {
             }
 
             if (isStatic)
-                builder.append(qualifiedTarget).append("::");
-            else if (isConstructor) {
-                builder.append("\t").append(qualifiedTarget).append("::clinit();\n");
-                builder.append("auto object = make_shared<").append(qualifiedTarget).append(">();\n");
-                builder.append("\tobject->");
-            } else {
-                boolean objectMethodOnInterface = false;
-                if (isInterface)
-                    for (BytecodeMethod m: BytecodeClass.OBJECT_METHODS)
-                        if (m.getSignature().equals(targetSignature)) {
-                            objectMethodOnInterface = true;
-                            builder.append("jobject(F_field0)->");
-                        }
-                if (!objectMethodOnInterface)
-                    builder.append("object_cast<").append(qualifiedTarget).append(">(F_field0)->");
-            }
+                builder.append(targetMethod).append("(ctx");
+            else if (isInterface) {
+                builder.append("((func_").append(targetMethod.substring(2)).append(") resolveInterfaceMethod(ctx, &class_").append(target)
+                        .append(", INDEX_").append(targetMethod.substring(2)).append(", (jobject) proxy->F_field0))(ctx, (jobject) proxy->F_field0");
+            } else if (isConstructor) {
+                builder.append("auto object = gcAlloc(ctx, &class_").append(qualifiedTarget).append(");\n");
+                builder.append("\t").append(targetMethod).append("(ctx, object");
+            } else
+                builder.append("((func_").append(targetMethod.substring(2)).append(") ((void **) NULL_CHECK((jobject) proxy->F_field0)->vtable)[VTABLE_").append(targetMethod.substring(2)).append("])(ctx, (jobject) proxy->F_field0");
 
-            builder.append(targetMethod).append("(");
-
-            boolean firstArg = true;
             int paramOffset = isStatic || isConstructor ? 0 : 1;
             for (int i = paramOffset; i < proxyFields.length; i++) {
-                if (!firstArg)
-                    builder.append(", ");
+                builder.append(", ");
                 boolean wrapped = proxyFields[i].appendWrapperPrefix(targetSignature.getParamTypes()[i - paramOffset], builder);
-                builder.append("F_field").append(i);
+                builder.append(proxyFields[i].isPrimitive() ? "" : "(jobject) ").append("proxy->F_field").append(i);
                 if (wrapped)
                     builder.append(")");
-                firstArg = false;
             }
             for (int i = 0; i < proxyMethodSignature.getParamTypes().length; i++) {
-                if (!firstArg)
-                    builder.append(", ");
+                builder.append(", ");
                 JavaType targetType = targetSignature.getParamTypes()[i + proxyFields.length - paramOffset];
                 JavaType paramType = proxyMethodSignature.getParamTypes()[i];
                 boolean wrapped = paramType.appendWrapperPrefix(targetType, builder);
@@ -159,7 +144,6 @@ public class InvokeDynamicInstruction extends Instruction {
                 builder.append("param").append(i);
                 if (wrapped || casted)
                     builder.append(")");
-                firstArg = false;
             }
 
             if (returnWrapped)
@@ -168,6 +152,10 @@ public class InvokeDynamicInstruction extends Instruction {
 
             if (isConstructor)
                 builder.append("\treturn object;\n");
+        }
+
+        @Override
+        public void resolveIO(List<StackEntry> stack) {
         }
 
         @Override

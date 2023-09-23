@@ -53,15 +53,14 @@ public class Thread implements java.lang.Runnable{
 
     private static long currentId;
     private Runnable target;
-    private volatile Object currentMonitor;
     private volatile boolean alive;
     private String name;
-    private int priority = NORM_PRIORITY;
-    private volatile long nativeThread;
-    private long entryPoint;
-    private static volatile int activeThreads = 0;
+    private long entrypoint;
+    private static volatile int activeThreads;
     private volatile boolean interrupted;
     private long id;
+    private volatile boolean started;
+    private long nativeContext;
 
     private volatile UncaughtExceptionHandler uncaughtExceptionHandler;
     private static volatile UncaughtExceptionHandler defaultUncaughtExceptionHandler;
@@ -78,9 +77,9 @@ public class Thread implements java.lang.Runnable{
     /**
      * Main thread entrypoint (Takes main function pointer)
      */
-    public Thread(long entryPoint) {
+    public Thread(long entrypoint) {
         this(null, "main");
-        this.entryPoint = entryPoint;
+        this.entrypoint = entrypoint;
     }
 
     /**
@@ -113,8 +112,6 @@ public class Thread implements java.lang.Runnable{
          this.name = name;
     }
 
-    public static native void cleanup();
-
     /**
      * Returns the current number of active threads in the virtual machine.
      */
@@ -146,7 +143,7 @@ public class Thread implements java.lang.Runnable{
      * Returns this thread's priority.
      */
     public final int getPriority(){
-        return priority; 
+        return 0;
     }
 
     /**
@@ -209,7 +206,7 @@ public class Thread implements java.lang.Runnable{
      * Subclasses of Thread should override this method.
      */
     public void run(){
-        if(!alive && target != null) {
+        if(target != null) {
             target.run();
         }
     }
@@ -218,7 +215,6 @@ public class Thread implements java.lang.Runnable{
      * Changes the priority of this thread.
      */
     public final void setPriority(int newPriority){
-        this.priority = newPriority;
     }
 
     /**
@@ -271,7 +267,8 @@ public class Thread implements java.lang.Runnable{
         } catch(InterruptedException i) {}
     }
 
-    protected final native void finalize() throws Throwable;
+    @Override
+    protected native void finalize() throws Throwable;
 
     public ClassLoader getContextClassLoader() {
         return ClassLoader.getSystemClassLoader();

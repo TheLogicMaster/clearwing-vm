@@ -36,9 +36,9 @@ public class BytecodeMethod {
 	public BytecodeMethod (BytecodeClass clazz, String name, int access, String desc, String signature, String[] exceptions) {
 		this.clazz = clazz;
 		this.originalName = name;
-		this.methodType = new MethodSignature(name, desc);
+		this.methodType = new MethodSignature(name, desc, clazz);
 		this.access = access;
-		this.name = Utils.sanitizeMethod(name, methodType, isStatic(), false);
+		this.name = Utils.sanitizeMethod(clazz.getName(), methodType, isStatic());
 		this.desc = desc;
 		this.signature = signature;
 		this.exceptions = exceptions;
@@ -90,6 +90,11 @@ public class BytecodeMethod {
 	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
 		for (Instruction instruction: instructions)
 			instruction.processHierarchy(classMap);
+	}
+
+	public void resolveSymbols() {
+		for (Instruction instruction: instructions)
+			instruction.resolveSymbols();
 	}
 
 	/**
@@ -267,5 +272,17 @@ public class BytecodeMethod {
 	@Override
 	public String toString() {
 		return clazz + "." + name;
+	}
+
+	@Override
+	public int hashCode() {
+		return signature.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof BytecodeMethod))
+			return false;
+		return ((BytecodeMethod) obj).methodType.equals(methodType);
 	}
 }

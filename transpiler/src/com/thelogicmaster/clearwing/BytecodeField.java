@@ -23,7 +23,7 @@ public class BytecodeField {
 		this.owner = clazz;
 		this.originalName = name;
 		this.access = access;
-		this.name = Utils.sanitizeField(name, isStatic());
+		this.name = Utils.sanitizeField(clazz.getName(), name, isStatic());
 		this.desc = desc;
 		this.signature = signature;
 		this.initialValue = initialValue;
@@ -33,7 +33,7 @@ public class BytecodeField {
 	public void collectDependencies(Set<String> dependencies, Map<String, BytecodeClass> classMap) {
 		for (BytecodeAnnotation annotation: annotations)
 			annotation.collectDependencies(dependencies, classMap);
-		if (!type.isPrimitive() && type.getArrayDimensions() == 0)
+		if (type.getComponentType() == TypeVariants.OBJECT)
 			dependencies.add(type.getRegistryTypeName());
 	}
 

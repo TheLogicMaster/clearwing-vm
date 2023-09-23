@@ -13,31 +13,31 @@ public class InstructionGroup extends Instruction {
         super(method, -1);
         this.instructions = instructions;
 
-        inputs = new ArrayList<>();
-        outputs = new ArrayList<>();
-        var stack = new ArrayList<StackEntry>();
-        int temporaries = 0;
-        for (Instruction instruction : instructions) {
-            while (stack.size() < instruction.getInputs().size()) {
-                var type = instruction.getInputs().get(instruction.getInputs().size() - 1 - stack.size()).getArithmeticVariant();
-                stack.add(0, new StackEntry(type, temporaries++));
-                inputs.add(0, type);
-            }
-            var operands = stack.subList(stack.size() - instruction.getInputs().size(), stack.size());
-            var typedInputs = instruction.getTypedInputs();
-            if (typedInputs != null)
-                for (int i = 0; i < operands.size(); i++)
-                    if (typedInputs.get(i) != null) {
-                        int temp = operands.get(i).getTemporary();
-                        if (!temporaryTypes.containsKey(temp))
-                            temporaryTypes.put(temp, new HashSet<>());
-                        temporaryTypes.get(temp).add(typedInputs.get(i));
-                    }
-            temporaries += instruction.adjustStack(operands, temporaries);
-
-        }
-        while (!stack.isEmpty())
-            outputs.add(stack.remove(0).getType());
+//        inputs = new ArrayList<>();
+//        outputs = new ArrayList<>();
+//        var stack = new ArrayList<StackEntry>();
+//        int temporaries = 0;
+//        for (Instruction instruction : instructions) {
+//            while (stack.size() < instruction.getInputs().size()) {
+//                var type = instruction.getInputs().get(instruction.getInputs().size() - 1 - stack.size()).getArithmeticVariant();
+//                stack.add(0, new StackEntry(type, temporaries++));
+//                inputs.add(0, type);
+//            }
+//            var operands = stack.subList(stack.size() - instruction.getInputs().size(), stack.size());
+//            var typedInputs = instruction.getTypedInputs();
+//            if (typedInputs != null)
+//                for (int i = 0; i < operands.size(); i++)
+//                    if (typedInputs.get(i) != null) {
+//                        int temp = operands.get(i).getTemporary();
+//                        if (!temporaryTypes.containsKey(temp))
+//                            temporaryTypes.put(temp, new HashSet<>());
+//                        temporaryTypes.get(temp).add(typedInputs.get(i));
+//                    }
+//            temporaries += instruction.adjustStack(operands, temporaries);
+//
+//        }
+//        while (!stack.isEmpty())
+//            outputs.add(stack.remove(0).getType());
     }
 
     private static void appendTypedTemporary(StringBuilder builder, StackEntry entry, JavaType type, Map<Integer, Set<String>> addedTypes) {
@@ -99,6 +99,11 @@ public class InstructionGroup extends Instruction {
             builder.append("\t\tvm::push(sp, ").append(stack.remove(0)).append(");\n");
 
         builder.append("\t}\n");
+    }
+
+    @Override
+    public void resolveIO(List<StackEntry> stack) {
+
     }
 
     @Override

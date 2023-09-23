@@ -49,27 +49,22 @@ import java.util.ArrayList;
  */
 public final class Field {
 
-    private final long getter;
-    private final long setter;
+    private final long offset;
     private final Class<?> declaringClass;
     private final Class<?> type;
-    private final Type genericType;
+    private String signature;
+    private Type genericType;
     private final String name;
     private final int modifiers;
     private Annotation[] annotations = new Annotation[0];
 
-    private Field(long getter, long setter, Class<?> declaringClass, Class<?> type, String signature, String name, int modifiers) {
-        this.getter = getter;
-        this.setter = setter;
+    private Field(long offset, Class<?> declaringClass, Class<?> type, String signature, String name, int modifiers) {
+        this.offset = offset;
         this.declaringClass = declaringClass;
         this.type = type;
+        this.signature = signature;
         this.name = name;
         this.modifiers = modifiers;
-        try {
-            genericType = signature == null || signature.isEmpty() ? type : parseSignature(signature);
-        } catch (ClassNotFoundException e) {
-            throw new MalformedParameterizedTypeException("Failed to find class: " + e.getMessage());
-        }
     }
 
     private Type parseSignature(String signature) throws ClassNotFoundException {
@@ -161,6 +156,12 @@ public final class Field {
     }
 
     public Type getGenericType() {
+        if (genericType == null)
+            try {
+                genericType = signature == null || signature.isEmpty() ? type : parseSignature(signature);
+            } catch (ClassNotFoundException e) {
+                throw new MalformedParameterizedTypeException("Failed to find class: " + e.getMessage());
+            }
         return genericType;
     }
 

@@ -27,21 +27,21 @@ public class IncrementInstruction extends Instruction implements LocalInstructio
 		if (getMethod().isLocalKnown(local))
 			builder.append("\tlocal").append(local).append("++;\n");
 		else
-			appendStandardInstruction(builder, "iinc", "local" + local, "" + amount);
+			appendStandardInstruction(builder, "iinc", "" + local, "" + amount);
 	}
 
 	@Override
 	public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-		if (getMethod().isLocalKnown(local))
-			builder.append("\t\tlocal").append(local).append(" += ").append(amount).append(";\n");
-		else
-			builder.append("\t\tget<jint>(local").append(local).append(") += ").append(amount).append(";\n");
+//		if (getMethod().isLocalKnown(local))
+//			builder.append("\t\tlocal").append(local).append(" += ").append(amount).append(";\n");
+//		else
+//			builder.append("\t\tget<jint>(local").append(local).append(") += ").append(amount).append(";\n");
 	}
 
 	@Override
-	public void populateIO(List<StackEntry> stack) {
-		inputs = Collections.emptyList();
-		outputs = Collections.emptyList();
+	public void resolveIO(List<StackEntry> stack) {
+		setBasicInputs();
+		setBasicOutputs();
 	}
 
 	@Override

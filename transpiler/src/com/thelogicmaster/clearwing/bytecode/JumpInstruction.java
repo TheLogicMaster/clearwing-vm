@@ -29,14 +29,12 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
 
     private void appendCompare(StringBuilder builder, TypeVariants type, String operation) {
         builder.append("\tsp -= 2; ");
-        builder.append("\tif (get<").append(type.getArithmeticType()).append(">(sp[0])").append(type == TypeVariants.OBJECT ? ".get() " : " ").append(operation);
-        builder.append(" get<").append(type.getArithmeticType()).append(">(sp[1])").append(type == TypeVariants.OBJECT ? ".get()) " : ") ");
+        builder.append("if (sp[0].").append(type.getStackName()).append(" ").append(operation).append(" sp[1].").append(type.getStackName()).append(") ");
         appendGoto(builder, bypass, label, originalLabel);
     }
 
     private void appendCompareZero(StringBuilder builder, TypeVariants type, String operation) {
-        builder.append("\tif (vm::pop<").append(type.getArithmeticType()).append(">(sp) ").append(operation);
-        builder.append(type == TypeVariants.OBJECT ? " nullptr" : " 0").append(") ");
+        builder.append("\tif ((--sp)->").append(type.getStackName()).append(" ").append(operation).append(" ").append(type == TypeVariants.OBJECT ? "nullptr" : "0").append(") ");
         appendGoto(builder, bypass, label, originalLabel);
     }
 
@@ -108,17 +106,19 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        boolean object = opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL || opcode == Opcodes.IF_ACMPEQ || opcode == Opcodes.IF_ACMPNE;
+    public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
             case Opcodes.IFEQ, Opcodes.IFNE, Opcodes.IFLT, Opcodes.IFGE, Opcodes.IFGT, Opcodes.IFLE, Opcodes.IFNULL, Opcodes.IFNONNULL -> {
-                inputs = Collections.singletonList(object ? TypeVariants.OBJECT : TypeVariants.INT);
+                setInputsFromStack(stack, 1);
             }
-            case Opcodes.IF_ICMPEQ, Opcodes.IF_ICMPNE, Opcodes.IF_ICMPLT, Opcodes.IF_ICMPGE, Opcodes.IF_ICMPGT, Opcodes.IF_ICMPLE, Opcodes.IF_ACMPEQ, Opcodes.IF_ACMPNE ->
-                    inputs = object ? Arrays.asList(TypeVariants.OBJECT, TypeVariants.OBJECT) : Arrays.asList(TypeVariants.INT, TypeVariants.INT);
-            case Opcodes.GOTO -> inputs = Collections.emptyList();
+            case Opcodes.IF_ICMPEQ, Opcodes.IF_ICMPNE, Opcodes.IF_ICMPLT, Opcodes.IF_ICMPGE, Opcodes.IF_ICMPGT, Opcodes.IF_ICMPLE, Opcodes.IF_ACMPEQ, Opcodes.IF_ACMPNE -> {
+                setInputsFromStack(stack, 2);
+            }
+            case Opcodes.GOTO -> setBasicInputs();
             default -> throw new TranspilerException("Invalid opcode");
         }
+        if (opcode != Opcodes.GOTO)
+            setBasicOutputs();
     }
 
     @Override

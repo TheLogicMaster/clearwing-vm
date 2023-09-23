@@ -43,11 +43,11 @@ public class MultiArrayInstruction extends Instruction {
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        inputs = new ArrayList<>();
+    public void resolveIO(List<StackEntry> stack) {
+        setBasicInputs();
         for (int i = 0; i < dimensions; i++)
-            inputs.add(TypeVariants.INT);
-        outputs = Collections.singletonList(TypeVariants.OBJECT);
+            inputs.add(new JavaType(TypeVariants.INT));
+        setBasicOutputs(TypeVariants.OBJECT);
     }
 
     @Override

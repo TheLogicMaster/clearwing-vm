@@ -39,6 +39,15 @@ public class JavaType {
 		registryFullName = "[".repeat(arrayDimensions) + registryTypeName;
 	}
 
+	public JavaType(TypeVariants type) {
+		this.type = type;
+		registryTypeName = type.getRegistryName();
+		registryFullName = registryTypeName;
+		desc = type == TypeVariants.OBJECT ? "L" + registryTypeName + ";" : registryTypeName;
+		referenceType = type == TypeVariants.OBJECT ? registryTypeName : null;
+		arrayDimensions = 0;
+	}
+
 	/**
 	 * Get the Java description for the type
 	 */
@@ -77,23 +86,10 @@ public class JavaType {
 	}
 
 	/**
-	 * Get the C++ type name for use as field/param types
+	 * Get the C++ type name for use as object fields
 	 */
-	public String getCppMemberType(boolean weak) {
-		if (arrayDimensions > 0)
-			return "jarray";
-		else if (type != TypeVariants.OBJECT)
-			return getCppType();
-		else if (weak)
-			return "weak_ptr<" + Utils.getQualifiedClassName(referenceType) + ">";
-		else if ("java/lang/Class".equals(referenceType))
-			return "jclass";
-		else if ("java/lang/Object".equals(referenceType))
-			return "jobject";
-		else if ("java/lang/String".equals(referenceType))
-			return "jstring";
-		else
-			return "shared_ptr<" + Utils.getQualifiedClassName(referenceType) + ">";
+	public String getCppMemberType() {
+		return isPrimitive() ? getCppType() : "jref";
 	}
 
 	/**
@@ -138,6 +134,13 @@ public class JavaType {
 	}
 
 	/**
+	 * Get the qualified class name with underscores (Without array brackets)
+	 */
+	public String getQualifiedTypeName() {
+		return registryTypeName == null ? null : Utils.getQualifiedClassName(registryTypeName);
+	}
+
+	/**
 	 * Get the class name as it will be registered at runtime (With array brackets)
 	 */
 	public String getRegistryFullName() {
@@ -159,9 +162,9 @@ public class JavaType {
 	 */
 	public boolean appendWrapperPrefix(JavaType target, StringBuilder builder) {
 		if (isPrimitive() && !target.isPrimitive())
-			builder.append("vm::wrap<").append(Utils.getQualifiedClassName(target.getReferenceType())).append(">(");
+			builder.append("box").append(getBasicType().getJavaType().getSimpleName()).append("(ctx, ");
 		else if (!isPrimitive() && target.isPrimitive())
-			builder.append("vm::unwrap<").append(target.getCppType()).append(">(");
+			builder.append("unbox").append(target.getBasicType().getJavaType().getSimpleName()).append("(");
 		else
 			return false;
 		return true;
@@ -171,15 +174,15 @@ public class JavaType {
 	 * Generate an expression that resolves to a class of the specified type
 	 */
 	public String generateClassFetch() {
-		String classFetch = type == TypeVariants.OBJECT ? Utils.getQualifiedClassName(referenceType) + "::CLASS" : type.getCppClass();
-		return arrayDimensions > 0 ? "vm::getArrayClass(" + classFetch + ", " + arrayDimensions + ")" : classFetch;
+		String classFetch = type == TypeVariants.OBJECT ? "&class_" + Utils.getQualifiedClassName(referenceType) : "&" + type.getCppClass();
+		return arrayDimensions > 0 ? "getArrayClass(" + classFetch + ", " + arrayDimensions + ")" : classFetch;
 	}
 
 	/**
 	 * Generate an expression that resolves to a class of the specified type (The component type for arrays)
 	 */
 	public String generateComponentClassFetch() {
-		return type == TypeVariants.OBJECT ? Utils.getQualifiedClassName(referenceType) + "::CLASS" : type.getCppClass();
+		return type == TypeVariants.OBJECT ? "&class_" + Utils.getQualifiedClassName(referenceType) : "&" + type.getCppClass();
 	}
 
 	@Override

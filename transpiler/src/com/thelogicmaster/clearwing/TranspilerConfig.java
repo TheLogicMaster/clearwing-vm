@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class TranspilerConfig {
+    // Todo: An ignore-list for classes to avoid transpiler warnings from unused classes
     private List<String> nonOptimized = new ArrayList<>(); // Patterns for classes to not optimize out even if unused
     private List<String> reflective = new ArrayList<>(); // Patterns for classes to generate reflection metadata for
     private List<String> sourceIgnores = new ArrayList<>(); // Patterns for source files to ignore for JNIGen style inlined C++

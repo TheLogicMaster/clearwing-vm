@@ -1,17 +1,24 @@
-#include "Clearwing.hpp"
+#include "Clearwing.h"
 
-#if !USE_PLATFORM_OVERRIDE
+extern "C" {
 
-std::string vm::getOSLanguage() {
+// Strings returned here are never freed but are cached, so it's fine
+
+#if not USE_PLATFORM_OVERRIDE
+
+const char *getOSLanguage() {
     return "en-US";
 }
 
-std::string vm::getSystemProperty(const std::string &key) {
-    if (key == "os.name" || key == "os.arch")
+const char *getSystemProperty(const char *key) {
+    std::string name(key);
+    if (name == "os.name" || name == "os.arch")
         return "unknown";
-    if (key == "line.separator")
+    if (name == "line.separator")
         return "\n";
-    return "";
+    return nullptr;
 }
 
 #endif
+
+}

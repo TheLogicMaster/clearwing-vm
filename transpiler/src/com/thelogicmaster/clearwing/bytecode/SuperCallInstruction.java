@@ -2,6 +2,8 @@ package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.*;
 
+import java.util.List;
+
 public class SuperCallInstruction extends Instruction {
 
     private final String superClass;
@@ -28,5 +30,10 @@ public class SuperCallInstruction extends Instruction {
             builder.append(" param").append(i);
         }
         builder.append(");\n");
+    }
+
+    @Override
+    public void resolveIO(List<StackEntry> stack) {
+
     }
 }

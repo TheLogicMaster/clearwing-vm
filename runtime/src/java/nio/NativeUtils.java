@@ -33,4 +33,6 @@ public class NativeUtils {
 			throw new RuntimeException(e);
 		}
 	}
+
+	public static native Class<?> getArrayClass(Class<?> type, int dimensions);
 }

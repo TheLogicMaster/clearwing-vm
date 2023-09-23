@@ -23,23 +23,23 @@ public class Utils {
 		String sanitized = name.replaceAll("\\.", "/").replace("-", "_");
 
 		// Replace keywords in package names
-		if (sanitized.contains("/")) {
-			String[] sections = sanitized.split("/");
-			StringBuilder builder = new StringBuilder();
-			boolean first = true;
-			for (String section: sections) {
-				if (!first)
-					builder.append("/");
-				for (String keyword: CPP_KEYWORDS)
-					if (keyword.equals(section)) {
-						builder.append("_");
-						break;
-					}
-				builder.append(section);
-				first = false;
-			}
-			sanitized = builder.toString();
-		}
+//		if (sanitized.contains("/")) {
+//			String[] sections = sanitized.split("/");
+//			StringBuilder builder = new StringBuilder();
+//			boolean first = true;
+//			for (String section: sections) {
+//				if (!first)
+//					builder.append("/");
+//				for (String keyword: CPP_KEYWORDS)
+//					if (keyword.equals(section)) {
+//						builder.append("_");
+//						break;
+//					}
+//				builder.append(section);
+//				first = false;
+//			}
+//			sanitized = builder.toString();
+//		}
 
 		return sanitized;
 	}
@@ -58,7 +58,7 @@ public class Utils {
 	 * Get a fully-qualified C++ class name from a Java class name
 	 */
 	public static String getQualifiedClassName(String name) {
-		return sanitizeName(name).replace("/", "::");
+		return sanitizeName(name).replace("/", "_");
 	}
 
 	/**
@@ -76,32 +76,25 @@ public class Utils {
 	}
 
 	/**
-	 * Sanitize method name (Ignores finalizer)
+	 * Sanitize method name
 	 */
-	public static String sanitizeMethod(String name, MethodSignature signature, boolean isStatic, boolean allTypes) {
+	public static String sanitizeMethod(String className, MethodSignature signature, boolean isStatic) {
+		className = getQualifiedClassName(className);
 		StringBuilder nameBuilder = new StringBuilder();
-		if ("<init>".equals(name))
-			name = "init";
-		else if ("<clinit>".equals(name))
-			name = "clinit";
+		if ("<init>".equals(signature.getName()))
+			nameBuilder.append("init_").append(className);
+		else if ("<clinit>".equals(signature.getName()))
+			nameBuilder.append("clinit_").append(className);
 		else {
 			if (isStatic)
 				nameBuilder.append("S");
-			nameBuilder.append("M_");
+			nameBuilder.append("M_").append(className).append("_").append(signature.getName());
 		}
 
-		nameBuilder.append(name);
+		for (JavaType type: signature.getParamTypes())
+			nameBuilder.append("_").append(type.getMethodSuffixName());
 
-		for (JavaType type: signature.getParamTypes()) {
-			if (type.getArrayDimensions() > 0)
-				nameBuilder.append("_").append(type.getMethodSuffixName());
-			else if (allTypes)
-				nameBuilder.append("_").append(type.getMethodSuffixName());
-		}
-
-		if (!signature.getReturnType().isPrimitive())
-			nameBuilder.append("_R_").append(signature.getReturnType().getMethodSuffixName());
-		else if (signature.getReturnType().isPrimitive() && !signature.getReturnType().isVoid())
+		if (!signature.getReturnType().isVoid())
 			nameBuilder.append("_R_").append(signature.getReturnType().getMethodSuffixName());
 
 		return sanitizeName(nameBuilder.toString());
@@ -110,15 +103,17 @@ public class Utils {
 	/**
 	 * Sanitize a field name
 	 */
-	public static String sanitizeField(String name, boolean isStatic) {
-		return (isStatic ? "SF_" : "F_") + sanitizeName(name);
+	public static String sanitizeField(String className, String name, boolean isStatic) {
+		className = getQualifiedClassName(className);
+		return (isStatic ? "SF_" + className + "_" : "F_") + sanitizeName(name);
 	}
 
 	/**
-	 * Get the qualified package name from a qualified name
+	 * Get the qualified package name from a qualified/class name
 	 */
 	public static String getQualifiedPackage(String name) {
-		int index = name.lastIndexOf(':');
+		name = getQualifiedClassName(name);
+		int index = name.lastIndexOf('_');
 		return index < 0 ? "" : name.substring(0, index - 1);
 	}
 
@@ -185,11 +180,11 @@ public class Utils {
 			else
 				return "jdouble(" + d + ")";
 		} else if (o instanceof String)
-			return Utils.encodeStringLiteral((String)o);
+			return "((jobject) createStringLiteral(ctx, " + Utils.encodeStringLiteral((String)o) + "))";
 		else if (o instanceof Type)
 			switch (((Type) o).getSort()) {
 				case Type.OBJECT, Type.ARRAY -> {
-					return new JavaType(((Type) o).getDescriptor()).generateClassFetch();
+					return "((jobject) " + new JavaType(((Type) o).getDescriptor()).generateClassFetch() + ")";
 				}
 				default -> throw new TranspilerException("Invalid Type: " + o);
 			}

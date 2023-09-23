@@ -39,24 +39,36 @@ import java.util.Arrays;
  */
 public final class Class<T> implements java.lang.reflect.Type {
 
-    private String name;
+    private long nativeName;
+    private Class<?> parentClass;
+    private int size;
+    private long classVtable;
+    private long staticInitializer;
+    private long markFunction;
+    private boolean primitive;
+    private int arrayDimensions;
+    private Class<?> componentClass;
     private int access;
-    private Class<?> parent;
+    private int interfaceCount;
+    private long nativeInterfaces;
+    private int fieldCount;
+    private long nativeFields;
+    private int methodCount;
+    private long nativeMethods;
+    private int vtableSize;
+    private long nativeVtableEntries;
+    private boolean anonymous;
+    private boolean synthetic;
+    private long instanceOfCache;
+
+    // Lazy-init fields start here
+    private boolean initialized;
+    private String name;
     private Class<?>[] interfaces;
     private Field[] fields;
     private Method[] methods;
     private Constructor<T>[] constructors;
     private Annotation[] annotations;
-    private boolean anonymous;
-    private boolean synthetic;
-    private boolean primitive;
-    private int size; // Native size for array items
-    private int arrayDimensions;
-    private Class<?> arrayItemType;
-
-    private long nativeData;
-
-    private String javaName;
 
     private Class() {
     }
@@ -91,12 +103,9 @@ public final class Class<T> implements java.lang.reflect.Type {
      * above.
      */
     public java.lang.String getName() {
-        if (javaName == null)
-            javaName = getName0();
-        return javaName;
+        ensureInitialized();
+        return name;
     }
-
-    private native String getName0();
 
     /**
      * Finds a resource with a given name in the application's JAR file. This
@@ -158,7 +167,6 @@ public final class Class<T> implements java.lang.reflect.Type {
      * Determines if this Class object represents an array class.
      */
     public boolean isArray() {
-        ensureInitialized();
         return arrayDimensions > 0;
     }
 
@@ -221,7 +229,6 @@ public final class Class<T> implements java.lang.reflect.Type {
      * Determines if the specified Class object represents an interface type.
      */
     public boolean isInterface() {
-        ensureInitialized();
         return Modifier.isInterface(access);
     }
 
@@ -355,7 +362,6 @@ public final class Class<T> implements java.lang.reflect.Type {
      * @return true if the class was declared as an Enum.
      */
     public boolean isEnum() {
-        ensureInitialized();
         return Modifier.isEnum(access);
     }
 
@@ -372,7 +378,6 @@ public final class Class<T> implements java.lang.reflect.Type {
      * replacement for Class.isAnonymousClass()
      */
     public boolean isAnonymousClass() {
-        ensureInitialized();
         return anonymous;
     }
 
@@ -460,12 +465,10 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public Class<?> getSuperclass() {
-        ensureInitialized();
-        return parent;
+        return parentClass;
     }
 
     public int getModifiers() {
-        ensureInitialized();
         return access;
     }
 
@@ -491,7 +494,6 @@ public final class Class<T> implements java.lang.reflect.Type {
      * replacement for Class.isSynthetic()
      */
     public boolean isSynthetic() {
-        ensureInitialized();
         return synthetic;
     }
 
@@ -514,8 +516,7 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
     
     public Class<?> getComponentType() {
-        ensureInitialized();
-        return arrayItemType;
+        return componentClass;
     }
 
     public Class<?>[] getInterfaces() {
@@ -529,7 +530,6 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
     
     public boolean isPrimitive() {
-        ensureInitialized();
         return primitive;
     }
     

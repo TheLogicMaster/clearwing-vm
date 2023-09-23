@@ -29,7 +29,7 @@ public class VariableInstruction extends Instruction implements LocalInstruction
             else
                 builder.append("\tlocal").append(local).append(" = vm::pop<").append(getLocalType().getArithmeticType()).append(">(sp);\n");
         } else
-            appendStandardInstruction(builder, name, "local" + local);
+            appendStandardInstruction(builder, name, "" + local);
     }
 
     @Override
@@ -64,15 +64,15 @@ public class VariableInstruction extends Instruction implements LocalInstruction
     }
 
     @Override
-    public void populateIO(List<StackEntry> stack) {
-        outputs = switch (opcode) {
-            case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD -> Collections.singletonList(getLocalType());
-            default -> Collections.emptyList();
-        };
-        inputs = switch (opcode) {
-            case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> Collections.singletonList(getLocalType());
-            default -> Collections.emptyList();
-        };
+    public void resolveIO(List<StackEntry> stack) {
+        switch (opcode) {
+            case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> setBasicInputs(getLocalType());
+            default -> setBasicInputs();
+        }
+        switch (opcode) {
+            case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD -> setBasicOutputs(getLocalType());
+            default -> setOutputs();
+        }
     }
 
     @Override

@@ -8,10 +8,12 @@ public class MethodSignature {
 	private final String desc;
 	private final JavaType returnType;
 	private final JavaType[] paramTypes;
+	private final BytecodeClass owner;
 
-	public MethodSignature (String name, String desc) {
+	public MethodSignature (String name, String desc, BytecodeClass owner) {
 		this.name = name;
 		this.desc = desc;
+		this.owner = owner;
 		int returnIndex = desc.indexOf(')');
 		String paramDesc = desc.substring(1, returnIndex);
 		ArrayList<JavaType> params = new ArrayList<>();
@@ -36,10 +38,8 @@ public class MethodSignature {
 		for (int i = 0; i < paramTypes.length; i++) {
 			if (i > 0)
 				builder.append(", ");
-			if (!paramTypes[i].isPrimitive())
-				builder.append("const ");
-			builder.append(paramTypes[i].getCppMemberType(false)).append(" ");
-			builder.append(paramTypes[i].isPrimitive() ? "param" : "&param").append(i);
+			builder.append(paramTypes[i].getCppType()).append(" ");
+			builder.append("param").append(i);
 		}
 	}
 
@@ -52,6 +52,10 @@ public class MethodSignature {
 
 	public String getDesc () {
 		return desc;
+	}
+
+	public BytecodeClass getOwner() {
+		return owner;
 	}
 
 	public JavaType getReturnType () {

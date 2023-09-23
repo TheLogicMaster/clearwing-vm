@@ -55,7 +55,7 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 
 	@Override
 	public void appendUnoptimized (StringBuilder builder) {
-		appendSwitch(builder, "\t", "get<jint>(*(--sp))");
+		appendSwitch(builder, "\t", "(--sp)->i");
 	}
 
 	@Override
@@ -64,8 +64,8 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 	}
 
 	@Override
-	public void populateIO(List<StackEntry> stack) {
-		inputs = Collections.singletonList(TypeVariants.INT);
+	public void resolveIO(List<StackEntry> stack) {
+		setBasicInputs(TypeVariants.INT);
 	}
 
 	public int[] getKeys() {

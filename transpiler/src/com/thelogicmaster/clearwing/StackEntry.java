@@ -4,24 +4,28 @@ import com.thelogicmaster.clearwing.bytecode.Instruction;
 
 public class StackEntry {
 
-    private final TypeVariants type;
+    private final JavaType type;
     private final Instruction source;
     private final int temporary;
 
-    public StackEntry(TypeVariants type, Instruction source) {
+    public StackEntry(JavaType type, Instruction source) {
         this.type = type;
         this.source = source;
         temporary = -1;
     }
 
-    public StackEntry(TypeVariants type, int temporary) {
+    public StackEntry(JavaType type, int temporary) {
         this.type = type;
         source = null;
         this.temporary = temporary;
     }
 
-    public TypeVariants getType() {
+    public JavaType getType() {
         return type;
+    }
+
+    public TypeVariants getBasicType() {
+        return type.getBasicType();
     }
 
     public Instruction getSource() {

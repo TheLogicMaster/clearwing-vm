@@ -17,7 +17,7 @@ public class MethodSignature {
 		int returnIndex = desc.indexOf(')');
 		String paramDesc = desc.substring(1, returnIndex);
 		ArrayList<JavaType> params = new ArrayList<>();
-		while (paramDesc.length() > 0) {
+		while (!paramDesc.isEmpty()) {
 			int start = 0;
 			if (paramDesc.charAt(0) == '[')
 				for (start = 1; start < paramDesc.length(); start++)

@@ -20,6 +20,26 @@ public class BytecodeAnnotation extends AnnotationValue {
 		this.qualifiedName = Utils.getQualifiedClassName(annotationName);
 	}
 
+	public void mergeDefaults(Map<String, BytecodeClass> classMap) {
+		mergeDefaults(Objects.requireNonNull(classMap.get(annotationName), "Failed to find annotation class for: " + annotationName).getDefaultAnnotation());
+	}
+
+	public void mergeDefaults(BytecodeAnnotation defaults) {
+		// Todo: Does this work recursively? Or should the class lookup happen per-BytecodeAnnotation?
+		for (AnnotationValue value : defaults.values) {
+			AnnotationValue found = null;
+			for (AnnotationValue v : values)
+				if (v.name.equals(value.name)) {
+					found = v;
+					break;
+				}
+			if (found == null)
+				addValue(value);
+			else if (found instanceof BytecodeAnnotation)
+				((BytecodeAnnotation) found).mergeDefaults((BytecodeAnnotation) value);
+		}
+	}
+
 	public void addValue (AnnotationValue value) {
 		values.add(value);
 	}
@@ -81,10 +101,10 @@ public class BytecodeAnnotation extends AnnotationValue {
 		}
 	}
 
-	public void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap) {
-		builder.append("\t").append(target).append(" = make_shared<").append(qualifiedName).append("Impl>();\n");
+	public void append (StringBuilder builder, String target, boolean fieldTarget, HashMap<String, BytecodeClass> classMap) {
+		builder.append("\t\t").append(target).append(" = ").append(fieldTarget ? "(intptr_t) " : "").append("gcAlloc(ctx, &class_").append(qualifiedName).append(");\n");
 		for (AnnotationValue value: values)
-			value.append(builder, "object_cast<" + qualifiedName + "Impl" + ">(" + target + ")->" + Utils.sanitizeField(qualifiedName, value.name, false), classMap);
+			value.append(builder, "((" + qualifiedName + " *)" + target + ")->" + Utils.sanitizeField(qualifiedName, value.name, false), true, classMap);
 	}
 }
 
@@ -96,7 +116,7 @@ abstract class AnnotationValue {
 		this.name = name;
 	}
 
-	public abstract void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap);
+	public abstract void append (StringBuilder builder, String target, boolean fieldTarget, HashMap<String, BytecodeClass> classMap);
 
 	public String getName() {
 		return name;
@@ -115,7 +135,7 @@ class AnnotationObjectValue extends AnnotationValue {
 	}
 
 	@Override
-	public void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap) {
+	public void append (StringBuilder builder, String target, boolean fieldTarget, HashMap<String, BytecodeClass> classMap) {
 		BytecodeClass cls = Objects.requireNonNull(classMap.get(getAnnotation().getAnnotationName()), "Failed to find class: " + getAnnotation().getAnnotationName());
 		BytecodeMethod method = null;
 		for (BytecodeMethod m: cls.getMethods())
@@ -127,67 +147,68 @@ class AnnotationObjectValue extends AnnotationValue {
 
 		if (object.getClass().isArray()) {
 			if (object.getClass().getComponentType().isPrimitive()) {
-				builder.append('\t').append(target).append(" = vm::newArray(vm::class");
+				builder.append("\t\t").append(target).append(" = ").append(fieldTarget ? "(intptr_t) " : "").append("createArray(ctx, &class_");
 				if (object instanceof boolean[]) {
 					boolean[] array = (boolean[])object;
-					builder.append("Boolean, ").append(array.length).append(");\n");
+					builder.append("boolean, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jbool>(").append(i).append(") = ").append(array[i]).append(";\n");
+						builder.append("\t\t((jbool *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append(";\n");
 				} else if (object instanceof char[]) {
 					char[] array = (char[])object;
-					builder.append("Char, ").append(array.length).append(");\n");
+					builder.append("char, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jchar>(").append(i).append(") = ").append((int)array[i]).append(";\n");
+						builder.append("\t\t((jchar *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append((int)array[i]).append(";\n");
 				} else if (object instanceof byte[]) {
 					byte[] array = (byte[])object;
-					builder.append("Byte, ").append(array.length).append(");\n");
+					builder.append("byte, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jbyte>(").append(i).append(") = ").append(array[i]).append(";\n");
+						builder.append("\t\t((jbyte *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append(";\n");
 				} else if (object instanceof short[]) {
 					short[] array = (short[])object;
-					builder.append("Short, ").append(array.length).append(");\n");
+					builder.append("short, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jshort>(").append(i).append(") = ").append(array[i]).append(";\n");
+						builder.append("\t\t((jshort *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append(";\n");
 				} else if (object instanceof int[]) {
 					int[] array = (int[])object;
-					builder.append("Int, ").append(array.length).append(");\n");
+					builder.append("int, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jint>(").append(i).append(") = ").append(array[i]).append(";\n");
+						builder.append("\t\t((jint *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append(";\n");
 				} else if (object instanceof long[]) {
 					long[] array = (long[])object;
-					builder.append("Long, ").append(array.length).append(");\n");
+					builder.append("long, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jlong>(").append(i).append(") = ").append(array[i]).append("ll;\n");
+						builder.append("\t\t((jlong *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append("ll;\n");
 				} else if (object instanceof float[]) {
 					float[] array = (float[])object;
-					builder.append("Float, ").append(array.length).append(");\n");
+					builder.append("float, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jfloat>(").append(i).append(") = ").append(array[i]).append("f;\n");
+						builder.append("\t\t((jfloat *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append("f;\n");
 				} else if (object instanceof double[]) {
 					double[] array = (double[])object;
-					builder.append("Double, ").append(array.length).append(");\n");
+					builder.append("double, ").append(array.length).append(");\n");
 					for (int i = 0; i < array.length; i++)
-						builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jdouble>(").append(i).append(") = ").append(array[i]).append(";\n");
+						builder.append("\t\t((jdouble *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ").append(array[i]).append(";\n");
 				} else
 					throw new TranspilerException("Unsupported array type: " + object);
 			} else {
 				Object[] array = (Object[])object;
 				JavaType type = method.getSignature().getReturnType();
-				builder.append('\t').append(target).append(" = vm::newArray(").append(type.generateComponentClassFetch()).append(", ").append(array.length).append(");\n");
+				builder.append("\t\t").append(target).append(" = ").append(fieldTarget ? "(intptr_t) " : "").append("createArray(ctx, ").append(type.generateComponentClassFetch())
+						.append(", ").append(array.length).append(");\n");
 				for (int i = 0; i < array.length; i++) {
 					if (array[i] instanceof AnnotationEnumValue)
-						((AnnotationEnumValue)array[i]).append(builder, "object_cast<vm::Array>(" + target + ")->get<jobject>(" + i + ')', classMap);
+						((AnnotationEnumValue)array[i]).append(builder, "((jobject *) ((jarray) " + target + ")->data)[" + i + ']', false, classMap);
 					else if (array[i] instanceof BytecodeAnnotation)
-						((BytecodeAnnotation)array[i]).append(builder, "object_cast<vm::Array>(" + target + ")->get<jobject>(" + i + ')', classMap);
+						((BytecodeAnnotation)array[i]).append(builder, "((jobject *) ((jarray) " + target + ")->data)[" + i + ']', false, classMap);
 					else {
 						if (array[i] instanceof String || array[i] instanceof Type) {
-							builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<jobject>(").append(i).append(") = ");
+							builder.append("\t\t((jobject *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ");
 							if (array[i] instanceof String)
 								builder.append(Utils.encodeStringLiteral((String)array[i]));
 							else
-								builder.append(Utils.getQualifiedClassName(((Type)array[i]).getClassName())).append("::CLASS");
+								builder.append("(jobject) &class_").append(Utils.getQualifiedClassName(((Type)array[i]).getClassName()));
 						} else {
-							builder.append("\tobject_cast<vm::Array>(").append(target).append(")->get<").append(type.getComponentType().getCppType()).append(">(").append(i).append(") = ");
+							builder.append("\t\t((").append(type.getComponentType().getCppType()).append(" *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ");
 							builder.append(Utils.getObjectValue(array[i]));
 						}
 						builder.append(";\n");
@@ -195,7 +216,7 @@ class AnnotationObjectValue extends AnnotationValue {
 				}
 			}
 		} else
-			builder.append('\t').append(target).append(" = ").append(Utils.getObjectValue(object)).append(";\n");
+			builder.append("\t\t").append(target).append(" = ").append(fieldTarget && (object instanceof String || object instanceof Type) ? "(intptr_t) " : "").append(Utils.getObjectValue(object)).append(";\n");
 	}
 
 	public Object getObject() {
@@ -219,10 +240,10 @@ class AnnotationEnumValue extends AnnotationValue {
 	}
 
 	@Override
-	public void append (StringBuilder builder, String target, HashMap<String, BytecodeClass> classMap) {
+	public void append (StringBuilder builder, String target, boolean fieldTarget, HashMap<String, BytecodeClass> classMap) {
 		String qualifiedName = Utils.getQualifiedClassName(clazz);
-		builder.append("\t").append(qualifiedName).append("::clinit();\n");
-		builder.append('\t').append(target).append(" = ").append(qualifiedName).append("::").append(Utils.sanitizeField(qualifiedName, value, true)).append(";\n");
+		builder.append("\t\tclinit_").append(qualifiedName).append("(ctx);\n");
+		builder.append("\t\t").append(target).append(" = ").append(fieldTarget ? "(intptr_t) " : "").append(Utils.sanitizeField(qualifiedName, value, true)).append(";\n");
 	}
 
 	public String getClazz() {

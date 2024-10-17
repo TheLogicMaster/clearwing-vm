@@ -3,12 +3,15 @@
 
 #include "Config.h"
 
-#include <csetjmp>
-
 #ifdef __cplusplus
 #include <cstdint>
+#include <csetjmp>
+#define NORETURN [[noreturn]]
 #else
 #include <stdint.h>
+#include <setjmp.h>
+#include <stdnoreturn.h>
+#define NORETURN noreturn
 typedef uint8_t bool;
 typedef int64_t intptr_t;
 #define true 1
@@ -24,6 +27,26 @@ extern "C" {
 #define GC_MARK_NATIVE (-1)
 #define GC_MARK_ETERNAL (-2)
 #define GC_MARK_COLLECTED (-3)
+#define GC_DEPTH_ALWAYS (-1)
+
+#ifndef MAX_GC_MARK_DEPTH
+#define MAX_GC_MARK_DEPTH 1000
+#endif
+
+// Max number of object allocations between collections
+#ifndef GC_OBJECT_THRESHOLD
+#define GC_OBJECT_THRESHOLD 100000
+#endif
+
+// Max memory allocated between collections
+#ifndef GC_MEM_THRESHOLD
+#define GC_MEM_THRESHOLD 100000000
+#endif
+
+// Max total memory before always collecting (Will run on every allocation past this threshold)
+#ifndef GC_HEAP_THRESHOLD
+#define GC_HEAP_THRESHOLD 2000000000
+#endif
 
 #ifndef MAX_STACK_DEPTH
 #define MAX_STACK_DEPTH 1000
@@ -51,8 +74,9 @@ typedef struct java_lang_String *jstring;
 typedef struct java_lang_Thread *jthread;
 
 typedef void (*static_init_ptr)(jcontext ctx);
+typedef void (*init_annotations_ptr)(jcontext ctx);
 typedef void (*finalizer_ptr)(jcontext ctx, jobject self);
-typedef void (*gc_mark_ptr)(jobject object, jint mark);
+typedef void (*gc_mark_ptr)(jobject object, jint mark, int depth);
 typedef void (*main_ptr)(jcontext ctx, jobject args);
 
 typedef struct VtableEntry {
@@ -102,13 +126,14 @@ typedef struct Array {
 
 // This is a mirror of the generated java_lang_Class for sanity
 typedef struct Class {
-    // The alignment/padding here is sometimes different from explicitly relisting the fields, so use this nested struct approach in LLVM and such
+    // The alignment/padding here is sometimes different from explicitly relisting the fields, so use this nested struct approach in LLVM and such (Also avoids name collisions)
     java_lang_Object parent;
     jlong nativeName;
     jref parentClass;
     jint size;
     jlong classVtable;
     jlong staticInitializer;
+    jlong annotationInitializer;
     jlong markFunction;
     jbool primitive;
     jint arrayDimensions;
@@ -169,6 +194,9 @@ void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject
 jobject gcAlloc(jcontext ctx, jclass clazz);
 jobject gcAllocNative(jcontext ctx, jclass clazz);
 void runGC(jcontext ctx);
+void markDeepObject(jobject obj);
+jcontext createContext();
+void destroyContext(jcontext ctx);
 
 jclass getArrayClass(jclass componentType, int dimensions);
 jarray createArray(jcontext ctx, jclass type, int length);
@@ -177,6 +205,7 @@ jstring stringFromNative(jcontext ctx, const char *string);
 jstring stringFromNativeLength(jcontext ctx, const char *string, int length);
 jstring createStringLiteral(jcontext ctx, StringLiteral string);
 const char *stringToNative(jcontext ctx, jstring string);
+jstring concatStringsRecipe(jcontext ctx, const char *recipe, int argCount, ...);
 
 void acquireCriticalLock();
 void releaseCriticalLock();
@@ -193,13 +222,13 @@ void interruptedCheck(jcontext ctx);
 void adjustHeapUsage(int64_t amount);
 
 jobject nullCheck(jcontext ctx, jobject object);
-void throwException(jcontext ctx, jobject exception);
-void throwDivisionByZero(jcontext ctx);
-void throwClassCast(jcontext ctx);
-void throwNullPointer(jcontext ctx);
-void throwIndexOutOfBounds(jcontext ctx);
-void throwIllegalArgument(jcontext ctx);
-void throwIOException(jcontext ctx, const char *message);
+NORETURN void throwException(jcontext ctx, jobject exception);
+NORETURN void throwDivisionByZero(jcontext ctx);
+NORETURN void throwClassCast(jcontext ctx);
+NORETURN void throwNullPointer(jcontext ctx);
+NORETURN void throwIndexOutOfBounds(jcontext ctx);
+NORETURN void throwIllegalArgument(jcontext ctx);
+NORETURN void throwIOException(jcontext ctx, const char *message);
 
 jobject boxByte(jcontext ctx, jbyte value);
 jobject boxCharacter(jcontext ctx, jchar value);
@@ -209,14 +238,14 @@ jobject boxLong(jcontext ctx, jlong value);
 jobject boxFloat(jcontext ctx, jfloat value);
 jobject boxDouble(jcontext ctx, jdouble value);
 jobject boxBoolean(jcontext ctx, jbool value);
-jbyte unboxByte(jobject boxed);
-jchar unboxCharacter(jobject boxed);
-jshort unboxShort(jobject boxed);
-jint unboxInteger(jobject boxed);
-jlong unboxLong(jobject boxed);
-jfloat unboxFloat(jobject boxed);
-jdouble unboxDouble(jobject boxed);
-jbool unboxBoolean(jobject boxed);
+jbyte unboxByte(jcontext ctx, jobject boxed);
+jchar unboxCharacter(jcontext ctx, jobject boxed);
+jshort unboxShort(jcontext ctx, jobject boxed);
+jint unboxInteger(jcontext ctx, jobject boxed);
+jlong unboxLong(jcontext ctx, jobject boxed);
+jfloat unboxFloat(jcontext ctx, jobject boxed);
+jdouble unboxDouble(jcontext ctx, jobject boxed);
+jbool unboxBoolean(jcontext ctx, jobject boxed);
 
 void instMultiANewArray(jcontext ctx, volatile jtype * volatile &sp, jclass type, int dimensions);
 jint floatCompare(jfloat value1, jfloat value2, jint nanValue);
@@ -762,6 +791,7 @@ jint longCompare(jlong value1, jlong value2);
 #ifdef __cplusplus
 
 #include <utility>
+#include <atomic>
 #include <vector>
 #include <map>
 #include <cmath>
@@ -772,8 +802,89 @@ jint longCompare(jlong value1, jlong value2);
 
 using std::bit_cast;
 
+template <typename B>
+void lockGuard(jcontext ctx, std::mutex &mutex, const char *method, B block) {
+    mutex.lock();
+    tryFinally(ctx, method, [&]{
+        block();
+    }, [&]{
+        mutex.unlock();
+    });
+}
+
+template <typename B>
+void lockGuard(jcontext ctx, std::mutex &mutex, jframe frameRef, B block) {
+    mutex.lock();
+    tryFinally(ctx, frameRef, [&]{
+        block();
+    }, [&]{
+        mutex.unlock();
+    });
+}
+
+template <typename B, typename C, typename F>
+void tryCatchFinally(jcontext ctx, jframe frameRef, B block, jclass clazz, C catchBlock, F finally) requires std::invocable<B> and std::invocable<C, jobject> and std::invocable<F> {
+    tryCatch(frameRef, [&]{
+        block();
+    }, clazz, [&](jobject ex){
+        tryFinally(ctx, frameRef, [&]{
+            catchBlock(ex);
+        }, [&]{
+            finally();
+        });
+    });
+    finally();
+}
+
+template <typename B, typename C, typename F>
+void tryCatchFinally(jcontext ctx, const char *method, B block, jclass clazz, C catchBlock, F finally) requires std::invocable<B> and std::invocable<C, jobject> and std::invocable<F> {
+    tryCatch(ctx, method, [&]{
+        block();
+    }, clazz, [&](jobject ex){
+        tryFinally(ctx, method, [&]{
+            catchBlock(ex);
+        }, [&]{
+            finally();
+        });
+    });
+    finally();
+}
+
+template <typename B, typename F>
+void tryFinally(jcontext ctx, jframe frameRef, B block, F finally) requires std::invocable<B> and std::invocable<F> {
+    tryCatch(frameRef, [&]{
+        block();
+    }, nullptr, [&](jobject ex){
+        finally();
+        throwException(ctx, ex);
+    });
+    finally();
+}
+
+template <typename B, typename F>
+void tryFinally(jcontext ctx, const char *method, B block, F finally) requires std::invocable<B> and std::invocable<F> {
+    tryCatch(ctx, method, [&]{
+        block();
+    }, nullptr, [&](jobject ex){
+        finally();
+        throwException(ctx, ex);
+    });
+    finally();
+}
+
 template <typename B, typename E>
-inline void tryCatch(jframe frameRef, B block, jclass clazz, E except) requires std::invocable<B> and std::invocable<E, jobject> {
+void tryCatch(jcontext ctx, const char *method, B block, jclass clazz, E except) requires std::invocable<B> and std::invocable<E, jobject> {
+    auto frameRef = pushStackFrame(ctx, 0, nullptr, method, nullptr);
+    tryCatch(frameRef, [&]{
+        block();
+    }, clazz, [&](jobject ex){
+        except(ex);
+    });
+    popStackFrame(ctx);
+}
+
+template <typename B, typename E>
+void tryCatch(jframe frameRef, B block, jclass clazz, E except) requires std::invocable<B> and std::invocable<E, jobject> {
     if (setjmp(*pushExceptionFrame(frameRef, clazz))) {
         auto ex = popExceptionFrame(frameRef);
         ex->gcMark = GC_MARK_NATIVE; // Doesn't cause a leak if exception is rethrow in except block, since it will be re-caught and fixed there
@@ -786,17 +897,17 @@ inline void tryCatch(jframe frameRef, B block, jclass clazz, E except) requires 
 }
 
 template <typename F, int I, typename ...P>
-inline auto invokeVirtual(jcontext ctx, jobject obj, P... params) {
+auto invokeVirtual(jcontext ctx, jobject obj, P... params) {
     return ((F) ((void **) NULL_CHECK(obj)->vtable)[I])(ctx, obj, params...);
 }
 
 template <typename F, auto C, int I, typename ...P>
-inline auto invokeInterface(jcontext ctx, jobject obj, P... params) {
+auto invokeInterface(jcontext ctx, jobject obj, P... params) {
     return ((F) resolveInterfaceMethod(ctx, C, I, obj))(ctx, obj, params...);
 }
 
 template <jclass T, auto C, typename ...P>
-inline jobject constructObject(jcontext ctx, P... params) {
+jobject constructObject(jcontext ctx, P... params) {
     auto object = gcAllocNative(ctx, T);
     C(ctx, object, params...);
     object->gcMark = GC_MARK_START;
@@ -804,17 +915,17 @@ inline jobject constructObject(jcontext ctx, P... params) {
 }
 
 template <jclass T, auto C, typename ...P>
-inline void constructAndThrow(jcontext ctx, P... params) {
+NORETURN void constructAndThrow(jcontext ctx, P... params) {
     throwException(ctx, constructObject<T, C, P...>(ctx, params...));
 }
 
 template <jclass T, auto C>
-inline void constructAndThrowMsg(jcontext ctx, const char *message) {
+NORETURN void constructAndThrowMsg(jcontext ctx, const char *message) {
     throwException(ctx, constructObject<T, C>(ctx, (jobject) stringFromNative(ctx, message)));
 }
 
 template <jclass T, auto C>
-inline void constructAndThrowMsg(jcontext ctx, jobject ex, const char *message) {
+NORETURN void constructAndThrowMsg(jcontext ctx, jobject ex, const char *message) {
     throwException(ctx, constructObject<T, C>(ctx, ex, (jobject) stringFromNative(ctx, message)));
 }
 
@@ -824,8 +935,12 @@ inline StringLiteral operator "" _j(const char8_t *string, size_t length) {
     return {(const char *) string, (int) length};
 }
 
+inline jstring stringFromNative(jcontext ctx, const std::string_view &string) {
+    return stringFromNativeLength(ctx, string.data(), (int)string.length());
+}
+
 template<typename T>
-inline jint floatingCompare(T t1, T t2, jint nanVal) {
+jint floatingCompare(T t1, T t2, jint nanVal) {
     if (std::isnan(t1) or std::isnan(t2))
         return nanVal;
     if (t1 > t2)
@@ -837,7 +952,8 @@ inline jint floatingCompare(T t1, T t2, jint nanVal) {
 
 typedef struct ObjectMonitor {
     std::recursive_mutex lock;
-    jcontext owner;
+    std::atomic_int32_t depth;
+    std::atomic<jcontext> owner;
     std::condition_variable condition;
     std::mutex conditionMutex;
 } ObjectMonitor;
@@ -854,7 +970,7 @@ struct StackFrame {
     jobject monitor{}; // The monitor only for synchronized methods, if used
     std::vector<ExceptionFrame> exceptionFrames; // Stack of current exception frames in the method
     int lineNumber{}; // Current line number
-    jobject exception{}; // The currently thrown exception // Todo: Why isn't this part of the ExceptionFrame, again?
+    jobject exception{}; // The currently thrown exception
 };
 
 struct Context {
@@ -862,27 +978,9 @@ struct Context {
     std::thread *nativeThread; // Null for main thread
     StackFrame frames[MAX_STACK_DEPTH];
     int stackDepth{};
-    bool suspended{}; // Considered at safepoint, must check for suspendVM flag when un-suspending
+    std::atomic_bool suspended; // Considered at safepoint, must check for suspendVM flag when un-suspending
     std::recursive_mutex lock; // Lock on changing the stack or blocking monitor
-    jobject blockedBy; // Object monitor blocking the current thread, or null
-};
-
-// Only use during a long-running native block where all objects are secured like at a safepoint (Not exception safe)
-// Todo: Capture a list of objects to preserve
-class SafepointGuard {
-public:
-    explicit inline SafepointGuard(jcontext ctx) : ctx(ctx) {
-        ctx->suspended = true;
-    }
-
-    inline ~SafepointGuard() {
-        ctx->suspended = false;
-        if (suspendVM) // Native functions that suspend the thread must poll for safepoint upon completion
-            safepointSuspend(ctx);
-    }
-
-private:
-    jcontext ctx;
+    std::atomic<jobject> blockedBy; // Object monitor blocking the current thread, or null
 };
 
 #endif

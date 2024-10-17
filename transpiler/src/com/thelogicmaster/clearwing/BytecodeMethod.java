@@ -72,6 +72,10 @@ public class BytecodeMethod {
 		return !isNative() && !isAbstract();
 	}
 
+	public boolean isAnnotationType() {
+		return originalName.equals("annotationType") && clazz.isAnnotation();
+	}
+
 	/**
 	 * Collects and returns all class dependencies (Sanitized class names)
 	 */
@@ -90,6 +94,9 @@ public class BytecodeMethod {
 	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
 		for (Instruction instruction: instructions)
 			instruction.processHierarchy(classMap);
+
+		for (BytecodeAnnotation annotation : annotations)
+			annotation.mergeDefaults(classMap);
 	}
 
 	public void resolveSymbols() {

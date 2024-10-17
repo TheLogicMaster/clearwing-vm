@@ -329,30 +329,6 @@ public class Transpiler {
 			collect(clazz, required, classMap);
 		}
 
-//		// Mark weak fields
-//		for (String weakField: config.getWeakFields()) {
-//			int separator = weakField.lastIndexOf('.');
-//			if (separator <= 0 || separator >= weakField.length() - 1) {
-//				System.out.println("Warning: Invalid field format: '" + weakField + "'");
-//				continue;
-//			}
-//			BytecodeClass clazz = classMap.get(Utils.sanitizeName(weakField.substring(0, separator)));
-//			if (clazz == null) {
-//				System.out.println("Warning: Failed to find class for field: '" + weakField + "'");
-//				continue;
-//			}
-//			String name = weakField.substring(separator + 1);
-//			boolean found = false;
-//			for (var field: clazz.getFields())
-//				if (field.getOriginalName().equals(name)) {
-//					field.markWeak();
-//					found = true;
-//					break;
-//				}
-//			if (!found)
-//				System.out.println("Warning: Failed to mark field as weak for: '" + weakField + "'");
-//		}
-
 		// Find main class
 		BytecodeClass mainClass = null;
 		String main = config.getMainClass() == null ? null : config.getMainClass().replace('.', '/');

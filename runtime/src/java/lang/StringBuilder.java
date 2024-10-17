@@ -77,6 +77,7 @@ public final class StringBuilder implements CharSequence, Appendable {
     }    
     
     private void enlargeBuffer(int min) {
+        if (count >= min) return;
         int newCount = ((value.length >> 1) + value.length) + 2;
         char[] newData = new char[min > newCount ? min : newCount];
         System.arraycopy(value, 0, newData, 0, count);

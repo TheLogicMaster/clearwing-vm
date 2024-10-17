@@ -34,8 +34,11 @@ public class JavaType {
 			referenceType = null;
 			type = TypeVariants.fromSymbol(desc.charAt(0));
 			registryTypeName = type.getRegistryName();
-		} else
-			throw new TranspilerException("Invalid type description");
+		} else {
+			referenceType = Utils.sanitizeName(desc);
+			type = TypeVariants.OBJECT;
+			registryTypeName = referenceType;	
+		}
 		registryFullName = "[".repeat(arrayDimensions) + registryTypeName;
 	}
 
@@ -162,9 +165,9 @@ public class JavaType {
 	 */
 	public boolean appendWrapperPrefix(JavaType target, StringBuilder builder) {
 		if (isPrimitive() && !target.isPrimitive())
-			builder.append("box").append(getBasicType().getJavaType().getSimpleName()).append("(ctx, ");
+			builder.append("box").append(getBasicType().getWrapper().getSimpleName()).append("(ctx, ");
 		else if (!isPrimitive() && target.isPrimitive())
-			builder.append("unbox").append(target.getBasicType().getJavaType().getSimpleName()).append("(");
+			builder.append("unbox").append(target.getBasicType().getWrapper().getSimpleName()).append("(");
 		else
 			return false;
 		return true;

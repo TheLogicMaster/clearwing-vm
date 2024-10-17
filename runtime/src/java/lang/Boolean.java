@@ -74,7 +74,7 @@ public final class Boolean implements Comparable<Boolean> {
      * Returns a hash code for this Boolean object.
      */
     public int hashCode(){
-        return 0;
+        return value ? 1231 : 1237;
     }
 
     public static String toString(boolean b) {

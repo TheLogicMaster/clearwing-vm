@@ -8,7 +8,7 @@ extern "C" {
 
 jlong SM_java_util_zip_ZipFile_open_java_lang_String_java_util_ArrayList_R_long(jcontext ctx, jobject path, jobject entries) {
     zzip_error_t errorCode;
-    ZZIP_DIR *zip = zzip_dir_open(stringToNative(ctx, (jstring) path), &errorCode);
+    ZZIP_DIR *zip = zzip_dir_open(stringToNative(ctx, (jstring) NULL_CHECK(path)), &errorCode);
     if (errorCode)
         return -1;
     ZZIP_DIRENT dirent;

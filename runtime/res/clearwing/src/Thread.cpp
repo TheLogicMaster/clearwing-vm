@@ -2,6 +2,7 @@
 
 #include "java/lang/Runnable.h"
 #include "java/lang/Thread.h"
+#include "java/lang/StackTraceElement.h"
 #include "java/lang/String.h"
 #include "java/lang/Object.h"
 #include "java/lang/Throwable.h"
@@ -9,24 +10,28 @@
 extern "C" {
 
 void threadEntrypoint(jcontext ctx, jthread thread) {
-    // Todo
-
     jtype frame[1];
     auto frameRef = pushStackFrame(ctx, 1, frame, "java/lang/Thread:threadEntrypoint", nullptr);
+
+    thread->F_started = true;
+    thread->F_alive = true;
 
     tryCatch(frameRef, [&]{
         if (thread->F_entrypoint) {
             frame[0].o = (jobject) createArray(ctx, &class_java_lang_String, 0);
             ((main_ptr) thread->F_entrypoint)(ctx, frame[0].o);
-        } else if (thread->F_target)
-            invokeInterface<func_java_lang_Runnable_run, &class_java_lang_Runnable, INDEX_java_lang_Runnable_run>(ctx, (jobject) thread->F_target);
+        }
+        else
+            invokeVirtual<func_java_lang_Thread_run, VTABLE_java_lang_Thread_run>(ctx, (jobject)thread);
     }, &class_java_lang_Throwable, [&](jobject ex){
         // Todo: Default handlers
     });
 
     popStackFrame(ctx);
 
-    // Todo: Cleanup active threads list, delete context, delete thread (Deleting/joining the thread itself must be done in the destructor)
+    thread->F_alive = false;
+
+    thread->parent.gcMark = GC_MARK_START;
 }
 
 jobject SM_java_lang_Thread_currentThread_R_java_lang_Thread(jcontext ctx) {
@@ -38,16 +43,20 @@ void SM_java_lang_Thread_sleepImpl_long_int(jcontext ctx, jlong millis, jint nan
     interruptedCheck(ctx);
     auto thread = (jobject) ctx->thread;
     while (std::chrono::system_clock::now() < end) {
+        auto remaining = end - std::chrono::system_clock::now();
+        auto remainingNanos = duration_cast<std::chrono::nanoseconds>(remaining);
+        auto remainingMillis = std::chrono::round<std::chrono::milliseconds>(remaining);
+        remainingNanos -= remainingMillis;
         monitorEnter(ctx, thread);
-        M_java_lang_Object_wait_long_int(ctx, thread, millis, nanos);
+        M_java_lang_Object_wait_long_int(ctx, thread, remainingMillis.count(), (int) remainingNanos.count());
         monitorExit(ctx, thread);
         interruptedCheck(ctx);
     }
 }
 
 void M_java_lang_Thread_start(jcontext ctx, jobject self) {
-    auto newContext = new Context;
-    auto thread = (jthread) gcAlloc(newContext, &class_java_lang_Thread);
+    auto newContext = createContext();
+    auto thread = (jthread) self;
     thread->parent.gcMark = GC_MARK_ETERNAL;
     thread->F_nativeContext = (intptr_t) newContext;
     newContext->thread = thread;
@@ -56,20 +65,41 @@ void M_java_lang_Thread_start(jcontext ctx, jobject self) {
 }
 
 void M_java_lang_Thread_interrupt(jcontext ctx, jobject self) {
-    auto threadCtx = (jcontext) ((jthread) self)->F_nativeContext;
+    auto threadCtx = (jcontext) ((jthread) NULL_CHECK(self))->F_nativeContext;
     threadCtx->lock.lock();
     threadCtx->thread->F_interrupted = true;
-    if (threadCtx->blockedBy) {
-        monitorEnter(ctx, threadCtx->blockedBy);
-        M_java_lang_Object_notifyAll(ctx, threadCtx->blockedBy);
-        monitorExit(ctx, threadCtx->blockedBy);
-    }
+    if (threadCtx->blockedBy)
+        ((jmonitor) ((jobject) threadCtx->blockedBy)->monitor)->condition.notify_all();
     threadCtx->lock.unlock();
 }
 
 void M_java_lang_Thread_finalize(jcontext ctx, jobject selfObj) {
     auto self = (jthread) selfObj;
-    // Todo: Cleanup of thread object data when thread execution finished
+    auto context = (jcontext) self->F_nativeContext;
+    context->nativeThread->join();
+    delete context->nativeThread;
+    destroyContext(context);
+}
+
+jobject M_java_lang_Thread_getStackTrace_R_Array1_java_lang_StackTraceElement(jcontext ctx, jobject self) {
+    jtype frame[4];
+    auto frameRef = pushStackFrame(ctx, 1, frame, "java/lang/Thread:getStackTrace", nullptr);
+
+    jarray trace = createArray(ctx, &class_java_lang_StackTraceElement, ctx->stackDepth);
+    frame[0].o = (jobject)trace;
+
+    for (int i = 0; i < ctx->stackDepth; i++) {
+        auto stackFrame = &ctx->frames[i];
+        std::string_view method = stackFrame->method ? stackFrame->method : "";
+        auto separator = method.find(':');
+        frame[1].o = (jobject)stringFromNative(ctx, separator != std::string_view::npos ? method.substr(0, separator) : "Unknown");
+        frame[2].o = (jobject)stringFromNative(ctx, separator != std::string_view::npos ? method.substr(separator + 1) : "unknown");
+        frame[3].o = frame[1].o;
+        ((jobject *)trace->data)[ctx->stackDepth - 1 - i] = constructObject<&class_java_lang_StackTraceElement, init_java_lang_StackTraceElement_java_lang_String_java_lang_String_java_lang_String_int>(ctx, frame[1].o, frame[2].o, frame[3].o, stackFrame->lineNumber);
+    }
+
+    popStackFrame(ctx);
+    return frame[0].o;
 }
 
 }

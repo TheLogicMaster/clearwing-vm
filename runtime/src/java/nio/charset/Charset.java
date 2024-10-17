@@ -30,7 +30,12 @@ import java.io.UnsupportedOperationException;
  */
 public class Charset implements Comparable<Charset> {
 
-    private String name;
+    private final String name;
+
+    public Charset(String name) {
+        this.name = name;
+    }
+
     protected Charset(String canonicalName, String[] aliases) {
         name = canonicalName;
     }
@@ -44,7 +49,15 @@ public class Charset implements Comparable<Charset> {
     }
     
     public static Charset forName(String name) {
-        throw new UnsupportedOperationException("Charset.forName not implemented on this platform");
+        switch (name) {
+            case "UTF-8": return StandardCharsets.UTF_8;
+            case "ISO-8859-1": return StandardCharsets.ISO_8859_1;
+            case "UTF-16": return StandardCharsets.UTF_16;
+            case "UTF-16LE": return StandardCharsets.UTF_16LE;
+            case "UTF-16BE": return StandardCharsets.UTF_16BE;
+            case "US-ASCII": return StandardCharsets.US_ASCII;
+            default: throw new UnsupportedCharsetException(name);
+        }
     }
 
     public CharsetDecoder newDecoder() {

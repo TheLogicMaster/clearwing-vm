@@ -29,6 +29,7 @@ package java.io;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 
 /**
  * @author shannah
@@ -89,10 +90,13 @@ public class File {
 	}
 
 	public static File createTempFile (String prefix, String suffix, File directory) {
-		File tempDir = directory == null ? new File("temp") : directory;
+		String tempPath = System.getenv("java.io.tmpdir");
+		if (tempPath == null)
+			tempPath = "temp";
+		File tempDir = directory == null ? new File(tempPath) : directory;
 		if (!(tempDir.exists() && tempDir.isDirectory()) && !tempDir.mkdir())
 			return null;
-        String name = prefix + (suffix == null ? ".tmp" : suffix);
+        String name = prefix + (int)(Math.random() * Integer.MAX_VALUE) + (suffix == null ? ".tmp" : suffix);
         File tempFile = new File(tempDir, name);
 		if (!createFile(tempFile.path))
             return null;
@@ -109,7 +113,7 @@ public class File {
 	public native boolean exists ();
 
 	public File getAbsoluteFile () {
-		return null;
+		return this;
 	}
 
 	public String getAbsolutePath () {
@@ -117,11 +121,11 @@ public class File {
 	}
 
 	public String getCanonicalPath () {
-		return null;
+		return path;
 	}
 
 	public File getCanonicalFile () {
-		return null;
+		return this;
 	}
 
 	public long getFreeSpace () {
@@ -194,6 +198,26 @@ public class File {
 		for (int i = 0; i < filenames.length; i++)
 			files[i] = new File(this, filenames[i]);
 		return files;
+	}
+
+	public File[] listFiles(FilenameFilter filter) {
+		ArrayList<File> files = new ArrayList<>();
+		for (String name : list()) {
+			File file = new File(this, name);
+			if (filter.accept(this, name))
+				files.add(file);
+		}
+		return files.toArray(new File[0]);
+	}
+
+	public File[] listFiles(FileFilter filter) {
+		ArrayList<File> files = new ArrayList<>();
+		for (String name : list()) {
+			File file = new File(this, name);
+			if (filter.accept(file))
+				files.add(file);
+		}
+		return files.toArray(new File[0]);
 	}
 
 	public static File[] listRoots () {

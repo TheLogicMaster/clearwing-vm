@@ -44,6 +44,7 @@ public final class Class<T> implements java.lang.reflect.Type {
     private int size;
     private long classVtable;
     private long staticInitializer;
+    private long annotationInitializer;
     private long markFunction;
     private boolean primitive;
     private int arrayDimensions;
@@ -473,6 +474,7 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public boolean isMemberClass() {
+        ensureInitialized();
         return !isAnonymousClass() && name.contains("$");
     }
 

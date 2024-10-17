@@ -82,6 +82,7 @@ public class InvokeDynamicInstruction extends Instruction {
 
         private final boolean isStatic;
         private final boolean isInterface;
+        private final boolean isSpecial;
         private final String target;
         private final String qualifiedTarget;
         private final String targetMethod;
@@ -91,6 +92,7 @@ public class InvokeDynamicInstruction extends Instruction {
             super(method, -1);
             isStatic = handle.getTag() == Opcodes.H_INVOKESTATIC;
             isInterface = handle.getTag() == Opcodes.H_INVOKEINTERFACE;
+            isSpecial = handle.getTag() == Opcodes.H_INVOKESPECIAL;
             target = Utils.sanitizeName(handle.getOwner());
             qualifiedTarget = Utils.getQualifiedClassName(target);
             targetSignature = new MethodSignature(handle.getName(), handle.getDesc(), null);
@@ -105,44 +107,51 @@ public class InvokeDynamicInstruction extends Instruction {
         @Override
         public void appendUnoptimized(StringBuilder builder) {
             boolean isConstructor = handle.getName().equals("<init>");
+            boolean thisParam = !isConstructor && !isStatic && !isSpecial && targetSignature.getParamTypes().length < proxyMethodSignature.getParamTypes().length;
+            
             builder.append("auto proxy = (").append(qualifiedProxyClassName).append(" *) self;\n");
 
             builder.append("\t");
             boolean returnWrapped = false;
-            if (!isConstructor && !targetSignature.getReturnType().isVoid()) {
-                builder.append("return ");
+            if (!isConstructor && !proxyMethodSignature.getReturnType().isVoid()) {
+                builder.append("auto object = ");
                 returnWrapped = targetSignature.getReturnType().appendWrapperPrefix(proxyMethodSignature.getReturnType(), builder);
             }
 
+            String thisStr = thisParam ? "param0" : "(jobject)proxy->F_field0";
             if (isStatic)
                 builder.append(targetMethod).append("(ctx");
             else if (isInterface) {
-                builder.append("((func_").append(targetMethod.substring(2)).append(") resolveInterfaceMethod(ctx, &class_").append(target)
-                        .append(", INDEX_").append(targetMethod.substring(2)).append(", (jobject) proxy->F_field0))(ctx, (jobject) proxy->F_field0");
+                builder.append("((func_").append(targetMethod.substring(2)).append(") resolveInterfaceMethod(ctx, &class_").append(qualifiedTarget)
+                        .append(", INDEX_").append(targetMethod.substring(2)).append(", ").append(thisStr).append("))(ctx");
             } else if (isConstructor) {
                 builder.append("auto object = gcAlloc(ctx, &class_").append(qualifiedTarget).append(");\n");
                 builder.append("\t").append(targetMethod).append("(ctx, object");
+            } else if (isSpecial) {
+                builder.append(targetMethod).append("(ctx");
             } else
-                builder.append("((func_").append(targetMethod.substring(2)).append(") ((void **) NULL_CHECK((jobject) proxy->F_field0)->vtable)[VTABLE_").append(targetMethod.substring(2)).append("])(ctx, (jobject) proxy->F_field0");
+                builder.append("((func_").append(targetMethod.substring(2)).append(") ((void **) NULL_CHECK(").append(thisStr).append(")->vtable)[VTABLE_").append(targetMethod.substring(2)).append("])(ctx");
 
-            int paramOffset = isStatic || isConstructor ? 0 : 1;
-            for (int i = paramOffset; i < proxyFields.length; i++) {
+            if (thisParam)
+                builder.append(", param0");
+            
+            int paramOffset = thisParam ? 1 : 0;
+            int fieldOffset = !isStatic && !isConstructor && !thisParam ? 1 : 0;
+            for (int i = 0; i < proxyFields.length; i++) {
                 builder.append(", ");
-                boolean wrapped = proxyFields[i].appendWrapperPrefix(targetSignature.getParamTypes()[i - paramOffset], builder);
+                int targetIndex = i - fieldOffset;
+                boolean wrapped = targetIndex >= 0 && proxyFields[i].appendWrapperPrefix(targetSignature.getParamTypes()[targetIndex], builder);
                 builder.append(proxyFields[i].isPrimitive() ? "" : "(jobject) ").append("proxy->F_field").append(i);
                 if (wrapped)
                     builder.append(")");
             }
-            for (int i = 0; i < proxyMethodSignature.getParamTypes().length; i++) {
+            for (int i = paramOffset; i < proxyMethodSignature.getParamTypes().length; i++) {
                 builder.append(", ");
-                JavaType targetType = targetSignature.getParamTypes()[i + proxyFields.length - paramOffset];
+                JavaType targetType = targetSignature.getParamTypes()[i + proxyFields.length - paramOffset - fieldOffset];
                 JavaType paramType = proxyMethodSignature.getParamTypes()[i];
                 boolean wrapped = paramType.appendWrapperPrefix(targetType, builder);
-                boolean casted = !wrapped && !targetType.isPrimitive() && !targetType.getRegistryTypeName().equals(paramType.getRegistryTypeName());
-                if (casted)
-                    builder.append("object_cast<").append(Utils.getQualifiedClassName(targetType.getRegistryTypeName())).append(">(");
                 builder.append("param").append(i);
-                if (wrapped || casted)
+                if (wrapped)
                     builder.append(")");
             }
 
@@ -150,8 +159,11 @@ public class InvokeDynamicInstruction extends Instruction {
                 builder.append(")");
             builder.append(");\n");
 
-            if (isConstructor)
+            builder.append("\tpopStackFrame(ctx);\n");
+            if (isConstructor || !proxyMethodSignature.getReturnType().isVoid())
                 builder.append("\treturn object;\n");
+            else
+                builder.append("\treturn;\n");
         }
 
         @Override

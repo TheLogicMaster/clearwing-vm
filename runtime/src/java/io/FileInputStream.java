@@ -124,6 +124,10 @@ class FileInputStream extends InputStream
 		closed = false;
 	}
 
+	public FileInputStream(FileDescriptor fd) {
+		throw new UnsupportedOperationException();
+	}
+
 	/**
 	 * Opens the specified file for reading.
 	 * @param name the name of the file

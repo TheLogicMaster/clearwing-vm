@@ -22,9 +22,9 @@ application {
 }
 
 dependencies {
-    implementation group: 'org.ow2.asm', name: 'asm', version: '9.4'
-    implementation group: 'org.ow2.asm', name: 'asm-util', version: '9.4'
-    implementation group: 'org.ow2.asm', name: 'asm-commons', version: '9.4'
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.7'
+    implementation group: 'org.ow2.asm', name: 'asm-util', version: '9.7'
+    implementation group: 'org.ow2.asm', name: 'asm-commons', version: '9.7'
     implementation group: 'org.json', name: 'json', version: '20220320'
     implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.9.0'
     implementation group: 'io.github.classgraph', name: 'classgraph', version: '4.8.151'

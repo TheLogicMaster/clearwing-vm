@@ -39,7 +39,7 @@ public class Throwable{
     private Throwable cause;
     private String stack;
     private java.util.List<Throwable> suppressed;
-    
+    private StackTraceElement[] stackTrace;
     
     /**
      * Constructs a new Throwable with null as its error message string.
@@ -135,11 +135,11 @@ public class Throwable{
     
     
     public StackTraceElement[] getStackTrace() {
-        return new StackTraceElement[0];
+        return stackTrace;
     }
     
     public void setStackTrace(StackTraceElement[] el) {
-        
+        stackTrace = el;
     }
 
     /**

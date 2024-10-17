@@ -7,7 +7,7 @@
 extern "C" {
 
 void SM_java_lang_System_arraycopy_java_lang_Object_int_java_lang_Object_int_int(jcontext ctx, jobject src, jint srcOffset, jobject dst, jint dstOffset, jint length) {
-    if (jclass(src->clazz)->arrayDimensions == 0 or jclass(dst->clazz)->arrayDimensions == 0)
+    if (jclass(NULL_CHECK(src)->clazz)->arrayDimensions == 0 or jclass(NULL_CHECK(dst)->clazz)->arrayDimensions == 0)
         constructAndThrow<&class_java_lang_IllegalArgumentException, init_java_lang_IllegalArgumentException>(ctx);
     auto srcArray = (jarray) src;
     auto dstArray = (jarray) dst;
@@ -35,24 +35,18 @@ void SM_java_lang_System_exit0_int(jcontext ctx, jint code) {
 }
 
 jobject SM_java_lang_System_getProperty_java_lang_String_R_java_lang_String(jcontext ctx, jobject keyObj) {
-    static std::map<const char *, jobject> cache;
+    static std::map<const char *, const char *> cache;
     static std::mutex lock;
-    auto key = stringToNative(ctx, (jstring) keyObj);
+    auto key = stringToNative(ctx, (jstring) NULL_CHECK(keyObj));
     if (!strcmp(key, "java.runtime.name"))
         return (jobject) createStringLiteral(ctx, u8"Clearwing"_j);
-    try {
-        return cache.at(key);
-    } catch (std::out_of_range &ex) {
-        auto value = getSystemProperty(key);
-        if (value) {
-            auto string = (jobject) stringFromNative(ctx, value);
-            lock.lock();
-            cache[key] = string;
-            lock.unlock();
-            return string;
-        }
-    }
-    return nullptr;
+    std::lock_guard guard(lock);
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return (jobject) stringFromNative(ctx, it->second);
+    auto &entry = cache[key];
+    entry = getSystemProperty(key);
+    return (jobject) stringFromNative(ctx, entry);
 }
 
 }

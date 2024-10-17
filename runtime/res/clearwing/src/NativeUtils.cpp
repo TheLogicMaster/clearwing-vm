@@ -53,7 +53,7 @@ jlong SM_java_nio_NativeUtils_getArrayAddress_java_lang_Object_R_long(jcontext c
 }
 
 jobject SM_java_nio_NativeUtils_getArrayClass_java_lang_Class_int_R_java_lang_Class(jcontext ctx, jobject type, jint dimensions) {
-    return (jobject) getArrayClass((jclass) type, dimensions);
+    return (jobject) getArrayClass((jclass) NULL_CHECK(type), dimensions);
 }
 
 }

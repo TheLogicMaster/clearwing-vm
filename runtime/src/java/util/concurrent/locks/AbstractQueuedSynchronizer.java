@@ -565,7 +565,12 @@ public abstract class AbstractQueuedSynchronizer
     protected final boolean compareAndSetState(int expect, int update) {
         // See below for intrinsics setup to support this
 //        return unsafe.compareAndSwapInt(this, stateOffset, expect, update);
-        return false;
+        synchronized (this) {
+            if (state != expect)
+                return false;
+            state = update;
+            return true;
+        }
     }
 
     // Queuing utilities
@@ -2285,32 +2290,32 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * CAS head field. Used only by enq.
      */
-    private final boolean compareAndSetHead(Node update) {
-        return false;//unsafe.compareAndSwapObject(this, headOffset, null, update);
+    private final synchronized boolean compareAndSetHead(Node update) {
+        head = update;
+        return true;//unsafe.compareAndSwapObject(this, headOffset, null, update);
     }
 
     /**
      * CAS tail field. Used only by enq.
      */
-    private final boolean compareAndSetTail(Node expect, Node update) {
-        return false;//unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+    private final synchronized boolean compareAndSetTail(Node expect, Node update) {
+        tail = update;
+        return true;//unsafe.compareAndSwapObject(this, tailOffset, expect, update);
     }
 
     /**
      * CAS waitStatus field of a node.
      */
-    private static final boolean compareAndSetWaitStatus(Node node,
-                                                         int expect,
-                                                         int update) {
-        return false;//unsafe.compareAndSwapInt(node, waitStatusOffset, expect, update);
+    private static final synchronized boolean compareAndSetWaitStatus(Node node, int expect, int update) {
+        node.waitStatus = update;
+        return true;//unsafe.compareAndSwapInt(node, waitStatusOffset, expect, update);
     }
 
     /**
      * CAS next field of a node.
      */
-    private static final boolean compareAndSetNext(Node node,
-                                                   Node expect,
-                                                   Node update) {
-        return false;//unsafe.compareAndSwapObject(node, nextOffset, expect, update);
+    private static final synchronized boolean compareAndSetNext(Node node, Node expect, Node update) {
+        node.next = update;
+        return true;//unsafe.compareAndSwapObject(node, nextOffset, expect, update);
     }
 }

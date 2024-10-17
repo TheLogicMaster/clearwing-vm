@@ -1,12 +1,17 @@
 #include "Clearwing.h"
+
 #include "java/lang/Object.h"
+#include "java/lang/Cloneable.h"
+#include "java/lang/CloneNotSupportedException.h"
+
+#include <cstring>
 
 extern "C" {
 
 void clinit_java_lang_Object(jcontext ctx) {
 }
 
-void mark_java_lang_Object(jobject object, jint mark) {
+void mark_java_lang_Object(jobject object, jint mark, jint depth) {
     if (object and object->gcMark >= GC_MARK_START)
         object->gcMark = mark;
 }
@@ -23,7 +28,11 @@ jbool M_java_lang_Object_equals_java_lang_Object_R_boolean(jcontext ctx, jobject
 }
 
 jobject M_java_lang_Object_clone_R_java_lang_Object(jcontext ctx, jobject self) {
-    return nullptr; // Todo
+    if (!isInstance(ctx, NULL_CHECK(self), &class_java_lang_Cloneable))
+        constructAndThrow<&class_java_lang_CloneNotSupportedException, init_java_lang_CloneNotSupportedException>(ctx);
+    auto cloned = gcAlloc(ctx, (jclass)self->clazz);
+    memcpy((char *)cloned + sizeof(java_lang_Object), (char *)self + sizeof(java_lang_Object), ((jclass)self->clazz)->size - sizeof(java_lang_Object));
+    return cloned;
 }
 
 jobject M_java_lang_Object_getClass_R_java_lang_Class(jcontext ctx, jobject self) {

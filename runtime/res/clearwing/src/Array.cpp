@@ -10,9 +10,13 @@ extern "C" {
 void clinit_array(jcontext ctx) {
 }
 
-void mark_array(jobject object, jint mark) {
-    if (!object)
+void mark_array(jobject object, jint mark, jint depth) {
+    if (!object || (depth > GC_DEPTH_ALWAYS && (object->gcMark < GC_MARK_START || object->gcMark == mark)))
         return;
+    if (depth > MAX_GC_MARK_DEPTH) {
+        markDeepObject(object);
+        return;
+    }
     if (object->gcMark >= GC_MARK_START)
         object->gcMark = mark;
     if (((jclass) ((jclass) object->clazz)->componentClass)->primitive)
@@ -21,12 +25,12 @@ void mark_array(jobject object, jint mark) {
     for (int i = 0; i < array->length; i++) {
         auto child = ((jobject *) array->data)[i];
         if (child)
-            ((gc_mark_ptr) ((jclass) child->clazz)->markFunction)(child, mark);
+            ((gc_mark_ptr) ((jclass) child->clazz)->markFunction)(child, mark, depth + 1);
     }
 }
 
 jobject array_clone_R_java_lang_Object(jcontext ctx, jobject self) {
-    auto array = (jarray) self;
+    auto array = (jarray) NULL_CHECK(self);
     auto clazz = (jclass) self->clazz;
     auto componentClass = (jclass) clazz->componentClass;
     auto copy = createArray(ctx, componentClass, array->length);
@@ -35,13 +39,6 @@ jobject array_clone_R_java_lang_Object(jcontext ctx, jobject self) {
 }
 
 void array_finalize(jcontext ctx, jobject self) {
-//    auto array = (jarray) self;
-//    if (array->data) {
-//        auto clazz = (jclass) array->parent.clazz;
-////        adjustHeapUsage(clazz->primitive ? -array->length * clazz->size : -(int64_t)sizeof(jobject) * array->length);
-//        delete[] (char *) array->data;
-//        array->data = nullptr;
-//    }
 }
 
 void *vtable_array[]{
@@ -58,6 +55,7 @@ void *vtable_array[]{
         (void *) M_java_lang_Object_wait_long_int,
 };
 
+/// Gets an array class for the provided type. Does not throw exceptions.
 jclass getArrayClass(jclass componentType, int dimensions) {
     static std::mutex mutex;
     static std::map<jclass, std::vector<jclass>> arrayClasses;
@@ -68,13 +66,12 @@ jclass getArrayClass(jclass componentType, int dimensions) {
         dimensions++;
     }
 
-    try {
-        auto &vector = arrayClasses.at(componentType);
-        if (vector.size() >= dimensions)
-            return vector[dimensions - 1];
-    } catch (std::out_of_range &ignored) {}
+    std::lock_guard guard(mutex);
 
-    mutex.lock();
+    auto it = arrayClasses.find(componentType);
+    if (it != arrayClasses.end() && it->second.size() >= dimensions)
+        return it->second[dimensions - 1];
+
     auto &vector = arrayClasses[componentType];
     while (vector.size() < dimensions) {
         auto component = vector.empty() ? componentType : vector.back();
@@ -101,14 +98,14 @@ jclass getArrayClass(jclass componentType, int dimensions) {
         });
         registerClass(vector.back());
     }
-    mutex.unlock();
 
     return vector[dimensions - 1];
 }
 
-// Todo: Is this the correct behavior for multi-dimensional arrays?
+/// Creates a new multi-dimensional array. Throws exceptions.
 extern "C++" jarray createMultiArray(jcontext ctx, jclass type, const std::vector<int> &dimensions) {
-    auto array = (jarray) gcAlloc(ctx, getArrayClass(type, (int) dimensions.size())); // Safe because no methods are called on it, so no safepoint
+    nullCheck(ctx, (jobject) type);
+    auto array = (jarray) gcAllocNative(ctx, getArrayClass(type, (int) dimensions.size())); // Safe because no methods are called on it, so no safepoint
     array->length = dimensions[0];
     if (array->length == 0) // Todo: Verify
         return array;
@@ -124,13 +121,16 @@ extern "C++" jarray createMultiArray(jcontext ctx, jclass type, const std::vecto
                 ((jobject *) array->data)[i] = (jobject) createMultiArray(ctx, type, itemDims);
         }
     }
+    array->parent.gcMark = GC_MARK_START;
     return array;
 }
 
+/// Creates a new array. Throws exceptions.
 jarray createArray(jcontext ctx, jclass type, int length) {
     return createMultiArray(ctx, type, {length});
 }
 
+/// Called by the garbage collector to dispose array data. Does not throw exceptions.
 void disposeArray(jcontext ctx, jarray array) {
     if (array->data) {
         auto clazz = (jclass)((jclass) array->parent.clazz)->componentClass;

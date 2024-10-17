@@ -946,10 +946,4 @@ public class LinkedList<E> extends AbstractSequentialList<E> implements
         }
         return contents;
     }
-
-    @Override
-    public void finalize() throws Throwable {
-        clear();
-        voidLink = null;
-    }
 }

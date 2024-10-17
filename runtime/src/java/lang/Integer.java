@@ -225,6 +225,33 @@ public final class Integer extends Number implements Comparable<Integer> {
 		}
 		return result;
 	}
+	
+	public static Integer getInteger(String nm) {
+		return getInteger(nm, (Integer)null);
+	}
+
+	public static Integer getInteger(String nm, int val) {
+		Integer result = getInteger(nm, (Integer)null);
+		return result == null ? val : result;
+	}
+
+	public static Integer getInteger(String nm, Integer val) {
+		String v = null;
+
+		try {
+			v = System.getProperty(nm);
+		} catch (NullPointerException | IllegalArgumentException var4) {
+		}
+
+		if (v != null) {
+			try {
+				return parseInt(v);
+			} catch (NumberFormatException var5) {
+			}
+		}
+
+		return val;
+	}
 
 	private static NumberFormatException invalidInt (String s) {
 		throw new NumberFormatException("Invalid int: \"" + s + "\"");

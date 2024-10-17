@@ -18,6 +18,10 @@
 package java.util;
 
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 /**
  * A {@code Map} is a data structure consisting of a set of keys and values
  * in which each key is mapped to a single value.  The class of the objects
@@ -288,6 +292,121 @@ public interface Map<K,V> {
         put(key, newValue);
         return true;
     }
+
+    default V getOrDefault(Object key, V defaultValue) {
+        V v;
+        return (v = this.get(key)) == null && !this.containsKey(key) ? defaultValue : v;
+    }
+
+    default void forEach(BiConsumer<? super K, ? super V> action) {
+        Objects.requireNonNull(action);
+
+        K k;
+        V v;
+        for(Iterator var2 = this.entrySet().iterator(); var2.hasNext(); action.accept(k, v)) {
+            Entry<K, V> entry = (Entry)var2.next();
+
+            try {
+                k = entry.getKey();
+                v = entry.getValue();
+            } catch (IllegalStateException var7) {
+                IllegalStateException ise = var7;
+                throw new ConcurrentModificationException(ise);
+            }
+        }
+
+    }
+
+    default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
+        Objects.requireNonNull(function);
+        Iterator var2 = this.entrySet().iterator();
+
+        while(var2.hasNext()) {
+            Entry<K, V> entry = (Entry)var2.next();
+
+            K k;
+            V v;
+            IllegalStateException ise;
+            try {
+                k = entry.getKey();
+                v = entry.getValue();
+            } catch (IllegalStateException var8) {
+                ise = var8;
+                throw new ConcurrentModificationException(ise);
+            }
+
+            v = function.apply(k, v);
+
+            try {
+                entry.setValue(v);
+            } catch (IllegalStateException var7) {
+                ise = var7;
+                throw new ConcurrentModificationException(ise);
+            }
+        }
+
+    }
+
+    default V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        Objects.requireNonNull(mappingFunction);
+        V v;
+        V newValue;
+        if ((v = this.get(key)) == null && (newValue = mappingFunction.apply(key)) != null) {
+            this.put(key, newValue);
+            return newValue;
+        } else {
+            return v;
+        }
+    }
+
+    default V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        Objects.requireNonNull(remappingFunction);
+        V oldValue;
+        if ((oldValue = this.get(key)) != null) {
+            V newValue = remappingFunction.apply(key, oldValue);
+            if (newValue != null) {
+                this.put(key, newValue);
+                return newValue;
+            } else {
+                this.remove(key);
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    default V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        Objects.requireNonNull(remappingFunction);
+        V oldValue = this.get(key);
+        V newValue = remappingFunction.apply(key, oldValue);
+        if (newValue == null) {
+            if (oldValue == null && !this.containsKey(key)) {
+                return null;
+            } else {
+                this.remove(key);
+                return null;
+            }
+        } else {
+            this.put(key, newValue);
+            return newValue;
+        }
+    }
+
+    default V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+        Objects.requireNonNull(remappingFunction);
+        Objects.requireNonNull(value);
+        V oldValue = this.get(key);
+        V newValue = oldValue == null ? value : remappingFunction.apply(oldValue, value);
+        if (newValue == null) {
+            this.remove(key);
+        } else {
+            this.put(key, newValue);
+        }
+
+        return newValue;
+    }
+
 
     /**
      * Returns the number of mappings in this {@code Map}.

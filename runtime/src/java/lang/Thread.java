@@ -253,10 +253,7 @@ public class Thread implements java.lang.Runnable{
         return "Thread " + name; 
     }
 
-    // Todo: Improve stack traces
-    public StackTraceElement[] getStackTrace() {
-        return new StackTraceElement[0];
-    }
+    public native StackTraceElement[] getStackTrace();
 
     /**
      * Causes the currently executing thread object to temporarily pause and allow other threads to execute.

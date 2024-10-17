@@ -637,9 +637,4 @@ public class LinkedHashMap<K, V> extends HashMap<K, V> implements Map<K, V> {
         super.clear();
         head = tail = null;
     }
-
-    @Override
-    public void finalize() throws Throwable {
-        clear();
-    }
 }

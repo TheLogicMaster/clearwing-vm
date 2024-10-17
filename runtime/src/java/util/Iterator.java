@@ -17,6 +17,8 @@
 
 package java.util;
 
+import java.util.function.Consumer;
+
 /**
  * An {@code Iterator} is used to sequence over a collection of objects.
  * Conceptually, an iterator is always positioned between two elements of a
@@ -62,5 +64,15 @@ public interface Iterator<E> {
      *             if {@code next} has not been called, or {@code remove} has
      *             already been called after the last call to {@code next}.
      */
-    public void remove();
+    default void remove() {
+        throw new UnsupportedOperationException("remove");
+    }
+
+    default void forEachRemaining(Consumer<? super E> action) {
+        Objects.requireNonNull(action);
+
+        while(this.hasNext()) {
+            action.accept(this.next());
+        }
+    }
 }

@@ -4,7 +4,7 @@
 extern "C" {
 
 jdouble SM_java_lang_StringToReal_parseDblImpl_java_lang_String_int_R_double(jcontext ctx, jobject stringObj, jint e) {
-    auto string = (jstring) stringObj;
+    auto string = (jstring) NULL_CHECK(stringObj);
     auto length = string->F_count;
     auto chars = (jchar *) jarray(string->F_value)->data;
     char *data = new char[length + 1]{};

@@ -3,6 +3,7 @@ package com.thelogicmaster.clearwing;
 import org.objectweb.asm.Opcodes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,7 +18,6 @@ public class BytecodeField {
 	private final String signature;
 	private final Object initialValue;
 	private final ArrayList<BytecodeAnnotation> annotations = new ArrayList<>();
-	private boolean weak;
 
 	public BytecodeField (BytecodeClass clazz, String name, int access, String desc, String signature, Object initialValue) {
 		this.owner = clazz;
@@ -35,6 +35,11 @@ public class BytecodeField {
 			annotation.collectDependencies(dependencies, classMap);
 		if (type.getComponentType() == TypeVariants.OBJECT)
 			dependencies.add(type.getRegistryTypeName());
+	}
+
+	public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
+		for (BytecodeAnnotation annotation : annotations)
+			annotation.mergeDefaults(classMap);
 	}
 
 	public boolean isStatic() {
@@ -87,13 +92,5 @@ public class BytecodeField {
 
 	public ArrayList<BytecodeAnnotation> getAnnotations() {
 		return annotations;
-	}
-
-	public boolean isWeak() {
-		return weak;
-	}
-
-	public void markWeak() {
-		weak = true;
 	}
 }

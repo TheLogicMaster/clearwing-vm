@@ -771,11 +771,4 @@ public class HashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Clone
     public Object clone() throws CloneNotSupportedException {
         return new HashMap<>(this);
     }
-
-    @Override
-    public void finalize() throws Throwable {
-        for (Entry<K, V> entry: elementData)
-            if (entry != null)
-                entry.next = null;
-    }
 }

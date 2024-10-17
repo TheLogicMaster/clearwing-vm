@@ -6,9 +6,9 @@ extern "C" {
 
 jobject M_java_lang_StringBuilder_append_char_R_java_lang_StringBuilder(jcontext ctx, jobject self, jchar c) {
     auto builder = (java_lang_StringBuilder *) NULL_CHECK(self);
-    auto value = (jarray) builder->F_value;
-    if (builder->F_count == value->length)
+    if (builder->F_count == jarray(builder->F_value)->length)
         M_java_lang_StringBuilder_enlargeBuffer_int(ctx, self, builder->F_count + 1);
+    auto value = (jarray) builder->F_value;
     ((jchar *) value->data)[builder->F_count++] = c;
     return self;
 }

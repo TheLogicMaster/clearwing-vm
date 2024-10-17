@@ -140,6 +140,13 @@ public class Method {
         return false;
     }
 
+    public <A extends Annotation> A getAnnotation(Class<?> annotationType) {
+        for (Annotation annotation: annotations)
+            if (annotationType == annotation.annotationType())
+                return (A)annotation;
+        return null;
+    }
+
     public Class<?>[] getParameterTypes() {
         ensureSignatureInitialized();
         return parameterTypes;

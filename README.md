@@ -32,15 +32,12 @@ flowchart LR
 - Not fully conformant with standard (Regex, string formatting, internal names)
 - Has to be debugged as a large C++ codebase
 - Long initial compilation and linkage times
-- There's no GC and reference counting is used instead, so use WeakReference to avoid retain cycles
 
 ## Todo
 - Testing suite
 - Further runtime library support
 - Transpiler logging
 - Method trimming
-- Profile runtime memory leakage
-- Prevent invalid memory accesses to stack data after exit is called
 - Crash logs
 
 ## Dependencies
@@ -80,7 +77,6 @@ The available options are as follows:
 - __nonOptimized__: Patterns for classes to not optimize out even if unused
 - __reflective__: Patterns for classes to generate reflection metadata for
 - __intrinsics__: A list of methods to treat as native so that they can be patched (For example, `java.lang.Integer.toString()Ljava/lang/String;`)
-- __weakFields__: A list of fields to treat as _weak_ for removing retain cycles in libraries (For example, `java.lang.Throwable.message`)
 - __useLeakCheck__: Records object leaks by class to `leaks.txt` (Has runtime overhead, requires gcc)
 - __sourceIgnores__: Patterns for source files to ignore for jnigen style inlined C++
 - __generateProjectFiles__: Whether to generate basic project files like the CMake config

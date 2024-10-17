@@ -27,6 +27,7 @@ package java.lang.reflect;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * A {@code Field} provides information about, and dynamic access to, a
@@ -169,6 +170,70 @@ public final class Field {
 
     public native void set(Object obj, Object value) throws IllegalArgumentException, IllegalAccessException;
 
+    public byte getByte(Object obj) throws IllegalAccessException {
+        return (byte)get(obj);
+    }
+
+    public short getShort(Object obj) throws IllegalAccessException {
+        return (short)get(obj);
+    }
+
+    public char getChar(Object obj) throws IllegalAccessException {
+        return (char)get(obj);
+    }
+
+    public int getInt(Object obj) throws IllegalAccessException {
+        return (int)get(obj);
+    }
+
+    public long getLong(Object obj) throws IllegalAccessException {
+        return (long)get(obj);
+    }
+
+    public float getFloat(Object obj) throws IllegalAccessException {
+        return (float)get(obj);
+    }
+
+    public double getDouble(Object obj) throws IllegalAccessException {
+        return (double)get(obj);
+    }
+
+    public boolean getBoolean(Object obj) throws IllegalAccessException {
+        return (boolean)get(obj);
+    }
+
+    public void setByte(Object obj, byte value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setShort(Object obj, short value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setChar(Object obj, char value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setInt(Object obj, int value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setLong(Object obj, long value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setFloat(Object obj, float value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setDouble(Object obj, double value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
+    public void setBoolean(Object obj, boolean value) throws IllegalAccessException {
+        set(obj, value);
+    }
+
     public Annotation[] getDeclaredAnnotations() {
         return annotations;
     }
@@ -178,6 +243,17 @@ public final class Field {
             if (annotation == a.getClass())
                 return true;
         return false;
+    }
+
+    public Annotation[] getAnnotations() {
+        return annotations.clone();
+    }
+
+    public <A extends Annotation> A getAnnotation(Class<?> annotationType) {
+        for (Annotation annotation: annotations)
+            if (annotationType == annotation.annotationType())
+                return (A)annotation;
+        return null;
     }
 
     private static class GenericArrayTypeImpl implements GenericArrayType {

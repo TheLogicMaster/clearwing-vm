@@ -31,6 +31,7 @@ import java.util.Objects;
 public class ZipEntry implements ZipConstants, Cloneable {
 
 	String name;        // entry name
+	long xdostime = -1L;
 	long crc = -1;      // crc-32 of entry data
 	long size = -1;     // uncompressed size of entry data
 	long csize = -1;    // compressed size of entry data
@@ -266,7 +267,7 @@ public class ZipEntry implements ZipConstants, Cloneable {
 	 * @see #getExtra()
 	 */
 	public void setExtra(byte[] extra) {
-		setExtra0(extra, false);
+		setExtra0(extra, false, true);
 	}
 
 	/**
@@ -277,7 +278,7 @@ public class ZipEntry implements ZipConstants, Cloneable {
 	 * @param doZIP64
 	 *        if true, set size and csize from ZIP64 fields if present
 	 */
-	void setExtra0(byte[] extra, boolean doZIP64) {
+	void setExtra0(byte[] extra, boolean doZIP64, boolean isLOC) {
 	}
 
 	/**

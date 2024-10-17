@@ -25,6 +25,8 @@ package java.lang;
 
 import java.io.NativeOutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The System class contains several useful class fields and methods. It cannot be instantiated.
@@ -97,6 +99,10 @@ public final class System {
     public static String getProperty(String key, String def) {
         String value = getProperty(key);
         return value == null ? def : value;
+    }
+
+    public static Map<String, String> getenv() {
+        return new HashMap<>();
     }
 
     public static String getenv(String name) {

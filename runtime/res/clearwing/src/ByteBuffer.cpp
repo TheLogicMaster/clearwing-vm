@@ -31,7 +31,7 @@ void SM_java_nio_ByteBuffer_deallocate_long(jcontext ctx, jlong address) {
 }
 
 jbool SM_java_nio_ByteOrder_isLittleEndian_R_boolean(jcontext ctx) {
-    return std::endian::native == std::endian::little;
+    return std::endian::native == std::endian::little; // NOLINT
 }
 
 jobject M_java_nio_Buffer_position_int_R_java_nio_Buffer(jcontext ctx, jobject self, jint position) {

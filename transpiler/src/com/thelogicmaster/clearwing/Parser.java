@@ -18,7 +18,7 @@ public class Parser extends ClassVisitor {
     private final HashMap<String, HashMap<String, Integer>> invokeDynamicCounts = new HashMap<>();
 
     public Parser(TranspilerConfig config) {
-        super(Opcodes.ASM6);
+        super(Opcodes.ASM7);
         this.config = config;
     }
 
@@ -194,8 +194,20 @@ public class Parser extends ClassVisitor {
 
         @Override
         public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-            if (!bsm.getOwner().contains("LambdaMetafactory"))
-                throw new TranspilerException("Unsupported InvokeDynamic call: " + bsm.getOwner());
+            switch (bsm.getOwner()) {
+                case "java/lang/invoke/LambdaMetafactory":
+                    visitInvokeLambda(name, desc, bsm, bsmArgs);
+                    break;
+                case "java/lang/invoke/StringConcatFactory":
+                    visitInvokeStringConcat(name, desc, bsm, bsmArgs);
+                    break;
+                default:
+                    throw new TranspilerException("Unsupported InvokeDynamic call: " + bsm.getOwner());
+            }
+        }
+        
+        private void visitInvokeLambda(String name, String desc, Handle bsm, Object... bsmArgs) {
+            if (!"metafactory".equals(bsm.getName())) throw new TranspilerException("Unsupported LambdaMetafactory: " + bsm.getName());
             Handle handle = (Handle)bsmArgs[1];
             if (handle.getTag() < Opcodes.H_INVOKEVIRTUAL)
                 throw new TranspilerException("Unsupported InvokeDynamic handle type: " + handle.getTag());
@@ -203,9 +215,7 @@ public class Parser extends ClassVisitor {
             JavaType[] proxyFields = new MethodSignature("", desc, null).getParamTypes();
             String interfaceClass = Utils.sanitizeName(Type.getMethodType(desc).getReturnType().getClassName());
 
-            MethodSignature handleSignature = new MethodSignature(handle.getName(), handle.getDesc(), null);
-//            String handleName = Utils.sanitizeMethod(handle.getOwner(), handleSignature, handle.getTag() == Opcodes.H_INVOKESTATIC);
-            String handleName = Utils.sanitizeName(handle.getName());
+            String handleName = Utils.sanitizeName(handle.getName().replace("<init>", "init"));
             String handlePrefix = Utils.sanitizeName(handle.getOwner()) + "_invoke_" + handleName + "_";
             if (!invokeDynamicCounts.containsKey(currentClass.getName()))
                 invokeDynamicCounts.put(currentClass.getName(), new HashMap<>());
@@ -230,6 +240,11 @@ public class Parser extends ClassVisitor {
 
             method.addInstruction(invokeDynamic);
             classes.add(proxyClass);
+        }
+
+        private void visitInvokeStringConcat(String name, String desc, Handle bsm, Object... bsmArgs) {
+            if (!"makeConcatWithConstants".equals(name)) throw new TranspilerException("Unsupported InvokeStringConcat: " + name);
+            method.addInstruction(new InvokeStringConcatInstruction(method, desc, (String) bsmArgs[0], Arrays.stream(bsmArgs).skip(1).toArray()));
         }
 
         @Override

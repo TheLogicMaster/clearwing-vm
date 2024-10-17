@@ -20,28 +20,7 @@ public class Utils {
 	 * Replaces invalid characters found in Java symbols for C++ symbols
 	 */
 	public static String sanitizeName (String name) {
-		String sanitized = name.replaceAll("\\.", "/").replace("-", "_");
-
-		// Replace keywords in package names
-//		if (sanitized.contains("/")) {
-//			String[] sections = sanitized.split("/");
-//			StringBuilder builder = new StringBuilder();
-//			boolean first = true;
-//			for (String section: sections) {
-//				if (!first)
-//					builder.append("/");
-//				for (String keyword: CPP_KEYWORDS)
-//					if (keyword.equals(section)) {
-//						builder.append("_");
-//						break;
-//					}
-//				builder.append(section);
-//				first = false;
-//			}
-//			sanitized = builder.toString();
-//		}
-
-		return sanitized;
+        return name.replaceAll("\\.", "/").replace("-", "_");
 	}
 
 	/**

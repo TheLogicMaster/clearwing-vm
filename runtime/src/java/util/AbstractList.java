@@ -18,6 +18,8 @@
 package java.util;
 
 
+import java.util.function.Consumer;
+
 /**
  * {@code AbstractList} is an abstract implementation of the {@code List} interface, optimized
  * for a backing store which supports random access. This implementation does
@@ -779,5 +781,102 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements
             arr[iter] = get(iter);
         }
         return (T[])arr;
+    }static final class RandomAccessSpliterator<E> implements Spliterator<E> {
+        private final List<E> list;
+        private int index;
+        private int fence;
+        private final AbstractList<E> alist;
+        private int expectedModCount;
+
+        RandomAccessSpliterator(List<E> list) {
+            assert list instanceof RandomAccess;
+
+            this.list = list;
+            this.index = 0;
+            this.fence = -1;
+            this.alist = list instanceof AbstractList ? (AbstractList)list : null;
+            this.expectedModCount = this.alist != null ? this.alist.modCount : 0;
+        }
+
+        private RandomAccessSpliterator(RandomAccessSpliterator<E> parent, int origin, int fence) {
+            this.list = parent.list;
+            this.index = origin;
+            this.fence = fence;
+            this.alist = parent.alist;
+            this.expectedModCount = parent.expectedModCount;
+        }
+
+        private int getFence() {
+            List<E> lst = this.list;
+            int hi;
+            if ((hi = this.fence) < 0) {
+                if (this.alist != null) {
+                    this.expectedModCount = this.alist.modCount;
+                }
+
+                hi = this.fence = lst.size();
+            }
+
+            return hi;
+        }
+
+        public Spliterator<E> trySplit() {
+            int hi = this.getFence();
+            int lo = this.index;
+            int mid = lo + hi >>> 1;
+            return lo >= mid ? null : new RandomAccessSpliterator(this, lo, this.index = mid);
+        }
+
+        public boolean tryAdvance(Consumer<? super E> action) {
+            if (action == null) {
+                throw new NullPointerException();
+            } else {
+                int hi = this.getFence();
+                int i = this.index;
+                if (i < hi) {
+                    this.index = i + 1;
+                    action.accept(get(this.list, i));
+                    checkAbstractListModCount(this.alist, this.expectedModCount);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        public void forEachRemaining(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            List<E> lst = this.list;
+            int hi = this.getFence();
+            int i = this.index;
+
+            for(this.index = hi; i < hi; ++i) {
+                action.accept(get(lst, i));
+            }
+
+            checkAbstractListModCount(this.alist, this.expectedModCount);
+        }
+
+        public long estimateSize() {
+            return (long)(this.getFence() - this.index);
+        }
+
+        public int characteristics() {
+            return 16464;
+        }
+
+        private static <E> E get(List<E> list, int i) {
+            try {
+                return list.get(i);
+            } catch (IndexOutOfBoundsException var3) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        static void checkAbstractListModCount(AbstractList<?> alist, int expectedModCount) {
+            if (alist != null && alist.modCount != expectedModCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
     }
 }

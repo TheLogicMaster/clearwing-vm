@@ -47,4 +47,7 @@ public class ConcurrentModificationException extends RuntimeException {
         super(detailMessage);
     }
 
+    public ConcurrentModificationException(Throwable cause) {
+        super(cause);
+    }
 }

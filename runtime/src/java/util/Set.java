@@ -193,4 +193,8 @@ public interface Set<E> extends Collection<E> {
      * @see Collection#toArray(Object[])
      */
     public <T> T[] toArray(T[] array);
+
+    default Spliterator<E> spliterator() {
+        return Spliterators.spliterator(this, 1);
+    }
 }

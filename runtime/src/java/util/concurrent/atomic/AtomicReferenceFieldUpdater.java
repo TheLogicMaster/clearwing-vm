@@ -371,7 +371,7 @@ public abstract class AtomicReferenceFieldUpdater<T,V> {
 			accessCheck(obj);
 			valueCheck(update);
 			try {
-				if (field.get(obj).equals(expect)) {
+				if (field.get(obj) == expect) {
 					field.set(obj, update);
 					return true;
 				}

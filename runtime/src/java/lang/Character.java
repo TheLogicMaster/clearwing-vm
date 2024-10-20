@@ -292,6 +292,10 @@ public final class Character implements Comparable<Character>{
     public int hashCode(){
         return value; 
     }
+    
+    public static int hashCode(char value) {
+        return value;
+    }
 
     public static String toString(char c) {
         return String.valueOf(c);

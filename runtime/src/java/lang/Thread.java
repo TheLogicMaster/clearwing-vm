@@ -246,6 +246,12 @@ public class Thread implements java.lang.Runnable{
      */
     public native void start();
 
+    public final void stop() {}
+
+    public final void suspend() {}
+
+    public final void resume() {}
+    
     /**
      * Returns a string representation of this thread, including the thread's name and priority.
      */
@@ -266,6 +272,9 @@ public class Thread implements java.lang.Runnable{
 
     @Override
     protected native void finalize() throws Throwable;
+
+    public void setContextClassLoader(ClassLoader cl) {
+    }
 
     public ClassLoader getContextClassLoader() {
         return ClassLoader.getSystemClassLoader();
@@ -290,5 +299,22 @@ public class Thread implements java.lang.Runnable{
     public interface UncaughtExceptionHandler {
 
         void uncaughtException(Thread t, Throwable e);
+    }
+
+    public State getState() {
+        return !started ? State.NEW : alive ? State.RUNNABLE : State.TERMINATED;
+    }
+
+    public final ThreadGroup getThreadGroup() {
+        return null;
+    }
+    
+    public enum State {
+        NEW,
+        RUNNABLE,
+        BLOCKED,
+        WAITING,
+        TIMED_WAITING,
+        TERMINATED
     }
 }

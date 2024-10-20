@@ -46,7 +46,7 @@ jobject SM_java_lang_System_getProperty_java_lang_String_R_java_lang_String(jcon
         return (jobject) stringFromNative(ctx, it->second);
     auto &entry = cache[key];
     entry = getSystemProperty(key);
-    return (jobject) stringFromNative(ctx, entry);
+    return entry ? (jobject) stringFromNative(ctx, entry) : nullptr;
 }
 
 }

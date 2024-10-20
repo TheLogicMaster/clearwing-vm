@@ -142,6 +142,10 @@ public final class Double extends Number implements Comparable<Double> {
      * , of the primitive double value represented by this Double object. That is, the hashcode is the value of the expression: (int)(v^(v>>>32)) where v is defined by: long v = Double.doubleToLongBits(this.doubleValue());
      */
     public int hashCode(){
+        return hashCode(value);
+    }
+    
+    public static int hashCode(double value){
         long v = doubleToLongBits(value);
         return (int) (v ^ (v >>> 32));
     }

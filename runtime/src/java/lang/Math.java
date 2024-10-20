@@ -79,6 +79,40 @@ public final class Math {
 	 */
 	public static native double floor (double a);
 
+	public static int floorDiv(int x, int y) {
+		int r = x / y;
+		if ((x ^ y) < 0 && r * y != x) {
+			--r;
+		}
+
+		return r;
+	}
+
+	public static long floorDiv(long x, int y) {
+		return floorDiv(x, (long)y);
+	}
+
+	public static long floorDiv(long x, long y) {
+		long r = x / y;
+		if ((x ^ y) < 0L && r * y != x) {
+			--r;
+		}
+
+		return r;
+	}
+
+	public static int floorMod(int x, int y) {
+		return x - floorDiv(x, y) * y;
+	}
+
+	public static int floorMod(long x, int y) {
+		return (int)(x - floorDiv(x, y) * (long)y);
+	}
+
+	public static long floorMod(long x, long y) {
+		return x - floorDiv(x, y) * y;
+	}
+
 	/**
 	 * Returns the greater of two double values. That is, the result is the argument closer to positive infinity. If the arguments have the same value, the result is that same value. If either value is NaN, then the result is NaN. Unlike the the numerical comparison operators, this method considers negative zero to be strictly smaller than positive zero. If one argument is positive zero and the other negative zero, the result is positive zero.
 	 */

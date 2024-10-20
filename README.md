@@ -19,7 +19,7 @@ flowchart LR
 - Basic File I/O
 - Buffers (Direct and ByteBuffer wrappers)
 - Basic threading
-- Reflection (Requires reflection metadata enabled per-class)
+- Reflection
 - Java 7 runtime with Java 8 features (lambdas, method references, and default methods)
 - Incremental compilation
 - Plain C++ 20 project output
@@ -35,10 +35,11 @@ flowchart LR
 
 ## Todo
 - Testing suite
-- Further runtime library support
+- Further runtime library support and specify which packages are supported
 - Transpiler logging
 - Method trimming
 - Crash logs
+- Add additional safe-points in loops without function calls to prevent freezes on GC
 
 ## Dependencies
 - C++ 20
@@ -51,7 +52,7 @@ The transpiler is provided as a fat JAR which can be used as a standalone comman
 build system. An example is provided for a simple Gradle based project which produces and builds a CMake C++ 
 project. Command line arguments are used for specifying the input and output directories as well as a JSON config
 file for further configuration of transpiler options. The transpiler is also provided as a normal Java library 
-which could be used programmatically. Java 16 is what the transpiler has been tested with.
+which could be used programmatically. Java 17 is what the transpiler has been tested with.
 
 JitPack Maven artifacts:
 ```
@@ -75,9 +76,7 @@ and `**` expands to anything.
 
 The available options are as follows:
 - __nonOptimized__: Patterns for classes to not optimize out even if unused
-- __reflective__: Patterns for classes to generate reflection metadata for
 - __intrinsics__: A list of methods to treat as native so that they can be patched (For example, `java.lang.Integer.toString()Ljava/lang/String;`)
-- __useLeakCheck__: Records object leaks by class to `leaks.txt` (Has runtime overhead, requires gcc)
 - __sourceIgnores__: Patterns for source files to ignore for jnigen style inlined C++
 - __generateProjectFiles__: Whether to generate basic project files like the CMake config
 - __mainClass__: An optional "main class" that contains the entrypoint main function
@@ -98,7 +97,7 @@ corresponding C++ function in the same way. There's no JNI library loading funct
 have bindings written for them.
 
 ## Building
-As a Gradle project, there are tasks for building the needed components. JDK 16 is what has been tested with.
+As a Gradle project, there are tasks for building the needed components. JDK 17 is what has been tested with.
 The runtime and example submodules get built with a language level of 8, and the transpiler uses language level 14.
 When building the runtime in an Intellij, `Build>>Rebuild Project` may be necessary after making changes. 
 
@@ -109,45 +108,24 @@ structs and function pointer arrays to represent Java classes, it became quite t
 especially for the garbage collector related memory bugs. The coding practices used in the transpiler side of the
 project also left a lot to be desired, with the redundancy and lack of organization making it a challenge to 
 maintain. As such, the decision was made to start from scratch with a new transpiler and "VM" that would utilize
-modern C++. The C version is now available in the _legacy_ branch.
-
-### Architecture
-As one might expect, there are many challenges associated with bringing a Java codebase into C++. Being 
-object-oriented, it makes reproducing Java class hierarchies substantially easier than with C, though there are
-plenty of pitfalls with multi-inheritance. Memory management is another essential component, and an approach 
-without a garbage collector was taken, instead relying entirely on smart pointers. This has substantial 
-performance implications, but also makes memory safety far easier and eliminates the largest source of memory 
-bugs. To actually parse the Java source,
-the compiled ByteCode is disassembled and ingested by the transpiler, meaning that other JVM languages like
-Kotlin are also compatible. The JVM Assembly is then statically analyzed to produce an output that a C++ 
-compiler can effectively optimize, using techniques like converting values pushed onto the method stack into
-local variables. There are also more minor challenges, like converting Java symbols to C++ ones while avoiding
-name conflicts. This is primarily accomplished with namespaces corresponding to Java packages and field/method
-name prefixes. Array parameter types and function return types also present a potential source of ambiguity,
-so additional suffixes for types are added to uniquely identify said functions.
-
-### Inheritance
-To achieve Java inheritance, virtual C++ inheritance is used for both `extends` and `implements`. Aside from
-in fields and method parameters, object references are stored as Object shared pointers, meaning that dynamic 
-casting, which has runtime overhead, is needed quite often. As such, cast values will be cached by the
-transpiler where possible. The get an Object shared pointer from within a method, `enable_shared_from_this` is
-implemented by Object and accessible by `get_this()`. For this to work in default methods on interfaces,
-since they don't extend Object, each interface also implements this. Since virtual inheritance is used, the
-diamond problem that could occur with interfaces is avoided. C++ hides functions in parent class functions if 
-they have the same name but a different signature, so using statements are generated to prevent this. If a
-function appears in two parents, then a bridge function or virtual definition needs to be added to clear up
-the ambiguity.
+modern C++. The C version is now available in the _legacy_ branch. The original C++ version used more convenient
+and higher level C++ features like smart pointers, inheritance, and type variants, which made it much easier to
+debug, but the result had performance and memory leak issues which were unsuitable for large projects. It was an
+interesting experiment, but the lack of a garbage collector led to reference cycles leaking memory and the performance
+overhead of storing stack values as variants and using smart pointer for all objects was huge, even after optimizations.
+The current architecture aims to maintain a C ABI compatible interface for generated code and represents objects as
+plain data structs. Since C++ is only used to make the code a bit nicer with templates and such (Especially in hand
+writen code), exceptions use longjmp/setjmp rather than C++ exceptions, so it is generally unsafe to count on RAII
+or non-volatile variable contents when calling code which can throw exceptions.
 
 ### VM
 The "VM" part of the project is a handful of C++ files that handle interfacing with the host system, providing
-an initialization mechanism, and various helper functions. `Clearwing.hpp` is the main header, providing the 
-primary types and functions. `Array.hpp` is the representation of a Java array. `Object.cpp` is the only
-non-autogenerated runtime class, since it's the parent type. `Config.hpp` and `main.cpp` are autogenerated by
-the transpiler, storing configuration flags and the program entrypoint, respectively. `Instructions.hpp` stores
-the C++ representations of JVM instructions, though most won't be used due to transpiler optimizations. The 
-`impl` directory stores the runtime intrinsic methods that are implemented natively for performance or system
-API access. VM fields and functions are all placed in the `vm` namespace to avoid name conflicts.
-Class registration is done by individual classes calling the `registerClass` during global initialization. No 
+an initialization mechanism, and various helper functions. `Clearwing.h` is the main header, providing the 
+primary types and functions, as well as macros for implementing Java ByteCode. 
+`Array.hpp` is the representation of a Java array. `Object.cpp` is the only
+non-autogenerated runtime class, since it's the parent type. `Config.h` and `main.cpp` are autogenerated by
+the transpiler, storing configuration flags and the program entrypoint, respectively. Class registration is 
+done by individual classes calling the `registerClass` during global initialization. No 
 generated code can be called at this point to avoid circular dependencies during VM startup, so the required
 arrays, strings, and classes are specially crafted to avoid calling any Java static initializers. After this
 point, the main program entrypoint is run, the VM gets initialized, then the program runs, lazily initializing
@@ -155,62 +133,54 @@ classes as normal. Classes are stored into a map for easy retrieval by name. Sim
 placed into a map by address of the literal when using the literal `_j` suffix. 
 
 ### Types
-Reference types are stored as shared pointers and primitive values are stored as their corresponding type. When
+Reference types are stored as pointers and primitive values are stored as their corresponding type. When
 in a method local or on the method stack, types are stored as their arithmetic variants, meaning smaller types 
 get promoted to int and the remaining ones are stored the same way. Wide types (Long and double) normally would
-occupy two stack/local slots, but here, all types are stored in a `std::variant` which can accommodate any
-arithmetic or reference type. Where possible, the transpiler will replace the variant wrapper with the specific
-type for that local or stack value. For common reference types like objects, arrays, strings, classes, and each
+occupy two stack/local slots, but here, all types are stored in a union which can accommodate any
+arithmetic or reference type. For common reference types like objects, arrays, strings, classes, and each
 of the primitive values, typedefs are provided in the form of `jobject`, `jint`, `jarray`, and so on. Arrays
 are a bit special in that they don't have variants for different component types. Instead, they contain a
 `void *` to their data along with the name of the type they contain. It's up to the accessor to know the type
 that a given array contains, though there are type checks for primitive/reference values to avoid memory bugs.
-Since they are all types as `jarray`, they don't count as unique types for function signatures, so the C++
-function names for methods have array types appended to them. Strings are normal objects, but get constructed
+Strings are normal objects, but get constructed
 from C-strings or C++ UTF-8 literals using the custom `_j` suffix. The value is stored as UTF-16 and can be
 retrieved as a C-string using the `getNativeString` function. Classes are also normal objects, but get
-constructed by the VM when registering object classes or creating classes for array types. To avoid retain 
-cycles with references, the `Weak` annotation is provided in the `annotations` module or in the `weakFields`
-config option to store the specified reference as a `weak_ptr` rather than a shared one. This should only be 
-used where Objects are always stored elsewhere, since it can cause premature object destruction if not used 
-carefully.
+constructed by the VM when registering object classes or creating classes for array types.
 
-### Object Construction and Destruction
-The C++ constructor for Object takes only the class name as a parameter, with the rest of the constructors
-being no-argument, aside from Array. As such, a Java constructor needs to be separately called after object
-construction. For finalization, it's a bit more complex. Since the destructor is only called once the
-shared pointer reference count reaches zero, you can't just retrieve a new shared pointer, but the finalizer
-needs access to an instance shared pointer. As a workaround, a dummy shared pointer is constructed which
-doesn't try to extend the lifetime of the object. 
+### Garbage Collection
+Garbage collection is done by the garbage collector at object allocation time based on the amount of memory and 
+number of objects allocated since the last collection. It is a simple algorithm, but should be sufficient, and
+macros are available to override the defaults if needed. All objects that aren't static class members, on a Java 
+thread's stack, marked as eternal, and are not referenced by another reachable object will be collected when the
+GC is run. Before running, the thread running the GC waits for all other threads to be at a safe-point. This 
+normally happens during function calls, where threads check for thread suspension and wait for the GC to run. 
+Currently, a thread that is busy waiting or otherwise blocking without performing any function calls could lead to
+a system freeze when the GC tries to run. This issue could be prevented in the future by inserting safe-point calls
+as needed in loops without function calls. A thread in native code like `Thread.sleep` can be treated as if it is
+at a safe-point so long as it does not interact with VM objects or return to VM code until the GC is done. To avoid
+premature collection of objects, it is essential to ensure that all objects are stored on the stack before calling
+any functions, since it is the responsibility of the caller to protect arguments. That is the safest way for hand-writen
+native code, but objects can also be marked as eternal at allocation time to prevent collection until marked accordingly.
 
 ### Exceptions
-Rather than using setjmp like the C version, C++ exception catching was utilized to handle exception control
-flow. The `jobject` type is thrown and caught, checking if the type matches the type for that block, then
-rethrown if it doesn't match. This presents an issue with branch instructions, since you can't _goto_ into a
-try-catch block. To work around this, an array of jump-bypass flags are present in the method where needed to
-allow setting a flag and jumping before the try-block to allow entering, then immediately jumping to the
-actual label. The type thrown has to be a `jobject` exactly to be caught, so utility methods are
-provided in `Utils.hpp` to easily construct and throw exceptions. `jobject` doesn't extend `exception`, so
-the C++ compiler will complain a bit.
+Exception handling is done using longjmp/setjmp, which has implications as far as memory safety is concerned.
+C++ exceptions are not compatible with this approach, along with normal RAII behavior, so uncaught native exceptions
+will crash the program and a jump from a Java exception will bypass native stack cleanup, so objects can leak and
+otherwise cause issues. Variables used between potential jumps also have to be volatile to prevent the compiler from
+optimizing a stack access into a register and the like, causing undefined behavior. Helper templated functions are
+present to help a bit mitigate these potential issues.
 
 ### Reflection
-Reflection is accomplished by generating additional helper functions for classes with reflection metadata 
-enabled. These functions handle accessing fields and calling methods, casting objects as needed and wrapping
-primitives into their boxed types. For classes with annotations, a function is generated which instantiates the
-annotation hierarchies when called from the static initializer. Because of annotation nesting, values need to
-be recursively instantiated, but this is handled at compile time, expanding into a linear implementation in
-the generator function. Because annotations are interfaces, an implementation class is generated for each
-annotation that stores its values and implements the required getter methods. 
-
-With the C version, libFFI was used for method reflection, but that approach didn't seem feasible with C++,
-so helper functions are generated. For field accesses, it was originally done using class member offset hacks,
-but using `offsetof` or null dereferencing isn't a portable solution. When field types were converted to be
-stored as shared pointers to the derived type rather than Object, the field pointer approach became infeasible
-and helper functions were utilized to perform the object casting and primitive boxing.
+Reflection metadata is generated automatically for all classes. libFFI is used for method reflection, 
+and fields use `offsetof` to get member offsets. The legacy object-oriented C++ version required the generation
+of helper/proxy functions to access fields and call methods so generation was disabled by default, but that
+behavior is not needed anymore. The only attention needed for classes used with reflection is that they must be
+explicitly listed in the config if they are not directly referenced by other used classes or they will be optimized
+out at compile time.
 
 ### Java 8 Features
 Lambda and method reference functionality is accomplished by generating proxy classes which implement
 the target interface, store captured values, and handle primitive boxing conversions. It only supports
-the lambda factory InvokeDynamic target, so compiling with a version later than Java 8 may introduce 
-unsupported calls for string building and such. Default methods are implemented by generating the default
-implementation in the interface class itself, making use of C++ multi-inheritance.
+the lambda factory InvokeDynamic and string builder targets, so compiling with a version later than Java 8 may introduce 
+unsupported calls for string building and such. Default methods are implemented by populating inheriting class
+vtables with default values before populating overwriting implementations.

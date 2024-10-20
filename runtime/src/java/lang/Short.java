@@ -72,6 +72,10 @@ public final class Short extends Number implements Comparable<Short> {
         return value;
     }
 
+    public static int hashCode(short value){
+        return value;
+    }
+    
     /**
      * Assuming the specified String represents a short, returns that short's value. Throws an exception if the String cannot be parsed as a short. The radix is assumed to be 10.
      */
@@ -133,8 +137,20 @@ public final class Short extends Number implements Comparable<Short> {
         return value;
     }
 
+    public static int toUnsignedInt(short x) {
+        return x & '\uffff';
+    }
+
+    public static long toUnsignedLong(short x) {
+        return (long)x & 65535L;
+    }
+
     public static int compare(short f1, short f2) {
         return f1 - f2;
+    }
+
+    public static int compareUnsigned(short x, short y) {
+        return toUnsignedInt(x) - toUnsignedInt(y);
     }
 
     public int compareTo(Short another) {

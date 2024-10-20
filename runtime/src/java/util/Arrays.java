@@ -4084,5 +4084,36 @@ public class Arrays {
     public static short[] copyOf(short[] original, int len) {
         return copyOfRange(original, 0, len);
     }
-   
+
+    public static <T> Spliterator<T> spliterator(T[] array) {
+        return Spliterators.spliterator(array, 1040);
+    }
+
+    public static <T> Spliterator<T> spliterator(T[] array, int startInclusive, int endExclusive) {
+        return Spliterators.spliterator(array, startInclusive, endExclusive, 1040);
+    }
+
+    public static Spliterator.OfInt spliterator(int[] array) {
+        return Spliterators.spliterator(array, 1040);
+    }
+
+    public static Spliterator.OfInt spliterator(int[] array, int startInclusive, int endExclusive) {
+        return Spliterators.spliterator(array, startInclusive, endExclusive, 1040);
+    }
+
+    public static Spliterator.OfLong spliterator(long[] array) {
+        return Spliterators.spliterator(array, 1040);
+    }
+
+    public static Spliterator.OfLong spliterator(long[] array, int startInclusive, int endExclusive) {
+        return Spliterators.spliterator(array, startInclusive, endExclusive, 1040);
+    }
+
+    public static Spliterator.OfDouble spliterator(double[] array) {
+        return Spliterators.spliterator(array, 1040);
+    }
+
+    public static Spliterator.OfDouble spliterator(double[] array, int startInclusive, int endExclusive) {
+        return Spliterators.spliterator(array, startInclusive, endExclusive, 1040);
+    }
 }

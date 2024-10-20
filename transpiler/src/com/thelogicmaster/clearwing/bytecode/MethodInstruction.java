@@ -74,7 +74,7 @@ public class MethodInstruction extends Instruction {
     @Override
     public void appendUnoptimized(StringBuilder builder) {
         if (resolvedMethod == null)
-            throw new TranspilerException("Method not resolved: " + owner + "." + originalName + " " + signature.getDesc());
+            throw new TranspilerException("Method not resolved: " + owner + "." + originalName + " " + signature.getDesc() + " for " + method);
         if (signature.getParamTypes().length > 0 || opcode != Opcodes.INVOKESTATIC)
             builder.append("\tPOP_N(").append(signature.getParamTypes().length + (opcode != Opcodes.INVOKESTATIC ? 1 : 0)).append("); // Pop method args\n");
         builder.append("\t");

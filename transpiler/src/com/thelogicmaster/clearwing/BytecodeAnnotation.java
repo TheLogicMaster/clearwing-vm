@@ -204,7 +204,7 @@ class AnnotationObjectValue extends AnnotationValue {
 						if (array[i] instanceof String || array[i] instanceof Type) {
 							builder.append("\t\t((jobject *) ((jarray) ").append(target).append(")->data)[").append(i).append("] = ");
 							if (array[i] instanceof String)
-								builder.append(Utils.encodeStringLiteral((String)array[i]));
+								builder.append("(jobject) createStringLiteral(ctx, ").append(Utils.encodeStringLiteral((String)array[i])).append(")");
 							else
 								builder.append("(jobject) &class_").append(Utils.getQualifiedClassName(((Type)array[i]).getClassName()));
 						} else {

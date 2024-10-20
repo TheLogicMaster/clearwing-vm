@@ -372,6 +372,10 @@ public class LockSupport {
 //        UNSAFE.park(true, deadline);
     }
 
+    static final long getThreadId(Thread thread) {
+        return 0;
+    }
+
     /**
      * Returns the pseudo-randomly initialized or updated secondary seed.
      * Copied from ThreadLocalRandom due to package access restrictions.

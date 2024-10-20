@@ -256,6 +256,8 @@ public class ZeroOperandInstruction extends Instruction {
                 if (stack.isEmpty())
                     break;
                 type = stack.get(stack.size() - 1).getBasicType();
+                if (!type.isWide() && stack.size() < 2)
+                    break;
                 setInputsFromStack(stack, type.isWide() ? 1 : 2);
                 setBasicOutputs();
                 break;

@@ -763,7 +763,7 @@ jint longCompare(jlong value1, jlong value2);
 #define INST_SWAP() { \
     jlong temp = sp[-1].l; \
     sp[-1].l = sp[-2].l; \
-    sp[-2].l = temp.l; \
+    sp[-2].l = temp; \
     } SEMICOLON_RECEPTOR
 
 #define INST_IRETURN() \

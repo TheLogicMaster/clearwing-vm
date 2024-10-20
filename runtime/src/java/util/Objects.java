@@ -25,6 +25,10 @@
 
 package java.util;
 
+import jdk.internal.util.Preconditions;
+
+import java.util.function.BiFunction;
+
 /**
  * This class consists of {@code static} utility methods for operating
  * on objects.  These utilities include {@code null}-safe or {@code

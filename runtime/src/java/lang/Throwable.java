@@ -96,6 +96,11 @@ public class Throwable{
 
     private native void fillInStack();
     
+    public Throwable fillInStackTrace(){
+        fillInStack();
+        return this;
+    }
+    
     /**
      * Prints this Throwable and its backtrace to the standard error stream. This method prints a stack trace for this Throwable object on the error output stream that is the value of the field System.err. The first line of output contains the result of the
      * method for this object.

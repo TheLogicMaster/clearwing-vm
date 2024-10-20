@@ -411,6 +411,9 @@ public class Parser extends ClassVisitor {
                     if (instruction.getOutputs() == null)
                         return;
                 }
+                
+                if (instruction.getOutputs() == null) 
+                    return;
 
                 offset++;
             }

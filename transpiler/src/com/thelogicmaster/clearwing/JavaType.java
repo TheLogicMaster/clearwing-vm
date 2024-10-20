@@ -200,4 +200,9 @@ public class JavaType {
 	public int hashCode() {
 		return desc.hashCode();
 	}
+
+	@Override
+	public String toString() {
+		return desc;
+	}
 }

@@ -76,6 +76,10 @@ public final class Byte extends Number implements Comparable<Byte> {
     public int hashCode(){
         return intValue();
     }
+    
+    public static int hashCode(byte value) {
+        return value;
+    }
 
     /**
      * Assuming the specified String represents a byte, returns that byte's value. Throws an exception if the String cannot be parsed as a byte. The radix is assumed to be 10.
@@ -162,6 +166,14 @@ public final class Byte extends Number implements Comparable<Byte> {
 
     public static int compare(byte f1, byte f2) {
         return f1 - f2;
+    }
+
+    public static int compareUnsigned(byte x, byte y) {
+        return toUnsignedInt(x) - toUnsignedInt(y);
+    }
+
+    public static long toUnsignedLong(byte x) {
+        return (long)x & 255L;
     }
 
     public int compareTo(Byte another) {

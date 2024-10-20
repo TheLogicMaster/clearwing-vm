@@ -89,6 +89,13 @@ public final class Class<T> implements java.lang.reflect.Type {
      */
     public native static java.lang.Class<?> forName(java.lang.String className) throws java.lang.ClassNotFoundException;
 
+    public static java.lang.Class<?> forName(java.lang.String className, boolean init, ClassLoader loader) throws java.lang.ClassNotFoundException {
+        Class<?> clazz = forName(className);
+        if (init)
+            clazz.ensureInitialized();
+        return clazz;
+    }
+    
     /**
      * Returns the fully-qualified name of the entity (class, interface, array
      * class, primitive type, or void) represented by this Class object, as a

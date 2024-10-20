@@ -198,7 +198,7 @@ const char *stringToNative(jcontext ctx, jstring string) {
 jstring concatStringsRecipe(jcontext ctx, const char *recipe, int argCount, ...) {
     va_list args;
     va_start(args, argCount);
-    auto string = new std::string;
+    volatile auto string = new std::string;
     jstring result{};
     tryFinally(ctx, "concatStringsRecipe", [&] {
         int term = 0;
@@ -217,7 +217,7 @@ jstring concatStringsRecipe(jcontext ctx, const char *recipe, int argCount, ...)
         result = stringFromNative(ctx, string->c_str());
     }, [&] {
         delete string;
-        va_end(args);
+        va_end(args); // This may be unsafe if an exception is thrown...
     });
     return result;
 }
@@ -545,6 +545,8 @@ jframe pushStackFrame(jcontext ctx, int size, const jtype *stack, const char *me
 /// Pops a stack frame. Does not throw exceptions.
 void popStackFrame(jcontext ctx) {
     SAFEPOINT(); // Safepoint before popping the stack to preserve return value object references on the frame
+    if (ctx->stackDepth == 0)
+        throw std::runtime_error("No stack frame to pop");
     auto frame = &ctx->frames[ctx->stackDepth - 1];
     if (frame->monitor)
         monitorExit(ctx, frame->monitor);
@@ -560,6 +562,8 @@ jmp_buf *pushExceptionFrame(jframe frame, jclass type) {
 
 /// Pops an exception frame then returns and clears the current exception. Does not throw exceptions.
 jobject popExceptionFrame(jframe frame) {
+    if (frame->exceptionFrames.empty()) 
+        return nullptr; // Todo: Should this be possible to happen, or do jumps into a try-catch region need to be guarded? Seen in ktx-assets-async AssetStorage.load
     frame->exceptionFrames.pop_back();
     auto exception = frame->exception;
     frame->exception = nullptr;

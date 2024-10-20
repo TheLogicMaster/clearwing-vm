@@ -360,4 +360,8 @@ public interface List<E> extends Collection<E> {
      *                in the type of the specified array.
      */
     public <T> T[] toArray(T[] array);
+
+    default Spliterator<E> spliterator() {
+        return (Spliterator)(this instanceof RandomAccess ? new AbstractList.RandomAccessSpliterator(this) : Spliterators.spliterator(this, 16));
+    }
 }

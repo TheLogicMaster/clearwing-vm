@@ -27,7 +27,7 @@ public class MessageFormat extends Format {
 	}
 
 	public String toPattern() {
-		return null;
+		return pattern;
 	}
 
 	public void setFormatsByArgumentIndex(Format[] newFormats) {
@@ -55,19 +55,36 @@ public class MessageFormat extends Format {
 	}
 
 	public final StringBuffer format(Object[] arguments, StringBuffer result, FieldPosition pos) {
-		return null;
+		// Todo: Only supports the bare minimum
+		int groupStart = -1;
+		for (int i = 0; i < pattern.length(); i++) {
+			char c = pattern.charAt(i);
+			if (c == '{') {
+				groupStart = i + 1;
+			} else if (groupStart < 0) {
+				result.append(c);
+			} else if (c == '}') {
+				try {
+					int index = Integer.parseInt(pattern.substring(groupStart, i));
+					result.append(arguments[index]);
+				} catch (NumberFormatException ignored) { }
+				groupStart = -1;
+			}
+		}
+		return result;
 	}
 
 	public static String format(String pattern, Object ... arguments) {
-		return pattern; // Todo: Actually format...
+		MessageFormat temp = new MessageFormat(pattern);
+		return temp.format(arguments);
 	}
 
-	public String format(Object o) {
-		return null;
+	public String format(Object obj) {
+		return this.format(obj, new StringBuffer(), new FieldPosition(0)).toString();
 	}
 
 	public final StringBuffer format(Object arguments, StringBuffer result, FieldPosition pos) {
-		return null;
+		return format((Object[]) arguments, result, pos);
 	}
 
 	public AttributedCharacterIterator formatToCharacterIterator(Object arguments) {

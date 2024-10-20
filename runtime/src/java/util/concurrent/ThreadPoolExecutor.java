@@ -841,7 +841,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *
      * @param shutdownOK true if should return true if SHUTDOWN
      */
-    final boolean isRunningOrShutdown(boolean shutdownOK) {
+    public final boolean isRunningOrShutdown(boolean shutdownOK) {
         int rs = runStateOf(ctl.get());
         return rs == RUNNING || (rs == SHUTDOWN && shutdownOK);
     }

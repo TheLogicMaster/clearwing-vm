@@ -122,5 +122,8 @@ public final class System {
     public static long nanoTime() {
         return currentTimeMillis() * 1000000;
     }
-
+    
+//    public static SecurityManager getSecurityManager() {
+//        return null;
+//    }
 }

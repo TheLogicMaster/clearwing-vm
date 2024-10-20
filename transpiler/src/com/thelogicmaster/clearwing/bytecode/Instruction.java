@@ -179,4 +179,9 @@ public abstract class Instruction {
 		}
 		builder.append(");\n");
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "(" + opcode + ")";
+	}
 }

@@ -15,7 +15,13 @@
  */
 package java.lang;
 
+import jdk.internal.loader.BootLoader;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URL;
+import java.util.Enumeration;
 
 
 public abstract class ClassLoader extends Object {
@@ -24,7 +30,6 @@ public abstract class ClassLoader extends Object {
         
     };
     
-
     protected ClassLoader() {
         this(null);
     }
@@ -45,11 +50,27 @@ public abstract class ClassLoader extends Object {
         throw new UnsupportedOperationException();
     }
 
+    public static URL getSystemResource(String name) {
+        return getSystemClassLoader().getResource(name);
+    }
+
+    public static Enumeration<URL> getSystemResources(String name) throws IOException {
+        return getSystemClassLoader().getResources(name);
+    }
+
     public static InputStream getSystemResourceAsStream(String name) {
         throw new UnsupportedOperationException();
     }
 
     public Class<?> loadClass(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    public URL getResource(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Enumeration<URL> getResources(String name) throws IOException {
         throw new UnsupportedOperationException();
     }
 }

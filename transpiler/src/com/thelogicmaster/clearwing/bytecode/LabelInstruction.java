@@ -13,9 +13,13 @@ public class LabelInstruction extends Instruction {
 
 	private final int label;
 
-	public LabelInstruction (BytecodeMethod method, Label label) {
+	public LabelInstruction (BytecodeMethod method, int label) {
 		super(method, -1);
-		this.label = method.getLabelId(label);
+		this.label = label;
+	}
+	
+	public LabelInstruction (BytecodeMethod method, Label label) {
+		this(method, method.getLabelId(label));
 	}
 
 	@Override

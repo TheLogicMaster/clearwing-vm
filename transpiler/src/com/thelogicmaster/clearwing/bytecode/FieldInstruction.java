@@ -35,26 +35,38 @@ public class FieldInstruction extends Instruction {
         ownerType = new JavaType(owner);
     }
 
+    private BytecodeClass findRealOwner(HashMap<String, BytecodeClass> classMap, BytecodeClass clazz) {
+        for (BytecodeField field : clazz.getFields())
+            if (field.getOriginalName().equals(originalName) && field.isStatic() == isStatic && field.getDesc().equals(desc))
+                return clazz;
+        
+        for (String inter : clazz.getInterfaces()) {
+            BytecodeClass iClazz = classMap.get(inter);
+            if (iClazz == null)
+                continue;
+            for (BytecodeField field : iClazz.getFields())
+                if (field.getOriginalName().equals(originalName) && field.isStatic() == isStatic && field.getDesc().equals(desc))
+                    return iClazz;
+            iClazz = findRealOwner(classMap, iClazz);
+            if (iClazz != null)
+                return iClazz;
+        }
+        
+        BytecodeClass parent = classMap.get(clazz.getSuperName());
+        if (parent == null)
+            return null;
+        return findRealOwner(classMap, parent);
+    }
+    
     @Override
     public void processHierarchy(HashMap<String, BytecodeClass> classMap) {
         ownerClass = classMap.get(owner);
         if (ownerClass == null)
             System.err.println("Failed to find owner class for: " + owner);
 
-        // Todo: Could it also be on an interface?
         // Real owner could be a super class
-        realOwnerClass = ownerClass;
-        while (realOwnerClass != null) {
-            boolean found = false;
-            for (BytecodeField field : realOwnerClass.getFields())
-                if (field.getOriginalName().equals(originalName) && field.isStatic() == isStatic && field.getDesc().equals(desc)) {
-                    found = true;
-                    break;
-                }
-            if (found)
-                break;
-            realOwnerClass = classMap.get(realOwnerClass.getSuperName());
-        }
+        realOwnerClass = ownerClass == null ? null : findRealOwner(classMap, ownerClass);
+        
         if (realOwnerClass == null)
             System.err.println("Failed to locate field owner for: " + owner + "." + originalName);
         else
@@ -86,9 +98,12 @@ public class FieldInstruction extends Instruction {
 
     @Override
     public void appendUnoptimized(StringBuilder builder) {
+        if (realOwnerClass == null)
+            throw new TranspilerException("Failed to find owner class for: " + name + " needed for " + method.getName());
+        
         if (isStatic) // Todo: Skip on same class for clinit
             builder.append("\tclinit_").append(qualifiedOwner).append("(ctx);\n");
-
+        
         switch (opcode) {
             case Opcodes.GETSTATIC ->
                     builder.append("\t(sp++)->").append(type.getBasicType().getStackName()).append(" = ").append(realName).append(";\n");

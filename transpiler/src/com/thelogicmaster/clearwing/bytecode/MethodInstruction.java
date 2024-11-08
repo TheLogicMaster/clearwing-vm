@@ -46,7 +46,7 @@ public class MethodInstruction extends Instruction {
     public void resolveSymbols() {
         if (ownerClass != null)
             resolvedMethod = resolveMethod(ownerClass);
-        if (resolvedMethod == null && !isStatic)
+        if (resolvedMethod == null && !isStatic && (!"<init>".equals(originalName) || "java/lang/Object".equals(owner)))
             for (BytecodeMethod m : BytecodeClass.OBJECT_METHODS)
                 if (m.getSignature().equals(signature)) {
                     resolvedMethod = m;

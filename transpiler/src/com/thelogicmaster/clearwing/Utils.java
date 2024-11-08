@@ -147,7 +147,7 @@ public class Utils {
 			else if (Float.isNaN(f))
 				return "jfloat(std::numeric_limits<float>::quiet_NaN())";
 			else
-				return "jfloat(" + f + "f)";
+				return "jfloat(" + formatFloatLiteral(f) + "f)";
 		} else if (o instanceof Double) {
 			double d = (Double) o;
 			if (d == Double.POSITIVE_INFINITY)
@@ -157,7 +157,7 @@ public class Utils {
 			else if (Double.isNaN(d))
 				return "jdouble(std::numeric_limits<double>::quiet_NaN())";
 			else
-				return "jdouble(" + d + ")";
+				return "jdouble(" + formatDoubleLiteral(d) + ")";
 		} else if (o instanceof String)
 			return "((jobject) createStringLiteral(ctx, " + Utils.encodeStringLiteral((String)o) + "))";
 		else if (o instanceof Type)
@@ -169,5 +169,19 @@ public class Utils {
 			}
 		else
 			throw new TranspilerException("Invalid annotation parameter object of type: " + o.getClass());
+	}
+	
+	private static String formatFloatLiteral(float value) {
+		float abs = Math.abs(value);
+		if (abs > 10e7 || abs < 10e-3)
+			return String.format("%e", value);
+		return Float.toString(value);
+	}
+
+	private static String formatDoubleLiteral(double value) {
+		double abs = Math.abs(value);
+		if (abs > 10e7 || abs < 10e-3)
+			return String.format("%e", value);
+		return Double.toString(value);
 	}
 }

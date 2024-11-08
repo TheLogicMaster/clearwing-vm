@@ -220,9 +220,7 @@ public class File {
 		return files.toArray(new File[0]);
 	}
 
-	public static File[] listRoots () {
-		return null;
-	}
+	public native static File[] listRoots ();
 
 	public native boolean mkdir ();
 

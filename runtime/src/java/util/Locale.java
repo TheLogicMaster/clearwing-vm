@@ -166,6 +166,10 @@ public class Locale {
         return defaultLocale;
     }
     
+    public static Locale getDefault(Category category) {
+        return getDefault();
+    }
+    
     public static void setDefault(Locale l) {
         defaultLocale = l;
     }
@@ -184,6 +188,14 @@ public class Locale {
 
     private static native String getOSLanguage();
 
+    public final String getDisplayName() {
+        return language;
+    }
+
+    public String getDisplayName(Locale inLocale) {
+        return getDisplayName();
+    }
+    
     @Override
     public String toString () {
         String string = language;

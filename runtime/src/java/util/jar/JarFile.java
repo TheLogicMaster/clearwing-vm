@@ -28,8 +28,6 @@ package java.util.jar;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import java.util.zip.*;
 
 /**

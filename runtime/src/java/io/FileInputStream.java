@@ -25,6 +25,8 @@
 
 package java.io;
 
+import java.nio.channels.FileChannel;
+
 /**
  * A <code>FileInputStream</code> obtains input bytes
  * from a file in a file system. What files
@@ -254,6 +256,10 @@ class FileInputStream extends InputStream
 			closed = true;
 		}
 		close0();
+	}
+
+	public FileChannel getChannel() {
+		return null;
 	}
 
 	private native void close0() throws IOException;

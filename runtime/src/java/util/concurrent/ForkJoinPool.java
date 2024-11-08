@@ -1959,7 +1959,7 @@ public class ForkJoinPool extends AbstractExecutorService {
     /**
      * Performs helpComplete for an external submitter.
      */
-    final int externalHelpComplete(CountedCompleter<?> task, int maxTasks) {
+    public final int externalHelpComplete(CountedCompleter<?> task, int maxTasks) {
         int r = new Random().nextInt();
         WorkQueue[] ws; WorkQueue w; int n;
         return ((ws = workQueues) != null && (n = ws.length) > 0 &&

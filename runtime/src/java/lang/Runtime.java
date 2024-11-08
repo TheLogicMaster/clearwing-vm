@@ -22,6 +22,11 @@
  */
 
 package java.lang;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.StringTokenizer;
+
 /**
  * Every Java application has a single instance of class Runtime that allows the application to interface with the environment in which the application is running. The current runtime can be obtained from the getRuntime method.
  * An application cannot create its own instance of this class.
@@ -78,5 +83,29 @@ public class Runtime {
 
     public int availableProcessors() {
         return 1;
+    }
+
+    public Process exec(String command) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public Process exec(String command, String[] envp) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public Process exec(String command, String[] envp, File dir) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public Process exec(String[] cmdarray) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public Process exec(String[] cmdarray, String[] envp) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public Process exec(String[] cmdarray, String[] envp, File dir) throws IOException {
+        throw new UnsupportedOperationException();
     }
 }

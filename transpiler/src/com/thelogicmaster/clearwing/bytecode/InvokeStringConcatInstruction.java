@@ -1,6 +1,7 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.*;
+import org.objectweb.asm.Opcodes;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +13,7 @@ public class InvokeStringConcatInstruction extends Instruction {
     private final Object[] constants;
     
     public InvokeStringConcatInstruction(BytecodeMethod method, String desc, String recipe, Object[] constants) {
-        super(method, -1);
+        super(method, Opcodes.INVOKEDYNAMIC);
         signature = new MethodSignature("", desc, null);
         this.recipe = recipe;
         this.constants = constants;

@@ -4,6 +4,7 @@ import org.objectweb.asm.Type;
 
 import java.util.*;
 
+// Todo: Make created objects eternal
 public class BytecodeAnnotation extends AnnotationValue {
 
 	private final ArrayList<AnnotationValue> values = new ArrayList<>();

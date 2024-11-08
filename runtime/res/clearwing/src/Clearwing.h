@@ -24,7 +24,7 @@ extern "C" {
 
 #define GC_MARK_START 0
 #define GC_MARK_END 100
-#define GC_MARK_NATIVE (-1)
+#define GC_MARK_PROTECTED (-1)
 #define GC_MARK_ETERNAL (-2)
 #define GC_MARK_COLLECTED (-3)
 #define GC_DEPTH_ALWAYS (-1)
@@ -35,7 +35,7 @@ extern "C" {
 
 // Max number of object allocations between collections
 #ifndef GC_OBJECT_THRESHOLD
-#define GC_OBJECT_THRESHOLD 100000
+#define GC_OBJECT_THRESHOLD 1000000
 #endif
 
 // Max memory allocated between collections
@@ -99,18 +99,6 @@ typedef struct MethodMetadata {
     int access;
 } MethodMetadata;
 
-typedef struct ClassMetadata {
-    int access;
-    int interfaceCount;
-    const char *interfaces;
-    int fieldCount;
-    FieldMetadata *fields;
-    int methodCount;
-    MethodMetadata *methods;
-    bool anonymous;
-    bool synthetic;
-} ClassMetadata;
-
 typedef struct java_lang_Object {
     jref clazz;
     jint gcMark;
@@ -138,6 +126,9 @@ typedef struct Class {
     jbool primitive;
     jint arrayDimensions;
     jref componentClass;
+    jref outerClass;
+    jint innerClassCount;
+    jlong nativeInnerClasses;
     jint access;
     jint interfaceCount;
     jlong nativeInterfaces;
@@ -158,6 +149,7 @@ typedef struct Class {
     jref methods;
     jref constructors;
     jref annotations;
+    jref innerClasses;
 } Class;
 
 typedef struct {
@@ -192,7 +184,12 @@ bool isAssignableFrom(jcontext ctx, jclass type, jclass assignee);
 bool isInstance(jcontext ctx, jobject object, jclass type);
 void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject object);
 jobject gcAlloc(jcontext ctx, jclass clazz);
-jobject gcAllocNative(jcontext ctx, jclass clazz);
+jobject gcAllocProtected(jcontext ctx, jclass clazz);
+jobject gcAllocEternal(jcontext ctx, jclass clazz);
+jobject makeEternal(jobject object);
+jobject makeEphemeral(jobject object);
+jobject protectObject(jobject object);
+jobject unprotectObject(jobject object);
 void runGC(jcontext ctx);
 void markDeepObject(jobject obj);
 jcontext createContext();
@@ -200,9 +197,12 @@ void destroyContext(jcontext ctx);
 
 jclass getArrayClass(jclass componentType, int dimensions);
 jarray createArray(jcontext ctx, jclass type, int length);
-void disposeArray(jcontext ctx, jarray array);
+jarray createArrayProtected(jcontext ctx, jclass type, int length);
+jarray createArrayEternal(jcontext ctx, jclass type, int length);
 jstring stringFromNative(jcontext ctx, const char *string);
 jstring stringFromNativeLength(jcontext ctx, const char *string, int length);
+jstring stringFromNativeProtected(jcontext ctx, const char *string);
+jstring stringFromNativeEternal(jcontext ctx, const char *string);
 jstring createStringLiteral(jcontext ctx, StringLiteral string);
 const char *stringToNative(jcontext ctx, jstring string);
 jstring concatStringsRecipe(jcontext ctx, const char *recipe, int argCount, ...);
@@ -215,6 +215,7 @@ jframe pushStackFrame(jcontext ctx, int size, const jtype *stack, const char *me
 void popStackFrame(jcontext ctx);
 jmp_buf *pushExceptionFrame(jframe frame, jclass type);
 jobject popExceptionFrame(jframe frame);
+void popExceptionFrames(jframe frame, int count);
 void monitorEnter(jcontext ctx, jobject object);
 void monitorExit(jcontext ctx, jobject object);
 void monitorOwnerCheck(jcontext ctx, jobject object);
@@ -887,9 +888,9 @@ template <typename B, typename E>
 void tryCatch(jframe frameRef, B block, jclass clazz, E except) requires std::invocable<B> and std::invocable<E, jobject> {
     if (setjmp(*pushExceptionFrame(frameRef, clazz))) {
         auto ex = popExceptionFrame(frameRef);
-        ex->gcMark = GC_MARK_NATIVE; // Doesn't cause a leak if exception is rethrow in except block, since it will be re-caught and fixed there
+        protectObject(ex); // Doesn't cause a leak if exception is rethrow in except block, since it will be re-caught and fixed there
         except(ex);
-        ex->gcMark = GC_MARK_START;
+        unprotectObject(ex);
         return;
     }
     block();
@@ -908,9 +909,9 @@ auto invokeInterface(jcontext ctx, jobject obj, P... params) {
 
 template <jclass T, auto C, typename ...P>
 jobject constructObject(jcontext ctx, P... params) {
-    auto object = gcAllocNative(ctx, T);
+    auto object = gcAllocProtected(ctx, T);
     C(ctx, object, params...);
-    object->gcMark = GC_MARK_START;
+    unprotectObject(object);
     return object;
 }
 
@@ -950,13 +951,13 @@ jint floatingCompare(T t1, T t2, jint nanVal) {
     return 0;
 }
 
-typedef struct ObjectMonitor {
+struct ObjectMonitor {
     std::recursive_mutex lock;
     std::atomic_int32_t depth;
     std::atomic<jcontext> owner;
     std::condition_variable condition;
     std::mutex conditionMutex;
-} ObjectMonitor;
+};
 
 struct ExceptionFrame {
     jclass type;

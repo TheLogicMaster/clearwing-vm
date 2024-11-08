@@ -22,11 +22,14 @@
  */
 
 package java.io;
+
+import java.nio.CharBuffer;
+
 /**
  * Abstract class for reading character streams. The only methods that a subclass must implement are read(char[], int, int) and close(). Most subclasses, however, will override some of the methods defined here in order to provide higher efficiency, additional functionality, or both.
  * Since: JDK1.1, CLDC 1.0 See Also:InputStreamReader, Writer
  */
-public abstract class Reader implements Closeable {
+public abstract class Reader implements Readable, Closeable {
     /**
      * The object used to synchronize operations on this stream. For efficiency, a character-stream object may use an object other than itself to protect critical sections. A subclass should therefore use the object in this field rather than this or a synchronized method.
      */
@@ -85,6 +88,17 @@ public abstract class Reader implements Closeable {
      */
     public int read(char[] cbuf) throws java.io.IOException{
         return read(cbuf, 0, cbuf.length);
+    }
+
+    public int read(CharBuffer target) throws IOException {
+        int len = target.remaining();
+        char[] cbuf = new char[len];
+        int n = this.read(cbuf, 0, len);
+        if (n > 0) {
+            target.put(cbuf, 0, n);
+        }
+
+        return n;
     }
 
     /**

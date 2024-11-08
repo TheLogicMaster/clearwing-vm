@@ -25,6 +25,7 @@ public class InvokeDynamicInstruction extends Instruction {
 
     @Override
     public void appendUnoptimized(StringBuilder builder) {
+        // Todo: Cache proxies without args
         builder.append("\t{ /* InvokeDynamic */\n");
         builder.append("\t\tclinit_").append(qualifiedProxyClassName).append("(ctx);\n");
         builder.append("\t\tauto proxy").append(" = (").append(qualifiedProxyClassName).append(" *) gcAlloc(ctx, &class_").append(qualifiedProxyClassName).append(");\n");

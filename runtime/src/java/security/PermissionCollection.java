@@ -26,8 +26,6 @@
 package java.security;
 
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Abstract class representing a collection of Permission objects.

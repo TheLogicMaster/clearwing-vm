@@ -27,7 +27,7 @@ public class ThreadLocal<T> extends Object {
         return null;
     }
 
-    public T get() {
+    public synchronized T get() {
         Thread t = Thread.currentThread();
         if (!_initialized.contains(t)) {
             _initialized.add(t);
@@ -38,14 +38,14 @@ public class ThreadLocal<T> extends Object {
         
     }
 
-    public void set(T value) {
+    public synchronized void set(T value) {
         Thread t = Thread.currentThread();
         
         _initialized.add(t);
         this.value.put(t, value);
     }
 
-    public void remove() {
+    public synchronized void remove() {
         Thread t = Thread.currentThread();
         _initialized.remove(t);
         value.remove(t);

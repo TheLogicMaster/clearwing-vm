@@ -109,10 +109,16 @@ jobject M_java_lang_String_replace_java_lang_CharSequence_java_lang_CharSequence
     std::string string = stringToNative(ctx, (jstring) self);
     popStackFrame(ctx);
 
-    size_t pos = 0;
-    while ((pos = string.find(target, pos)) != std::string::npos) {
-        string.replace(pos, target.length(), replacement);
-        pos += replacement.length();
+    if (target.empty()) {
+        std::string str;
+        for (char c : string)
+            str += std::to_string(c) + replacement;
+    } else {
+        size_t pos = 0;
+        while ((pos = string.find(target, pos)) != std::string::npos) {
+            string.replace(pos, target.length(), replacement);
+            pos += replacement.length();
+        }
     }
     return (jobject) stringFromNativeLength(ctx, string.c_str(), (int) string.size());
 }

@@ -88,8 +88,7 @@ public final class System {
      * The call System.gc() is effectively equivalent to the call:
      * Runtime.getRuntime().gc()
      */
-    public static void gc() {
-    }
+    public native static void gc();
 
     /**
      * Gets the system property indicated by the specified key.
@@ -123,7 +122,7 @@ public final class System {
         return currentTimeMillis() * 1000000;
     }
     
-//    public static SecurityManager getSecurityManager() {
-//        return null;
-//    }
+    public static SecurityManager getSecurityManager() {
+        return null;
+    }
 }

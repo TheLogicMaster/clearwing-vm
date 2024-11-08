@@ -19,15 +19,21 @@ static void throwBufferUnderflow(jcontext ctx) {
 }
 
 jobject SM_java_nio_ByteBuffer_allocateDirect_int_R_java_nio_ByteBuffer(jcontext ctx, jint size) {
-    auto buffer = gcAllocNative(ctx, &class_java_nio_ByteBuffer);
+    auto buffer = gcAllocProtected(ctx, &class_java_nio_ByteBuffer);
     auto data = new char[size];
     init_java_nio_ByteBuffer_long_int(ctx, buffer, (jlong) data, size);
-    buffer->gcMark = GC_MARK_START;
+    unprotectObject(buffer);
+    adjustHeapUsage(size);
     return buffer;
 }
 
-void SM_java_nio_ByteBuffer_deallocate_long(jcontext ctx, jlong address) {
-    delete[] (char *) address;
+void M_java_nio_ByteBuffer_deallocate(jcontext ctx, jobject self) {
+    auto buffer = (java_nio_Buffer *)self;
+    if (!buffer->F_address)
+        return;
+    delete[] (char *) buffer->F_address;
+    adjustHeapUsage(-buffer->F_capacity);
+    buffer->F_address = 0;
 }
 
 jbool SM_java_nio_ByteOrder_isLittleEndian_R_boolean(jcontext ctx) {

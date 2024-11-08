@@ -28,6 +28,7 @@ package java.util;
 import jdk.internal.util.Preconditions;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * This class consists of {@code static} utility methods for operating
@@ -265,5 +266,12 @@ public final class Objects {
      */
     public static boolean nonNull(Object obj) {
         return obj != null;
+    }
+
+    public static <T> T requireNonNull(T obj, Supplier<String> messageSupplier) {
+        if (obj == null)
+            throw new NullPointerException(messageSupplier == null ?
+                    null : messageSupplier.get());
+        return obj;
     }
 }

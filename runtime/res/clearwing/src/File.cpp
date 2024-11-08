@@ -60,7 +60,7 @@ jlong M_java_io_File_length_R_long(jcontext ctx, jobject self) {
 }
 
 jobject M_java_io_File_list_R_Array1_java_lang_String(jcontext ctx, jobject self) {
-    std::vector<jobject> collected;
+    std::vector<std::string> collected;
     auto path = stringToNative(ctx, (jstring) ((java_io_File *) NULL_CHECK(self))->F_path);
     if (!fs::is_directory(path))
         return nullptr;
@@ -71,11 +71,34 @@ jobject M_java_io_File_list_R_Array1_java_lang_String(jcontext ctx, jobject self
 #else
         auto filePath = entry.path().filename().string();
 #endif
-        collected.emplace_back((jobject) stringFromNative(ctx, filePath.c_str()));
+        collected.emplace_back(filePath);
     }
     auto array = createArray(ctx, &class_java_lang_String, (int)collected.size());
     for (int i = 0; i < (int)collected.size(); i++)
-        ((jobject *)array->data)[i] = collected[i];
+        ((jobject *)array->data)[i] = (jobject) stringFromNative(ctx, collected[i]);
+    return (jobject) array;
+}
+
+jobject SM_java_io_File_listRoots_R_Array1_java_io_File(jcontext ctx) {
+    std::vector<std::string> collected;
+#if defined(__WIN32__) || defined(__WINRT__)
+    char buffer[512];
+    int len = (int)GetLogicalDriveStrings(sizeof(buffer), buffer);
+    if (len > buffer)
+        collected.emplace_back("C:\\");
+    else {
+        char *ptr = buffer;
+        while (*ptr) {
+            collected.emplace_back(ptr);
+            ptr += strlen(ptr) + 1;
+        }
+    }
+#else
+    collected.emplace_back("/");
+#endif
+    auto array = createArray(ctx, &class_java_lang_String, (int)collected.size());
+    for (int i = 0; i < (int)collected.size(); i++)
+        ((jobject *)array->data)[i] = (jobject) stringFromNative(ctx, collected[i]);
     return (jobject) array;
 }
 

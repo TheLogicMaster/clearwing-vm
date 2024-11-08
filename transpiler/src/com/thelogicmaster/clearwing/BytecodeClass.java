@@ -39,12 +39,13 @@ public class BytecodeClass {
 	private boolean anonymous;
 	private boolean nested;
 
-	private boolean reflective;
 	private final ArrayList<BytecodeMethod> methods = new ArrayList<>();
 	private final ArrayList<BytecodeField> fields = new ArrayList<>();
 	private final HashSet<String> dependencies = new HashSet<>();
 	private final ArrayList<BytecodeAnnotation> annotations = new ArrayList<>();
 	private final BytecodeAnnotation defaultAnnotation;
+	private final List<String> innerClassNames = new ArrayList<>();
+	private String outerClassName;
 	private boolean hierarchyProcessed;
 	private boolean hierarchyError;
 	private final ArrayList<BytecodeMethod> vtable = new ArrayList<>();
@@ -66,9 +67,6 @@ public class BytecodeClass {
 		for (int i = 0; i < originalInterfaces.length; i++)
 			this.interfaces[i] = Utils.sanitizeName(originalInterfaces[i]);
 		defaultAnnotation = isAnnotation() ? new BytecodeAnnotation(this.name) : null;
-
-		if (isEnum())
-			reflective = true;
 
 		if (isAnnotationImpl())
 			methods.add(new BytecodeMethod(this, "annotationType", Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, "()Ljava/lang/Class;", null, null));
@@ -102,8 +100,14 @@ public class BytecodeClass {
 		return anonymous;
 	}
 
-	public void markNested() {
+	public void addInnerClass(String innerName) {
+		innerClassNames.add(Utils.sanitizeName(innerName));
+	}
+	
+	public void markInner(String outer) {
 		this.nested = true;
+		if (outer != null)
+			outerClassName = Utils.sanitizeName(outer);
 
 		// Not sure why flag has to be added here
 		if (isInterface() || isAnnotation() || isEnum())
@@ -112,14 +116,6 @@ public class BytecodeClass {
 
 	public boolean isNested() {
 		return nested;
-	}
-
-	public boolean isReflective() {
-		return reflective;
-	}
-
-	public void setReflective(boolean reflective) {
-		this.reflective = reflective;
 	}
 
 	public boolean hasFinalizer() {
@@ -173,6 +169,9 @@ public class BytecodeClass {
 		dependencies.clear();
 		dependencies.add(superName);
 		dependencies.addAll(Arrays.asList(interfaces));
+		if (outerClassName != null)
+			dependencies.add(outerClassName);
+        dependencies.addAll(innerClassNames);
 		for (BytecodeMethod method: methods)
 			method.collectDependencies(dependencies, classMap);
 		for (BytecodeField field: fields)
@@ -271,7 +270,10 @@ public class BytecodeClass {
 		builder.append("#define HEADER_").append(qualifiedName).append("\n\n");
 
 		builder.append("#include \"Clearwing.h\"\n");
-		builder.append("#include \"").append(Utils.getClassFilename(superName)).append(".h\"\n\n");
+		builder.append("#include \"").append(Utils.getClassFilename(superName)).append(".h\"\n");
+		for (String iName : interfaces)
+			builder.append("#include \"").append(Utils.getClassFilename(iName)).append(".h\"\n");
+		builder.append("\n");
 
 		builder.append("#ifdef __cplusplus\n");
 		builder.append("extern \"C\" {\n");
@@ -420,7 +422,12 @@ public class BytecodeClass {
 				builder.append("(jobject) &class_").append(qualifiedName);
 			else
 				builder.append("self");
-			builder.append(");\n\n");
+			builder.append(");\n");
+			
+			if (method.getTryCatchBypasses() > 0)
+				builder.append("\tvolatile bool bypasses[").append(method.getTryCatchBypasses()).append("]{};\n");
+			
+			builder.append("\n");
 
 			if (method.isStatic() || method.isConstructor())
 				builder.append("\tclinit_").append(qualifiedName).append("(ctx);\n");
@@ -540,6 +547,12 @@ public class BytecodeClass {
 			builder.append("&class_").append(Utils.getQualifiedClassName(interfaceName)).append(", ");
 		builder.append("};\n\n");
 
+		// Inner class list
+		builder.append("static jclass innerClasses").append("[] {\n");
+		for (String innerName : innerClassNames)
+			builder.append("\t&class_").append(Utils.getQualifiedClassName(innerName)).append(",\n");
+		builder.append("};\n\n");
+
 		// Field metadata
 		builder.append("static FieldMetadata fields").append("[] {\n");
 		for (BytecodeField field : fields) {
@@ -576,6 +589,9 @@ public class BytecodeClass {
 		builder.append("\t\t.primitive = false,\n");
 		builder.append("\t\t.arrayDimensions = 0,\n");
 		builder.append("\t\t.componentClass = (intptr_t) nullptr,\n");
+		builder.append("\t\t.outerClass = (intptr_t) ").append(outerClassName == null ? "nullptr" : "&class_" + Utils.getQualifiedClassName(outerClassName)).append(",\n");
+		builder.append("\t\t.innerClassCount = ").append(innerClassNames.size()).append(",\n");
+		builder.append("\t\t.nativeInnerClasses = (intptr_t) innerClasses").append(",\n");
 		builder.append("\t\t.access = ").append(access).append(",\n");
 		builder.append("\t\t.interfaceCount = ").append(interfaces.length).append(",\n");
 		builder.append("\t\t.nativeInterfaces = (intptr_t) interfaces").append(",\n");

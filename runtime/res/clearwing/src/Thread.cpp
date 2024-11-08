@@ -31,7 +31,7 @@ void threadEntrypoint(jcontext ctx, jthread thread) {
 
     thread->F_alive = false;
 
-    thread->parent.gcMark = GC_MARK_START;
+    unprotectObject((jobject)thread);
 }
 
 jobject SM_java_lang_Thread_currentThread_R_java_lang_Thread(jcontext ctx) {
@@ -57,7 +57,7 @@ void SM_java_lang_Thread_sleepImpl_long_int(jcontext ctx, jlong millis, jint nan
 void M_java_lang_Thread_start(jcontext ctx, jobject self) {
     auto newContext = createContext();
     auto thread = (jthread) self;
-    thread->parent.gcMark = GC_MARK_ETERNAL;
+    protectObject((jobject)thread);
     thread->F_nativeContext = (intptr_t) newContext;
     newContext->thread = thread;
     newContext->nativeThread = new std::thread;

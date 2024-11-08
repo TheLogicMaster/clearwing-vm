@@ -15,7 +15,6 @@ public class TranspilerConfig {
     private List<String> definitions = new ArrayList<>(); // Custom definitions to add to config.hpp
     private boolean projectFiles = true; // Whether to generate basic project files like the CMake config
     private String mainClass; // An optional "main class" that contains the entrypoint main function
-    private boolean stackTraces = true; // Enable stack traces (Disable for a slight performance increase)
     private boolean lineNumbers = true; // Enable stack trace line numbers (Requires stack traces, disable for a slight performance increase)
     private boolean stackCookies = true; // Enable Java stack cookies (Only needed for debugging VM)
     private boolean valueChecks = false; // Enable type/NPE checks at runtime, has substantial performance overhead
@@ -33,7 +32,6 @@ public class TranspilerConfig {
         definitions = getArray(json, "definitions");
         projectFiles = json.optBoolean("generateProjectFiles", false);
         mainClass = json.optString("mainClass");
-        stackTraces = json.optBoolean("useStackTraces", true);
         lineNumbers = json.optBoolean("useLineNumbers", true);
         valueChecks = json.optBoolean("useValueChecks", true);
         stackCookies = json.optBoolean("useStackCookies", false);
@@ -94,14 +92,6 @@ public class TranspilerConfig {
 
     public void setMainClass(String mainClass) {
         this.mainClass = mainClass;
-    }
-
-    public boolean hasStackTraces() {
-        return stackTraces;
-    }
-
-    public void setStackTraces(boolean stackTraces) {
-        this.stackTraces = stackTraces;
     }
 
     public boolean hasLineNumbers() {

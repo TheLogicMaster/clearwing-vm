@@ -33,11 +33,6 @@ public class ThreadLocalRandom extends Random {
         return current.get();
     }
 
-    @Override
-    public void setSeed(long seed) {
-        throw new UnsupportedOperationException();
-    }
-
     public int nextInt(int origin, int bound) {
         if (origin >= bound) {
             throw new IllegalArgumentException();

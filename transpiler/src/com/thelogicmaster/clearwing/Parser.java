@@ -66,8 +66,10 @@ public class Parser extends ClassVisitor {
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
         if (currentClass.getOriginalName().equals(name)) {
             currentClass.setAnonymous(innerName == null);
-            currentClass.markNested();
+            currentClass.markInner(outerName);
         }
+        if (currentClass.getOriginalName().equals(outerName))
+            currentClass.addInnerClass(name);
     }
 
     @Override
@@ -207,7 +209,13 @@ public class Parser extends ClassVisitor {
         }
         
         private void visitInvokeLambda(String name, String desc, Handle bsm, Object... bsmArgs) {
-            if (!"metafactory".equals(bsm.getName())) throw new TranspilerException("Unsupported LambdaMetafactory: " + bsm.getName());
+            final int FLAG_SERIALIZABLE = 0x1;
+            final int FLAG_MARKERS = 0x2;
+            final int FLAG_BRIDGES = 0x4;
+            boolean isAlt = "altMetafactory".equals(bsm.getName());
+            if (!isAlt && !"metafactory".equals(bsm.getName())) 
+                throw new TranspilerException("Unsupported LambdaMetafactory: " + bsm.getName());
+            int flags = isAlt ? (int)bsmArgs[3] : 0;
             Handle handle = (Handle)bsmArgs[1];
             if (handle.getTag() < Opcodes.H_INVOKEVIRTUAL)
                 throw new TranspilerException("Unsupported InvokeDynamic handle type: " + handle.getTag());
@@ -215,18 +223,35 @@ public class Parser extends ClassVisitor {
             JavaType[] proxyFields = new MethodSignature("", desc, null).getParamTypes();
             String interfaceClass = Utils.sanitizeName(Type.getMethodType(desc).getReturnType().getClassName());
 
-            String handleName = Utils.sanitizeName(handle.getName().replace("<init>", "init"));
-            String handlePrefix = Utils.sanitizeName(handle.getOwner()) + "_invoke_" + handleName + "_";
+            String proxyPrefix = currentClass.getName() + "_invoke_" + Utils.getQualifiedClassName(interfaceClass) + "_";
             if (!invokeDynamicCounts.containsKey(currentClass.getName()))
                 invokeDynamicCounts.put(currentClass.getName(), new HashMap<>());
             HashMap<String, Integer> counts = invokeDynamicCounts.get(currentClass.getName());
-            if (!counts.containsKey(handlePrefix))
-                counts.put(handlePrefix, 0);
-            int count = counts.get(handlePrefix);
-            counts.put(handlePrefix, count + 1);
-            String className = handlePrefix + count;
+            if (!counts.containsKey(proxyPrefix))
+                counts.put(proxyPrefix, 0);
+            int count = counts.get(proxyPrefix);
+            counts.put(proxyPrefix, count + 1);
+            String className = proxyPrefix + count;
 
-            BytecodeClass proxyClass = new BytecodeClass(className, "java/lang/Object", new String[]{interfaceClass}, 0);
+            ArrayList<String> interfaces = new ArrayList<>();
+            interfaces.add(interfaceClass);
+            if ((flags & FLAG_SERIALIZABLE) != 0) {
+                interfaces.add("java/io/Serializable");
+                throw new TranspilerException("InvokeDynamic altMetafactory Serializable lambda not supported");
+            }
+            int index = 4;
+            if ((flags & FLAG_MARKERS) != 0) {
+                int markerCount = (int)bsmArgs[index++];
+                for (int i = 0; i < markerCount; i++)
+                    interfaces.add(((Type)bsmArgs[index++]).getDescriptor());
+            }
+            if ((flags & FLAG_BRIDGES) != 0) {
+                int bridgeCount = (int)bsmArgs[index];
+                if (bridgeCount > 0)
+                    throw new TranspilerException("InvokeDynamic altMetafactory bridges not supported");
+            }
+
+            BytecodeClass proxyClass = new BytecodeClass(className, "java/lang/Object", interfaces.toArray(new String[0]), 0);
             InvokeDynamicInstruction invokeDynamic = new InvokeDynamicInstruction(method, handle, className, proxyFields, proxyMethodType.getDescriptor());
             BytecodeMethod delegate = new BytecodeMethod(proxyClass, name, 0, proxyMethodType.getDescriptor(), null, null);
             delegate.addInstruction(invokeDynamic.getProxy(delegate));
@@ -323,11 +348,12 @@ public class Parser extends ClassVisitor {
         public void visitEnd() {
             // Todo: Move to BytecodeMethod
 
-            insertTryCatchBlocks(); // Todo: Maybe insert exception push/pop instructions directly instead
+            insertTryCatchBlocks();
             resolveInstructionIO();
             // Todo: Inline instructions from bottom to top
-            trimLabels();
-//            insertTryCatchBypasses();
+//            trimLabels();
+            handleTryCatchOuterJumps();
+            insertTryCatchBypasses();
 //            optimizeInstructions();
 //            discoverLocals();
 //            groupInstructions();
@@ -401,11 +427,10 @@ public class Parser extends ClassVisitor {
                     for (JavaType type : instruction.getOutputs())
                         stack.add(new StackEntry(type, instruction));
 
-                if (instruction instanceof TryInstruction)
-                    resolveInstructionIO(method.findLabelInstruction(((TryInstruction) instruction).getEnd()),
+                if (instruction instanceof TryInstruction) {
+                    resolveInstructionIO(method.findLabelInstruction(((TryInstruction) instruction).getHandler()),
                             new ArrayList<>(List.of(new StackEntry(new JavaType(TypeVariants.OBJECT), instruction))));
-
-                if (instruction instanceof JumpingInstruction) {
+                } else if (instruction instanceof JumpingInstruction) {
                     for (int label : ((JumpingInstruction) instruction).getJumpLabels())
                         resolveInstructionIO(method.findLabelInstruction(label), new ArrayList<>(stack));
                     if (instruction.getOutputs() == null)
@@ -472,115 +497,115 @@ public class Parser extends ClassVisitor {
             }
         }
 
-        private int findStackMaxDepthJump(int label, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
-            int branch = labels.get(label);
-            if (branches.contains(branch))
-                return 0;
-            branches.add(branch);
-            int depth = findStackMaxDepth(branch, new ArrayList<>(stack), branches, labels);
-            if (depth < 0)
-                return -1;
-            return depth;
-        }
+//        private int findStackMaxDepthJump(int label, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
+//            int branch = labels.get(label);
+//            if (branches.contains(branch))
+//                return 0;
+//            branches.add(branch);
+//            int depth = findStackMaxDepth(branch, new ArrayList<>(stack), branches, labels);
+//            if (depth < 0)
+//                return -1;
+//            return depth;
+//        }
 
-        private int findStackMaxDepth(int index, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
-            List<Instruction> instructions = method.getInstructions();
-            int max = stack.size();
-            for (int i = index; i < instructions.size(); i++) {
-                Instruction instruction = instructions.get(i);
-                if (instruction instanceof TryInstruction.CatchInstruction) {
-                    ArrayList<StackEntry> newStack = new ArrayList<>();
-                    newStack.add(new StackEntry(new JavaType(TypeVariants.OBJECT), null));
-                    int branch = labels.get(((TryInstruction.CatchInstruction) instruction).getJumpLabels().get(0));
-                    if (branches.contains(branch))
-                        return max;
-                    branches.add(branch);
-                    int depth = findStackMaxDepth(branch, newStack, branches, labels);
-                    max = Math.max(max, depth);
-                    if (depth < 0)
-                        return -1;
-                } else if (instruction instanceof JumpingInstruction) {
-                    for (int label : ((JumpingInstruction) instruction).getJumpLabels()) {
-                        if (stack.size() < instruction.getInputs().size())
-                            return -1;
-                        if (instruction.getInputs().size() > 0)
-                            stack.subList(stack.size() - instruction.getInputs().size(), stack.size()).clear();
-                        int depth = findStackMaxDepthJump(label, stack, branches, labels);
-                        if (depth < 0)
-                            return -1;
-                        max = Math.max(max, depth);
-                    }
-                    if (!(instruction instanceof JumpInstruction) || instruction.getOpcode() == Opcodes.GOTO)
-                        return max;
-                } else if (instruction instanceof SuperCallInstruction || instruction instanceof InvokeDynamicInstruction.Proxy)
-                    return 0;
-                else if (instruction instanceof LineNumberInstruction || instruction instanceof LabelInstruction || instruction instanceof TryInstruction)
-                    continue;
-                else if (instruction instanceof ZeroOperandInstruction) {
-                    switch (instruction.getOpcode()) {
-                        case Opcodes.DUP, Opcodes.DUP_X1, Opcodes.DUP_X2, Opcodes.DUP2, Opcodes.DUP2_X1, Opcodes.DUP2_X2, Opcodes.SWAP -> {
-                            instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
-                            max = Math.max(max, stack.size());
-                        }
-                        default -> {
-                            return -1;
-                        }
-                    }
-                } else if (instruction.getInputs() != null && instruction.getOutputs() != null) {
-                    if (stack.size() < instruction.getInputs().size())
-                        return -1;
-                    instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
-                    max = Math.max(max, stack.size());
-                    if (instruction instanceof InstructionGroup) {
-                        InstructionGroup group = (InstructionGroup) instruction;
-                        Instruction lastInstruction = group.getLastInstruction();
-                        switch (lastInstruction.getOpcode()) {
-                            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN, Opcodes.ATHROW -> {
-                                return max;
-                            }
-                        }
-                        if (!(lastInstruction instanceof JumpingInstruction))
-                            continue;
-                        for (int label: ((JumpingInstruction) lastInstruction).getJumpLabels()) {
-                            int depth = findStackMaxDepthJump(label, stack, branches, labels);
-                            if (depth < 0)
-                                return -1;
-                            max = Math.max(max, depth);
-                        }
-                        if (!(lastInstruction instanceof JumpInstruction) || lastInstruction.getOpcode() == Opcodes.GOTO)
-                            return max;
-                    }
-                } else {
-                    System.out.println("Warning: Failed to trim stack for instruction: " + instruction);
-                    return -1;
-                }
-            }
-            return max;
-        }
+//        private int findStackMaxDepth(int index, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
+//            List<Instruction> instructions = method.getInstructions();
+//            int max = stack.size();
+//            for (int i = index; i < instructions.size(); i++) {
+//                Instruction instruction = instructions.get(i);
+//                if (instruction instanceof TryInstruction.CatchInstruction) {
+//                    ArrayList<StackEntry> newStack = new ArrayList<>();
+//                    newStack.add(new StackEntry(new JavaType(TypeVariants.OBJECT), null));
+//                    int branch = labels.get(((TryInstruction.CatchInstruction) instruction).getJumpLabels().get(0));
+//                    if (branches.contains(branch))
+//                        return max;
+//                    branches.add(branch);
+//                    int depth = findStackMaxDepth(branch, newStack, branches, labels);
+//                    max = Math.max(max, depth);
+//                    if (depth < 0)
+//                        return -1;
+//                } else if (instruction instanceof JumpingInstruction) {
+//                    for (int label : ((JumpingInstruction) instruction).getJumpLabels()) {
+//                        if (stack.size() < instruction.getInputs().size())
+//                            return -1;
+//                        if (instruction.getInputs().size() > 0)
+//                            stack.subList(stack.size() - instruction.getInputs().size(), stack.size()).clear();
+//                        int depth = findStackMaxDepthJump(label, stack, branches, labels);
+//                        if (depth < 0)
+//                            return -1;
+//                        max = Math.max(max, depth);
+//                    }
+//                    if (!(instruction instanceof JumpInstruction) || instruction.getOpcode() == Opcodes.GOTO)
+//                        return max;
+//                } else if (instruction instanceof SuperCallInstruction || instruction instanceof InvokeDynamicInstruction.Proxy)
+//                    return 0;
+//                else if (instruction instanceof LineNumberInstruction || instruction instanceof LabelInstruction || instruction instanceof TryInstruction)
+//                    continue;
+//                else if (instruction instanceof ZeroOperandInstruction) {
+//                    switch (instruction.getOpcode()) {
+//                        case Opcodes.DUP, Opcodes.DUP_X1, Opcodes.DUP_X2, Opcodes.DUP2, Opcodes.DUP2_X1, Opcodes.DUP2_X2, Opcodes.SWAP -> {
+//                            instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
+//                            max = Math.max(max, stack.size());
+//                        }
+//                        default -> {
+//                            return -1;
+//                        }
+//                    }
+//                } else if (instruction.getInputs() != null && instruction.getOutputs() != null) {
+//                    if (stack.size() < instruction.getInputs().size())
+//                        return -1;
+//                    instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
+//                    max = Math.max(max, stack.size());
+//                    if (instruction instanceof InstructionGroup) {
+//                        InstructionGroup group = (InstructionGroup) instruction;
+//                        Instruction lastInstruction = group.getLastInstruction();
+//                        switch (lastInstruction.getOpcode()) {
+//                            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN, Opcodes.ATHROW -> {
+//                                return max;
+//                            }
+//                        }
+//                        if (!(lastInstruction instanceof JumpingInstruction))
+//                            continue;
+//                        for (int label: ((JumpingInstruction) lastInstruction).getJumpLabels()) {
+//                            int depth = findStackMaxDepthJump(label, stack, branches, labels);
+//                            if (depth < 0)
+//                                return -1;
+//                            max = Math.max(max, depth);
+//                        }
+//                        if (!(lastInstruction instanceof JumpInstruction) || lastInstruction.getOpcode() == Opcodes.GOTO)
+//                            return max;
+//                    }
+//                } else {
+//                    System.out.println("Warning: Failed to trim stack for instruction: " + instruction);
+//                    return -1;
+//                }
+//            }
+//            return max;
+//        }
 
         /**
          * Trim max stack size after optimizations
          */
-        private void trimStack() {
-            try {
-                HashMap<Integer, Integer> labels = new HashMap<>();
-                for (int i = 0; i < method.getInstructions().size(); i++)
-                    if (method.getInstructions().get(i) instanceof LabelInstruction)
-                        labels.put(((LabelInstruction) method.getInstructions().get(i)).getLabel(), i);
-                int depth = findStackMaxDepth(0, new ArrayList<>(), new HashSet<>(), labels);
-                if (depth < 0) {
-                    System.out.println("Warning: Failed to trim stack for: " + method);
-                    return;
-                }
-                if (depth > method.getStackSize())
-                    System.out.println("Somehow increased stack size for: " + method);
-                else
-                    System.out.println("Trimmed " + (method.getStackSize() - depth) + " from " + method);
-                method.setStackSize(depth, method.getLocalCount());
-            } catch (Exception e) {
-                System.err.println("Caught exception while trimming stack for " + method + ": " + e);
-            }
-        }
+//        private void trimStack() {
+//            try {
+//                HashMap<Integer, Integer> labels = new HashMap<>();
+//                for (int i = 0; i < method.getInstructions().size(); i++)
+//                    if (method.getInstructions().get(i) instanceof LabelInstruction)
+//                        labels.put(((LabelInstruction) method.getInstructions().get(i)).getLabel(), i);
+//                int depth = findStackMaxDepth(0, new ArrayList<>(), new HashSet<>(), labels);
+//                if (depth < 0) {
+//                    System.out.println("Warning: Failed to trim stack for: " + method);
+//                    return;
+//                }
+//                if (depth > method.getStackSize())
+//                    System.out.println("Somehow increased stack size for: " + method);
+//                else
+//                    System.out.println("Trimmed " + (method.getStackSize() - depth) + " from " + method);
+//                method.setStackSize(depth, method.getLocalCount());
+//            } catch (Exception e) {
+//                System.err.println("Caught exception while trimming stack for " + method + ": " + e);
+//            }
+//        }
 
         /**
          * Remove unneeded labels to not block optimizations
@@ -631,40 +656,89 @@ public class Parser extends ClassVisitor {
         /**
          * Bypasses a try-catch jump if needed and returns the new jump label
          */
-        private int bypassTryCatchJump(int jumpIndex, int jumpLabel) {
-            List<Instruction> instructions = method.getInstructions();
-
-            int jumpLabelIndex = method.findLabelInstruction(jumpLabel);
-
-            for (int i = 0; i < instructions.size(); i++) {
-                if (!(instructions.get(i) instanceof TryInstruction))
-                    continue;
-                TryInstruction tryInstruction = (TryInstruction) instructions.get(i);
-
-                int scopeEnd = method.findInstruction(i, instructions.size(), true, instr -> tryInstruction.getCatchInstruction() == instr);
-
-                if (jumpLabelIndex < i || jumpLabelIndex > scopeEnd || (jumpIndex >= i && jumpIndex < scopeEnd))
-                    continue;
-
-                int target = bypassTryCatchJump(i, jumpLabel);
-                TryInstruction.Bypass bypass = tryInstruction.getBypass(target, jumpLabel);
-                if (instructions.get(jumpIndex) instanceof JumpingInstruction)
-                    ((JumpingInstruction) instructions.get(jumpIndex)).setJumpBypass(bypass.getIndex(), jumpLabel, tryInstruction.getLabel());
-
-                return tryInstruction.getLabel();
-            }
-
-            return jumpLabel;
-        }
-
+//        private int bypassTryCatchJump(int jumpIndex, int jumpLabel) {
+//            List<Instruction> instructions = method.getInstructions();
+//
+//            int jumpLabelIndex = method.findLabelInstruction(jumpLabel);
+//
+//            for (int i = 0; i < instructions.size(); i++) {
+//                if (!(instructions.get(i) instanceof TryInstruction tryInstruction))
+//                    continue;
+//
+//                int scopeEnd = method.findInstruction(i, instructions.size(), true, instr -> tryInstruction.getCatchInstruction() == instr);
+//
+//                if (jumpLabelIndex < i || jumpLabelIndex > scopeEnd || (jumpIndex >= i && jumpIndex < scopeEnd))
+//                    continue;
+//
+//                int target = bypassTryCatchJump(i, jumpLabel);
+//                TryInstruction.Bypass bypass = tryInstruction.getBypass(target, jumpLabel);
+//                if (instructions.get(jumpIndex) instanceof JumpingInstruction)
+//                    ((JumpingInstruction) instructions.get(jumpIndex)).setJumpBypass(bypass.getIndex(), jumpLabel, tryInstruction.getLabel());
+//
+//                return tryInstruction.getLabel();
+//            }
+//
+//            return jumpLabel;
+//        }
+        
         private void insertTryCatchBypasses() {
             List<Instruction> instructions = method.getInstructions();
             for (int i = 0; i < instructions.size(); i++) {
-                if (!(instructions.get(i) instanceof JumpingInstruction))
+                if (!(instructions.get(i) instanceof JumpingInstruction jump))
                     continue;
-                JumpingInstruction jump = (JumpingInstruction) instructions.get(i);
-                for (int label: jump.getJumpLabels())
-                    bypassTryCatchJump(i, label);
+                ArrayList<Integer> jumpStack = getTryStack(i);
+                for (int label : jump.getJumpLabels()) {
+                    int target = method.findLabelInstruction(label);
+                    ArrayList<Integer> targetStack = getTryStack(target);
+                    for (int j = 0; j < targetStack.size(); j++) {
+                        if (j < jumpStack.size() && jumpStack.get(j).equals(targetStack.get(j)))
+                            continue;
+                        int currentLabel = label;
+                        int bypassIndex = method.allocateTryCatchBypass();
+                        for (int k = targetStack.size() - 1; k >= j; k--) {
+                            int tryLabel = targetStack.get(k);
+                            TryInstruction tryCatch = (TryInstruction) instructions.get(method.findInstruction(0, instructions.size(), true, inst -> inst instanceof TryInstruction t && t.getLabel() == tryLabel));
+                            tryCatch.createBypass(currentLabel, label, bypassIndex);
+                            currentLabel = tryCatch.getLabel();
+                        }
+                        jump.setJumpBypass(bypassIndex, label, currentLabel);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        private ArrayList<Integer> getTryStack(int index) {
+            ArrayList<Integer> stack = new ArrayList<>();
+            List<Instruction> instructions = method.getInstructions();
+            for (int i = 0; i <= index; i++) {
+                Instruction instruction = instructions.get(i);
+                if (instruction instanceof TryInstruction tryInstruction)
+                    stack.add(tryInstruction.getLabel());
+                if (index == i)
+                    break;
+                if (instruction instanceof TryInstruction.CatchInstruction)
+                    stack.remove(stack.size() - 1);
+            }
+            return stack;
+        }
+        
+        private void handleTryCatchOuterJumps() {
+            List<Instruction> instructions = method.getInstructions();
+            for (int i = 0; i < instructions.size(); i++) {
+                if (!(instructions.get(i) instanceof JumpingInstruction jump))
+                    continue;
+                ArrayList<Integer> jumpStack = getTryStack(i);
+                for (int label : jump.getJumpLabels()) {
+                    int target = method.findLabelInstruction(label);
+                    ArrayList<Integer> targetStack = getTryStack(target);
+                    for (int j = 0; j < jumpStack.size(); j++) {
+                        if (j < targetStack.size() && targetStack.get(j).equals(jumpStack.get(j)))
+                            continue;
+                        jump.setJumpExceptionPops(label, jumpStack.size() - j);
+                        break;
+                    }
+                }
             }
         }
     }

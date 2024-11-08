@@ -40,6 +40,7 @@ flowchart LR
 - Method trimming
 - Crash logs
 - Add additional safe-points in loops without function calls to prevent freezes on GC
+- Debugger (Possibly by python GDB based debug server)
 
 ## Dependencies
 - C++ 20
@@ -80,10 +81,9 @@ The available options are as follows:
 - __sourceIgnores__: Patterns for source files to ignore for jnigen style inlined C++
 - __generateProjectFiles__: Whether to generate basic project files like the CMake config
 - __mainClass__: An optional "main class" that contains the entrypoint main function
-- __useStackTraces__: Enable stack traces (Disable for a slight performance increase)
-- __useLineNumbers__: Enable stack trace line numbers (Requires stack traces, disable for a slight performance increase)
-- __useValueChecks__: Enable type/NPE checks at runtime, has substantial performance overhead
-- __useStackCookies__: Enable Java stack cookies (Only needed for debugging VM)
+- __useLineNumbers__: Enable stack trace line numbers (Requires stack traces, disable for a slight performance increase) (Not yet used)
+- __useValueChecks__: Enable type/NPE checks at runtime, has substantial performance overhead (Not yet used)
+- __useStackCookies__: Enable Java stack cookies (Only needed for debugging VM) (Not yet used)
 
 ## Native Code
 Native C++ code can be used with the project in a ways. The easiest way is to add native functions with trailing

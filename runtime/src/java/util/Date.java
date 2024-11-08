@@ -94,4 +94,7 @@ public class Date implements Comparable<Date> {
         return getTime() < another.getTime() ? -1 : getTime() > another.getTime() ? 1 : 0;
     }
 
+    public static long parse(String s) {
+        return 0;
+    }
 }

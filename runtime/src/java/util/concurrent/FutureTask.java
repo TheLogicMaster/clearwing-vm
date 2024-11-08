@@ -393,7 +393,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @param nanos time to wait, if timed
      * @return state upon completion or at timeout
      */
-    private synchronized int awaitDone(boolean timed, long nanos)
+    private int awaitDone(boolean timed, long nanos)
             throws InterruptedException {
         // The code below is very delicate, to achieve these goals:
         // - call nanoTime exactly once for each call to park
@@ -408,9 +408,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
         for (;;) {
             int s = state;
             if (s > COMPLETING) {
-                if (q != null)
-                    q.thread = null;
-                return s;
+                synchronized (this) {
+                    if (q != null)
+                        q.thread = null;
+                    return s;
+                }
             }
             else if (s == COMPLETING)
                 // We may have already promised (via isDone) that we are done
@@ -426,9 +428,11 @@ public class FutureTask<V> implements RunnableFuture<V> {
                 q = new WaitNode();
             }
             else if (!queued) {
-                if (waiters == (q.next = waiters)) {
-                    waiters = q;
-                    queued = true;
+                synchronized (this) {
+                    if (waiters == (q.next = waiters)) {
+                        waiters = q;
+                        queued = true;
+                    }
                 }
             } else if (timed) {
                 final long parkNanos;
@@ -440,8 +444,10 @@ public class FutureTask<V> implements RunnableFuture<V> {
                 } else {
                     long elapsed = System.nanoTime() - startTime;
                     if (elapsed >= nanos) {
-                        removeWaiter(q);
-                        return state;
+                        synchronized (this) {
+                            removeWaiter(q);
+                            return state;
+                        }
                     }
                     parkNanos = nanos - elapsed;
                 }

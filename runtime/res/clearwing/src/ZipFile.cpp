@@ -13,13 +13,13 @@ jlong SM_java_util_zip_ZipFile_open_java_lang_String_java_util_ArrayList_R_long(
         return -1;
     ZZIP_DIRENT dirent;
     while (zzip_dir_read(zip, &dirent)) {
-        auto entry = (java_util_zip_ZipEntry *) gcAllocNative(ctx, &class_java_util_zip_ZipEntry);
+        auto entry = (java_util_zip_ZipEntry *) gcAllocProtected(ctx, &class_java_util_zip_ZipEntry);
         entry->F_name = (jref) stringFromNative(ctx, dirent.d_name); // Stored on protected object
         entry->F_csize = dirent.d_csize;
         entry->F_size = dirent.st_size;
         entry->F_method = dirent.d_compr;
         M_java_util_ArrayList_add_java_lang_Object_R_boolean(ctx, entries, (jobject) entry);
-        entry->parent.gcMark = GC_MARK_START;
+        unprotectObject((jobject)entry);
     }
     return (jlong)zip;
 }

@@ -167,7 +167,7 @@ public class JavaType {
 		if (isPrimitive() && !target.isPrimitive())
 			builder.append("box").append(getBasicType().getWrapper().getSimpleName()).append("(ctx, ");
 		else if (!isPrimitive() && target.isPrimitive())
-			builder.append("unbox").append(target.getBasicType().getWrapper().getSimpleName()).append("(");
+			builder.append("unbox").append(target.getBasicType().getWrapper().getSimpleName()).append("(ctx, ");
 		else
 			return false;
 		return true;

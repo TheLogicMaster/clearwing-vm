@@ -34,6 +34,10 @@ void SM_java_lang_System_exit0_int(jcontext ctx, jint code) {
     exit(code); // Todo: Cleanup
 }
 
+void SM_java_lang_System_gc(jcontext ctx) {
+    runGC(ctx);
+}
+
 jobject SM_java_lang_System_getProperty_java_lang_String_R_java_lang_String(jcontext ctx, jobject keyObj) {
     static std::map<const char *, const char *> cache;
     static std::mutex lock;

@@ -26,6 +26,8 @@
 package java.io;
 
 
+import java.nio.channels.FileChannel;
+
 /**
  * A file output stream is an output stream for writing data to a
  * <code>File</code> or to a <code>FileDescriptor</code>. Whether or not
@@ -278,6 +280,10 @@ class FileOutputStream extends OutputStream
 		}
 
 		close0();
+	}
+
+	public FileChannel getChannel() {
+		return null;
 	}
 
 	/**

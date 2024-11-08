@@ -49,6 +49,9 @@ public final class Class<T> implements java.lang.reflect.Type {
     private boolean primitive;
     private int arrayDimensions;
     private Class<?> componentClass;
+    private Class<?> outerClass;
+    private int innerClassCount;
+    private long nativeInnerClasses;
     private int access;
     private int interfaceCount;
     private long nativeInterfaces;
@@ -70,6 +73,7 @@ public final class Class<T> implements java.lang.reflect.Type {
     private Method[] methods;
     private Constructor<T>[] constructors;
     private Annotation[] annotations;
+    private Class<?>[] innerClasses;
 
     private Class() {
     }
@@ -390,13 +394,13 @@ public final class Class<T> implements java.lang.reflect.Type {
     }
 
     public Class<?>[] getDeclaredClasses() {
-        // Todo
-        return new Class[0];
+        ensureInitialized();
+        return innerClasses;
     }
 
     public Class<?> getDeclaringClass() {
-        // Todo
-        return null;
+        ensureInitialized();
+        return outerClass;
     }
 
     public Field[] getDeclaredFields() {

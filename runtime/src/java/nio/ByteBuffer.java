@@ -55,13 +55,13 @@ public class ByteBuffer extends Buffer implements Comparable<ByteBuffer> {
 		this.array = array;
 	}
 
-	private native static void deallocate(long address);
+	private native void deallocate();
 
 	public native static ByteBuffer allocateDirect (int capacity);
 
 	protected void finalize () {
 		if (address != 0 && isOwner) {
-			deallocate(address);
+			deallocate();
 			address = 0;
 		}
 	}

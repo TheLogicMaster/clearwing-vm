@@ -10,43 +10,45 @@ import java.util.*;
 /**
  * A pseudo-instruction try-catch that gets inserted in parts after the start and end labels
  */
-public class TryInstruction extends Instruction {
+public class TryInstruction extends Instruction implements JumpingInstruction {
 
     private final int start;
     private final int end;
-    private final int handler;
+    private int handler;
+    private final int originalHandler;
     private final String type;
     private final String qualifiedType;
     private final int label;
     private final CatchInstruction catchInstruction;
 
-    private final HashMap<Integer, Bypass> bypasses = new HashMap<>();
+    private final ArrayList<Bypass> bypasses = new ArrayList<>();
+    private int handlerBypass = -1;
+    private int exceptionPops = 0;
 
     public TryInstruction(BytecodeMethod method, Label start, Label end, Label handler, String type) {
         super(method, -1);
         this.start = method.getLabelId(start);
         this.end = method.getLabelId(end);
-        this.handler = method.getLabelId(handler);
+        originalHandler = this.handler = method.getLabelId(handler);
         this.type = type;
         label = method.getLabelId(new Label());
         qualifiedType = type == null ? null : Utils.getQualifiedClassName(type);
         catchInstruction = new CatchInstruction();
     }
 
-    // Todo: Switch from TRY macro, it leaks exceptions and makes it impossible to debug
     @Override
     public void appendUnoptimized(StringBuilder builder) {
         builder.append(LABEL_PREFIX).append(label).append(": if (setjmp(*pushExceptionFrame(frameRef, &class_")
-                .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) { sp = stack; PUSH_OBJECT(popExceptionFrame(frameRef)); goto ").append(LABEL_PREFIX).append(handler).append("; }\n");
-
-//        builder.append(LABEL_PREFIX).append(label).append(":\n\tTRY (\n");
-
-//        for (Map.Entry<Integer, Bypass> bypass: bypasses.entrySet()) {
-//            builder.append("\tif (bypasses[").append(bypass.getValue().index).append("]) { bypasses[").append(bypass.getValue().index).append("] = false; ");
-//            if (bypass.getValue().bypassed())
-//                builder.append("bypasses[").append(bypass.getValue().index - 1).append("] = true; ");
-//            builder.append("goto ").append(LABEL_PREFIX).append(bypass.getKey()).append("; }\n");
-//        }
+                .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) {\n\t\tsp = stack; PUSH_OBJECT(popExceptionFrame(frameRef)); ");
+        appendGoto(builder, handlerBypass, handler, originalHandler, exceptionPops);
+        builder.append("\n\t}\n");
+        
+        for (Bypass bypass: bypasses) {
+            builder.append("\tif (bypasses[").append(bypass.index).append("]) { ");
+            if (bypass.isLast())
+                builder.append("bypasses[").append(bypass.index).append("] = false; ");
+            builder.append("goto ").append(LABEL_PREFIX).append(bypass.target).append("; }\n");
+        }
     }
 
     @Override
@@ -57,10 +59,24 @@ public class TryInstruction extends Instruction {
             dependencies.add("java/lang/Throwable");
     }
 
-    public Bypass getBypass(int target, int originalTarget) {
-        if (!bypasses.containsKey(target))
-            bypasses.put(target, new Bypass(getMethod().allocateTryCatchBypass(), target, originalTarget));
-        return bypasses.get(target);
+    public void createBypass(int target, int originalTarget, int bypassIndex) {
+        bypasses.add(new Bypass(bypassIndex, target, originalTarget));
+    }
+
+    @Override
+    public void setJumpExceptionPops(int label, int pops) {
+        exceptionPops = pops - 1;
+    }
+
+    @Override
+    public List<Integer> getJumpLabels() {
+        return List.of(handler);
+    }
+
+    @Override
+    public void setJumpBypass(int bypass, int label, int bypassLabel) {
+        handler = bypassLabel;
+        handlerBypass = bypass;
     }
 
     @Override
@@ -100,41 +116,19 @@ public class TryInstruction extends Instruction {
         return catchInstruction;
     }
 
-    public class CatchInstruction extends Instruction implements JumpingInstruction {
-
-        private int bypass = -1;
-        private int label;
-
+    public class CatchInstruction extends Instruction {
+        
         private CatchInstruction() {
             super(TryInstruction.this.getMethod(), -1);
-            label = handler;
         }
 
         @Override
         public void appendUnoptimized(StringBuilder builder) {
-//            builder.append("\t} CATCH (").append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append(" ex) {\n");
-//            builder.append("\tsp = stack;\n");
-//            builder.append("\tPUSH_OBJECT(ex);\n");
-//            builder.append("\t");
-//            appendGoto(builder, bypass, label, handler);
-//            builder.append("\t)\n");
-
             builder.append("\tpopExceptionFrame(frameRef);\n");
         }
-
-        @Override
-        public void setJumpBypass(int bypass, int label, int bypassLabel) {
-            this.bypass = bypass;
-            this.label = bypassLabel;
-        }
-
-        public int getBypass() {
-            return bypass;
-        }
-
-        @Override
-        public List<Integer> getJumpLabels() {
-            return Collections.singletonList(label);
+        
+        public int getLabel() {
+            return handler;
         }
 
         @Override
@@ -166,9 +160,9 @@ public class TryInstruction extends Instruction {
         public int getOriginalTarget() {
             return originalTarget;
         }
-
-        public boolean bypassed() {
-            return target != originalTarget;
+        
+        public boolean isLast() {
+            return target == originalTarget;
         }
     }
 }

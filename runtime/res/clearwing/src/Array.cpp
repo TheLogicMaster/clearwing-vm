@@ -39,6 +39,14 @@ jobject array_clone_R_java_lang_Object(jcontext ctx, jobject self) {
 }
 
 void array_finalize(jcontext ctx, jobject self) {
+    auto array = (jarray)self;
+    if (array->data) {
+        auto clazz = (jclass)((jclass) array->parent.clazz)->componentClass;
+        adjustHeapUsage(clazz->primitive ? -array->length * clazz->size : -(int64_t)sizeof(jobject) * array->length);
+        delete[] (char *) array->data;
+        array->length = 0;
+        array->data = nullptr;
+    }
 }
 
 void *vtable_array[]{
@@ -105,7 +113,7 @@ jclass getArrayClass(jclass componentType, int dimensions) {
 /// Creates a new multi-dimensional array. Throws exceptions.
 extern "C++" jarray createMultiArray(jcontext ctx, jclass type, const std::vector<int> &dimensions) {
     nullCheck(ctx, (jobject) type);
-    auto array = (jarray) gcAllocNative(ctx, getArrayClass(type, (int) dimensions.size())); // Safe because no methods are called on it, so no safepoint
+    auto array = (jarray) gcAllocProtected(ctx, getArrayClass(type, (int) dimensions.size())); // Safe because no methods are called on it, so no safepoint
     array->length = dimensions[0];
     if (array->length == 0) // Todo: Verify
         return array;
@@ -121,7 +129,7 @@ extern "C++" jarray createMultiArray(jcontext ctx, jclass type, const std::vecto
                 ((jobject *) array->data)[i] = (jobject) createMultiArray(ctx, type, itemDims);
         }
     }
-    array->parent.gcMark = GC_MARK_START;
+    unprotectObject((jobject)array);
     return array;
 }
 
@@ -130,14 +138,12 @@ jarray createArray(jcontext ctx, jclass type, int length) {
     return createMultiArray(ctx, type, {length});
 }
 
-/// Called by the garbage collector to dispose array data. Does not throw exceptions.
-void disposeArray(jcontext ctx, jarray array) {
-    if (array->data) {
-        auto clazz = (jclass)((jclass) array->parent.clazz)->componentClass;
-        adjustHeapUsage(clazz->primitive ? -array->length * clazz->size : -(int64_t)sizeof(jobject) * array->length);
-        delete[] (char *) array->data;
-        array->data = nullptr;
-    }
+jarray createArrayProtected(jcontext ctx, jclass type, int length) {
+    return (jarray)protectObject((jobject)createArray(ctx, type, length));
+}
+
+jarray createArrayEternal(jcontext ctx, jclass type, int length) {
+    return (jarray)makeEternal((jobject)createArray(ctx, type, length));
 }
 
 }

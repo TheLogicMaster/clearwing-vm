@@ -6,8 +6,8 @@ plugins {
 
 apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.14
-targetCompatibility = 1.14
+sourceCompatibility = 1.16
+targetCompatibility = 1.16
 
 sourceSets {
     main {

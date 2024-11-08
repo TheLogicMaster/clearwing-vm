@@ -24,6 +24,8 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 
 	private final int[] labelBypasses;
 	private int defaultLabelBypass = -1;
+	private final int[] exceptionPops;
+	private int defaultExceptionPops = 0;
 
 	public SwitchInstruction (BytecodeMethod method, int[] keys, Label[] labels, Label defaultLabel) {
 		super(method, Opcodes.LOOKUPSWITCH);
@@ -36,19 +38,23 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 		}
 		this.defaultLabel = method.getLabelId(defaultLabel);
 		this.originalDefaultLabel = this.defaultLabel;
-		labelBypasses = new int[labels.length + (defaultLabel == null ? 0 : 1)];
+		labelBypasses = new int[labels.length];
 		Arrays.fill(labelBypasses, -1);
+		exceptionPops = new int[labels.length];
+		Arrays.fill(exceptionPops, 0);
 	}
 
 	private void appendSwitch(StringBuilder builder, String indent, String value) {
 		builder.append(indent).append("switch(").append(value).append(") {\n");
 		for (int i = 0; i < keys.length; i++) {
 			builder.append(indent).append("\tcase ").append(keys[i]).append(": ");
-			appendGoto(builder, labelBypasses[i], labels[i], originalLabels[i]);
+			appendGoto(builder, labelBypasses[i], labels[i], originalLabels[i], exceptionPops[i]);
+			builder.append("\n");
 		}
 		if (defaultLabel != -1) {
 			builder.append(indent).append("\tdefault: ");
-			appendGoto(builder, defaultLabelBypass, defaultLabel, originalDefaultLabel);
+			appendGoto(builder, defaultLabelBypass, defaultLabel, originalDefaultLabel, defaultExceptionPops);
+			builder.append("\n");
 		}
 		builder.append(indent).append("}\n");
 	}
@@ -93,11 +99,25 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 		if (label == defaultLabel) {
 			defaultLabel = bypassLabel;
 			defaultLabelBypass = bypass;
+			return;
 		}
 		for (int i = 0; i < labels.length; i++)
 			if (label == labels[i]) {
 				labels[i] = bypassLabel;
 				labelBypasses[i] = bypass;
+				break;
+			}
+	}
+
+	@Override
+	public void setJumpExceptionPops(int label, int pops) {
+		if (label == defaultLabel) {
+			defaultLabelBypass = pops;
+			return;
+		}
+		for (int i = 0; i < labels.length; i++)
+			if (label == labels[i]) {
+				exceptionPops[i] = pops;
 				break;
 			}
 	}

@@ -60,6 +60,10 @@ public class Charset implements Comparable<Charset> {
         }
     }
 
+    public static Charset defaultCharset() {
+        return StandardCharsets.UTF_8;
+    }
+
     public CharsetDecoder newDecoder() {
         throw new UnsupportedOperationException();
     }

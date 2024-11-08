@@ -271,7 +271,7 @@ public class ZeroOperandInstruction extends Instruction {
                 if (stack.size() < 2)
                     break;
                 setInputsFromStack(stack, 2);
-                setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
+                setOutputs(inputs.get(1), inputs.get(0), inputs.get(1));
                 break;
             case Opcodes.DUP_X2:
                 if (stack.size() < 2)
@@ -279,12 +279,12 @@ public class ZeroOperandInstruction extends Instruction {
                 type2 = stack.get(stack.size() - 2).getBasicType();
                 if (type2.isWide()) { // Form 2
                     setInputsFromStack(stack, 2);
-                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(1));
                 } else { // Form 1
                     if (stack.size() < 3)
                         break;
                     setInputsFromStack(stack, 3);
-                    setOutputs(inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(2), inputs.get(0), inputs.get(1), inputs.get(2));
                 }
                 break;
             case Opcodes.DUP2:
@@ -298,7 +298,7 @@ public class ZeroOperandInstruction extends Instruction {
                     if (stack.size() < 2)
                         break;
                     setInputsFromStack(stack, 2);
-                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0), inputs.get(1));
                 }
                 break;
             case Opcodes.DUP2_X1:
@@ -307,12 +307,12 @@ public class ZeroOperandInstruction extends Instruction {
                 type = stack.get(stack.size() - 1).getBasicType();
                 if (type.isWide()) { // Form 2
                     setInputsFromStack(stack, 2);
-                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(1));
                 } else { // Form 1
                     if (stack.size() < 3)
                         break;
                     setInputsFromStack(stack, 3);
-                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(1), inputs.get(2), inputs.get(0), inputs.get(1), inputs.get(2));
                 }
                 break;
             case Opcodes.DUP2_X2:
@@ -322,22 +322,22 @@ public class ZeroOperandInstruction extends Instruction {
                 type2 = stack.get(stack.size() - 2).getBasicType();
                 if (type.isWide() && type2.isWide()) { // Form 4
                     setInputsFromStack(stack, 2);
-                    setOutputs(inputs.get(0), inputs.get(1), inputs.get(0));
+                    setOutputs(inputs.get(1), inputs.get(0), inputs.get(1));
                 } else {
                     if (stack.size() < 3)
                         break;
                     type3 = stack.get(stack.size() - 3).getBasicType();
                     if (type.isWide()) { // Form 2
                         setInputsFromStack(stack, 3);
-                        setOutputs(inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
+                        setOutputs(inputs.get(2), inputs.get(0), inputs.get(1), inputs.get(2));
                     } else if (type3.isWide()) { // Form 3
                         setInputsFromStack(stack, 3);
-                        setOutputs(inputs.get(1), inputs.get(0), inputs.get(2), inputs.get(1), inputs.get(0));
+                        setOutputs(inputs.get(1), inputs.get(2), inputs.get(0), inputs.get(1), inputs.get(2));
                     } else { // Form 1
                         if (stack.size() < 4)
                             break;
                         setInputsFromStack(stack, 4);
-                        setOutputs(inputs.get(1), inputs.get(0), inputs.get(3), inputs.get(2), inputs.get(1), inputs.get(0));
+                        setOutputs(inputs.get(2), inputs.get(3), inputs.get(0), inputs.get(1), inputs.get(2), inputs.get(3));
                     }
                 }
                 break;

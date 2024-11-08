@@ -201,7 +201,7 @@ public class Transpiler {
 						if (type.isBuffer())
 							builder.append("(").append(type.getPointerType()).append(")((java_nio_Buffer *)").append(arg.getName()).append("_object)->F_address;\n");
 						else if (type.isString())
-							builder.append("stringToNative((jstring) ").append(arg.getName()).append("_object);\n");
+							builder.append("stringToNative(ctx, (jstring) ").append(arg.getName()).append("_object);\n");
 						else if (type.isPrimitiveArray())
 							builder.append("(").append(type.getPointerType()).append(")((jarray)").append(arg.getName()).append("_object)->data;\n");
 					}
@@ -297,11 +297,6 @@ public class Transpiler {
 		for (BytecodeClass clazz: classes)
 			clazz.collectDependencies(classMap);
 
-		// Enable reflection info
-		for (String reflective: config.getReflective())
-			for (Map.Entry<String, BytecodeClass> entry : filterByPattern(reflective, classMap.entrySet()))
-				entry.getValue().setReflective(true);
-
 		// Mark intrinsic methods
 		for (String intrinsic: config.getIntrinsics()) {
 			int separator = intrinsic.lastIndexOf('.');
@@ -350,7 +345,6 @@ public class Transpiler {
 		for (String dep: NATIVE_DEPENDENCIES)
 			collect(classMap.get(dep), required, classMap);
 		ArrayList<String> requiredPatterns = new ArrayList<>(config.getNonOptimized());
-		requiredPatterns.addAll(config.getReflective());
 		for (String pattern: requiredPatterns)
 			for (Map.Entry<String, BytecodeClass> entry: filterByPattern(pattern, classMap.entrySet()))
 				collect(entry.getValue(), required, classMap);
@@ -397,11 +391,9 @@ public class Transpiler {
 		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(new File(outputDir.getPath(), "src/Config.h")))) {
 			writer.write("" +
 					"#pragma once\n\n" +
-					"#define USE_STACK_TRACES " + config.hasStackTraces() + "\n" +
-					"#define USE_LINE_NUMBERS " + (config.hasLineNumbers() && config.hasStackTraces()) + "\n" +
-					"#define USE_STACK_COOKIES " + (config.hasStackCookies() && config.hasStackTraces()) + "\n" +
+					"#define USE_LINE_NUMBERS " + config.hasLineNumbers() + "\n" +
+					"#define USE_STACK_COOKIES " + config.hasStackCookies() + "\n" +
 					"#define USE_VALUE_CHECKS " + config.hasValueChecks() + "\n" +
-					"#define USE_LEAK_CHECK " + config.hasLeakCheck() + "\n" +
 					"#define USE_PLATFORM_OVERRIDE " + config.hasPlatformOverride() + "\n"
 			);
 		}

@@ -1,6 +1,7 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.*;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.Printer;
 
 import java.util.*;
@@ -182,6 +183,6 @@ public abstract class Instruction {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "(" + opcode + ")";
+		return getClass().getSimpleName() + (opcode < 0 ? "" : "(" + Printer.OPCODES[opcode] + ")");
 	}
 }

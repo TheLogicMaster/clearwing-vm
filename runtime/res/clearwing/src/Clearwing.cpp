@@ -23,6 +23,9 @@
 #include "java/lang/Double.h"
 #include "java/lang/Boolean.h"
 #include "java/lang/Number.h"
+#include <java/nio/ByteBuffer.h>
+
+#include <ankerl/unordered_dense.h>
 
 #include <set>
 #include <map>
@@ -35,11 +38,17 @@
 #include <atomic>
 #include <unordered_set>
 #include <cstdarg>
+#include <ranges>
+#include <chrono>
 
 static_assert(sizeof(Class) == sizeof(java_lang_Class)); // Loosely ensure generated Class structure matches native representation
 static_assert(std::alignment_of<java_lang_Object>() == std::alignment_of<jlong>()); // Embedding Object in type struct should not add padding
 
-static std::vector<jobject> *objects;
+static ankerl::unordered_dense::set<jobject> *objects;
+static ankerl::unordered_dense::set<jobject> *rootObjects;
+static std::vector<jobject> collectedObjects;
+static std::mutex objectsLock;
+static jthread collectionThread;
 static std::map<std::string, jclass> *classes;
 static std::recursive_mutex criticalLock;
 static std::mutex registryMutex;
@@ -53,6 +62,8 @@ int64_t lastCollectionHeapUsage;
 extern "C" {
 
 bool volatile suspendVM;
+
+static void collectionThreadFunc(jcontext ctx);
 
 static void markPrimitive(jobject object, jint mark, jint depth) {}
 
@@ -82,8 +93,17 @@ void runVM(main_ptr entrypoint) {
     registerClass(&class_void);
 
     auto mainContext = createContext();
-    auto thread = (jthread) gcAlloc(mainContext, &class_java_lang_Thread); // Todo: Ensure all fields are set, since constructor isn't called
-    thread->parent.gcMark = GC_MARK_ETERNAL;
+
+    jcontext collectionCtx = createContext();
+    collectionThread = (jthread) gcAllocEternal(mainContext, &class_java_lang_Thread); // Todo: Ensure all fields are set, since constructor isn't called
+    collectionThread->F_nativeContext = (intptr_t) collectionCtx;
+    collectionCtx->thread = collectionThread;
+    collectionThread->F_started = true;
+    collectionThread->F_name = (intptr_t) stringFromNative(mainContext, "GC");
+    collectionCtx->nativeThread = new std::thread;
+    *collectionCtx->nativeThread = std::thread(collectionThreadFunc, collectionCtx);
+
+    auto thread = (jthread) gcAllocEternal(mainContext, &class_java_lang_Thread); // Todo: Ensure all fields are set, since constructor isn't called
     thread->F_nativeContext = (intptr_t) mainContext;
     mainContext->thread = thread;
     thread->F_entrypoint = (intptr_t) entrypoint;
@@ -140,18 +160,18 @@ jint doubleCompare(jdouble value1, jdouble value2, jint nanValue) {
 jint longCompare(jlong value1, jlong value2) {
     if (value1 > value2)
         return 1;
-    else if (value1 < value2)
+    if (value1 < value2)
         return -1;
-    else
-        return 0;
+    return 0;
 }
 
-static jstring createString(jcontext ctx, const char *string, int length) {
+static jstring createString(jcontext ctx, const char *string, int length, bool protect) {
     auto encoded = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(string, string + length);
     int encodedLength = (int)encoded.length();
-    auto inst = (jstring) gcAllocNative(ctx, &class_java_lang_String); // This leaks if createArray throws an exception
+    auto inst = (jstring) gcAllocProtected(ctx, &class_java_lang_String); // This leaks if createArray throws an exception
     inst->F_value = (intptr_t) createArray(ctx, &class_char, encodedLength);
-    inst->parent.gcMark = GC_MARK_START;
+    if (!protect)
+        unprotectObject((jobject)inst);
     inst->F_count = encodedLength;
     memcpy(((jarray) inst->F_value)->data, encoded.c_str(), encoded.length() * 2);
     return inst;
@@ -159,12 +179,22 @@ static jstring createString(jcontext ctx, const char *string, int length) {
 
 /// Creates a string from a native string. Throws exceptions.
 jstring stringFromNative(jcontext ctx, const char *string) {
-    return createString(ctx, string, (int)strlen(string));
+    return createString(ctx, string, (int)strlen(string), false);
 }
 
 /// Creates a string from a native string. Throws exceptions.
 jstring stringFromNativeLength(jcontext ctx, const char *string, int length) {
-    return createString(ctx, string, length);
+    return createString(ctx, string, length, false);
+}
+
+jstring stringFromNativeProtected(jcontext ctx, const char *string) {
+    return createString(ctx, string, (int)strlen(string), true);
+}
+
+jstring stringFromNativeEternal(jcontext ctx, const char *string) {
+    auto str = createString(ctx, string, (int)strlen(string), false);
+    makeEternal((jobject)str);
+    return str;
 }
 
 /// Creates a string from a StringLiteral. Throws exceptions.
@@ -178,8 +208,9 @@ jstring createStringLiteral(jcontext ctx, StringLiteral literal) {
             value = it->second;
             return;
         }
-        value = createString(ctx, literal.string, literal.length);
-        value->parent.gcMark = GC_MARK_ETERNAL;
+        value = createString(ctx, literal.string, literal.length, false);
+        makeEternal((jobject)value);
+        makeEternal((jobject)value->F_value);
         pool[literal.string] = value;
     });
     return value;
@@ -275,23 +306,16 @@ void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject
     static std::mutex lock;
     static std::map<jclass, std::map<jclass, std::vector<int>>> mappings;
 
-    std::map<jclass, std::vector<int>> *objectMappings;
-    {
-        std::lock_guard guard(lock);
-        auto mappingsIt = mappings.find(interface);
-        if (mappingsIt == mappings.end())
-            objectMappings = &mappings[interface];
-        else
-            objectMappings = &mappingsIt->second;
-    }
-
     auto objectClass = (jclass) object->clazz;
 
     int offset;
     {
         std::lock_guard guard(lock);
-        auto offsetsIt = objectMappings->find(objectClass);
-        if (offsetsIt == objectMappings->end()) {
+
+        std::map<jclass, std::vector<int>> &objectMappings = mappings[interface];
+
+        auto offsetsIt = objectMappings.find(objectClass);
+        if (offsetsIt == objectMappings.end()) {
             std::vector<int> offsets(interface->methodCount);
             for (int i = 0; i < interface->methodCount; i++) {
                 auto &metadata = ((MethodMetadata *) interface->nativeMethods)[i];
@@ -309,7 +333,7 @@ void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject
                 }
                 offsets[i] = found;
             }
-            (*objectMappings)[objectClass] = offsets;
+            objectMappings[objectClass] = offsets;
             offset = offsets[method];
         } else {
             auto &offsets = offsetsIt->second;
@@ -323,14 +347,10 @@ void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject
     return ((void **) object->vtable)[offset];
 }
 
-/// Allocates an instance of a class. Caller must be at a safepoint, this calls the GC. Throws exceptions.
-jobject gcAlloc(jcontext ctx, jclass clazz) {
-    static std::mutex lock;
-
+jobject gcAllocObject(jcontext ctx, jclass clazz, int mark) {
     if (!objects) {
-        lock.lock();
-        objects = new std::vector<jobject>;
-        lock.unlock();
+        objects = new ankerl::unordered_dense::set<jobject>;
+        rootObjects = new ankerl::unordered_dense::set<jobject>;
     }
 
     if (heapUsage > GC_HEAP_THRESHOLD || heapUsage - lastCollectionHeapUsage > GC_MEM_THRESHOLD || allocationsSinceCollection > GC_OBJECT_THRESHOLD)
@@ -344,24 +364,76 @@ jobject gcAlloc(jcontext ctx, jclass clazz) {
     allocationsSinceCollection++;
 
     *object = {
-            .clazz = (intptr_t) clazz,
-            .gcMark = GC_MARK_START,
-            .vtable = (intptr_t) clazz->classVtable,
-            .monitor = (intptr_t) new ObjectMonitor,
+        .clazz = (intptr_t) clazz,
+        .gcMark = mark,
+        .vtable = (intptr_t) clazz->classVtable,
+        .monitor = (intptr_t) new ObjectMonitor,
     };
 
-    lock.lock();
-    objects->push_back(object);
-    lock.unlock();
+    objectsLock.lock();
+    if (mark == GC_MARK_START)
+        objects->emplace(object);
+    else
+        rootObjects->emplace(object);
+    objectsLock.unlock();
 
     return object;
 }
 
+/// Allocates an instance of a class. Caller must be at a safepoint, this calls the GC. Throws exceptions.
+jobject gcAlloc(jcontext ctx, jclass clazz) {
+    return gcAllocObject(ctx, clazz, GC_MARK_START);
+}
+
 /// Allocates an instance of a class and sets the GC mark to GC_MARK_NATIVE. Prefer storing objects on a stack frame. Throws exceptions.
-jobject gcAllocNative(jcontext ctx, jclass clazz) {
-    auto object = gcAlloc(ctx, clazz);
-    object->gcMark = GC_MARK_NATIVE;
+jobject gcAllocProtected(jcontext ctx, jclass clazz) {
+    return gcAllocObject(ctx, clazz, GC_MARK_PROTECTED);
+}
+
+jobject gcAllocEternal(jcontext ctx, jclass clazz) {
+    return gcAllocObject(ctx, clazz, GC_MARK_ETERNAL);
+}
+
+static jobject makeRoot(jobject object, int mark) {
+    objectsLock.lock();
+    if (object->gcMark == mark) {
+        objectsLock.unlock();
+        return object;
+    }
+    object->gcMark = mark;
+    objects->erase(object);
+    rootObjects->emplace(object);
+    objectsLock.unlock();
     return object;
+}
+
+static jobject makeRegular(jobject object, int mark) {
+    objectsLock.lock();
+    if (object->gcMark != mark) {
+        objectsLock.unlock();
+        return object;
+    }
+    object->gcMark = GC_MARK_START;
+    rootObjects->erase(object);
+    objects->emplace(object);
+    objectsLock.unlock();
+    return object;
+}
+
+jobject makeEternal(jobject object) {
+    return makeRoot(object, GC_MARK_ETERNAL);
+}
+
+jobject makeEphemeral(jobject object) {
+    return makeRegular(object, GC_MARK_ETERNAL);
+}
+
+jobject protectObject(jobject object) {
+    return makeRoot(object, GC_MARK_PROTECTED);
+}
+
+jobject unprotectObject(jobject object) {
+    return makeRegular(object, GC_MARK_PROTECTED);
 }
 
 /// Creates a new context. Does not throw exceptions.
@@ -381,6 +453,50 @@ void destroyContext(jcontext context) {
     delete context;
 }
 
+static void collectionThreadFunc(jcontext ctx) {
+    static std::vector<jobject> collected;
+
+    auto frameRef = pushStackFrame(ctx, 0, nullptr, "GC:collect", nullptr);
+
+    while (true) { // Todo
+        objectsLock.lock();
+        if (!collectedObjects.empty()) {
+            collected = collectedObjects;
+            collectedObjects.clear();
+        }
+        objectsLock.unlock();
+
+        if (!collected.empty()) {
+            for (jobject obj : collected) {
+                tryCatch(frameRef, [&]{
+                    ((finalizer_ptr)((void **)obj->vtable)[VTABLE_java_lang_Object_finalize])(ctx, obj);
+                }, &class_java_lang_Throwable, [](jobject ignored){});
+            }
+
+            for (jobject obj : collected) {
+                objectsLock.lock();
+                objects->erase(obj);
+                objectsLock.unlock();
+
+                heapUsage -= ((jclass) obj->clazz)->size + (int64_t) sizeof(ObjectMonitor);
+
+                delete (ObjectMonitor *) obj->monitor;
+
+                memset(obj, 0, sizeof(java_lang_Object)); // Erase collected objects to make memory bugs easier to catch
+                obj->gcMark = GC_MARK_COLLECTED; // Set collected flag again
+
+                delete[] (char *) obj;
+            }
+
+            collected.clear();
+        }
+
+        usleep(1000);
+
+        SAFEPOINT();
+    }
+}
+
 /// Runs the garbage collector
 void runGC(jcontext ctx) {
     static std::atomic_bool running;
@@ -390,6 +506,8 @@ void runGC(jcontext ctx) {
         return;
 
     auto frameRef = pushStackFrame(ctx, 0, nullptr, "runGC", nullptr);
+
+    auto blockTime = std::chrono::system_clock::now();
 
     // Suspend all threads before collecting (Suspended threads must have all owned objects reachable)
     {
@@ -410,10 +528,9 @@ void runGC(jcontext ctx) {
             break;
     }
 
-    acquireCriticalLock();
+    auto copyTime = std::chrono::system_clock::now();
 
-    std::unordered_set<jobject> objectSet;
-    objectSet.insert(objects->begin(), objects->end());
+    acquireCriticalLock();
 
     static jint mark;
     if (++mark > GC_MARK_END)
@@ -421,18 +538,25 @@ void runGC(jcontext ctx) {
 
     deepMarkedObjects.clear();
 
-    // Explicitly mark children of non-collectable objects
-    for (auto object : *objects)
-        if (object->gcMark > GC_MARK_COLLECTED && object->gcMark < GC_MARK_START)
-            ((gc_mark_ptr) ((jclass) object->clazz)->markFunction)(object, mark, GC_DEPTH_ALWAYS);
+    auto nonCollectableTime = std::chrono::system_clock::now();
 
-    // Mark class objects (Not in `objects`)
+    // Explicitly mark children of non-collectable objects
+    for (auto object : *rootObjects)
+        ((gc_mark_ptr) ((jclass) object->clazz)->markFunction)(object, mark, GC_DEPTH_ALWAYS);
+
+    auto markClassesTime = std::chrono::system_clock::now();
+
+    // Mark class objects (Not in `objects`) // Todo: Not needed once all eternal
     for (auto &pair : *classes)
         mark_java_lang_Class((jobject) pair.second, mark, GC_DEPTH_ALWAYS);
+
+    auto markStaticFieldsTime = std::chrono::system_clock::now();
 
     // Mark static fields
     for (auto &pair : *classes)
         ((gc_mark_ptr) pair.second->markFunction)(nullptr, mark, GC_DEPTH_ALWAYS);
+
+    auto markStackTime = std::chrono::system_clock::now();
 
     // Mark stack objects
     for (auto threadContext : threadContexts) {
@@ -440,11 +564,13 @@ void runGC(jcontext ctx) {
             const auto &frame = threadContext->frames[i];
             for (int j = 0; j < frame.size; j++) {
                 const auto obj = frame.frame[j].o;
-                if (objectSet.contains(obj))
+                if (objects->contains(obj))
                     ((gc_mark_ptr) ((jclass) obj->clazz)->markFunction)(obj, mark, 0);
             }
         }
     }
+
+    auto markDeepTime = std::chrono::system_clock::now();
 
     // Specially mark deep object chains to avoid stack overflows
     while (!deepMarkedObjects.empty()) {
@@ -454,12 +580,73 @@ void runGC(jcontext ctx) {
             ((gc_mark_ptr) ((jclass) obj->clazz)->markFunction)(obj, mark, 0);
     }
 
-    // Collect unmarked objects
-    auto partitionIterator = std::partition(objects->begin(), objects->end(), [](jobject o){
-        return (o->gcMark > GC_MARK_COLLECTED && o->gcMark < GC_MARK_START) || o->gcMark == mark; // `true` for reachable objects
-    });
-    std::vector<jobject> collected(partitionIterator, objects->end());
-    objects->erase(partitionIterator, objects->end());
+    auto collectTime = std::chrono::system_clock::now();
+
+    // Collect unreachable objects
+    for (jobject obj : *objects) {
+        if ((obj->gcMark > GC_MARK_COLLECTED && obj->gcMark < GC_MARK_START) || obj->gcMark == mark)
+            continue;
+        obj->gcMark = GC_MARK_COLLECTED;
+        collectedObjects.emplace_back(obj);
+    }
+
+#if false // Todo: Use macro
+    std::map<jclass, int> usage;
+    std::map<jclass, int> counts;
+    std::multimap<int, jclass> usageMap;
+    for (jobject o : *objectsSet) {
+        auto cls = (jclass)o->clazz;
+        counts[cls]++;
+        usage[cls] += cls->size;
+        if (cls->arrayDimensions > 0) {
+            auto array = (jarray)o;
+            auto component = (jclass)cls->componentClass;
+            usage[cls] += cls->size + component->primitive ? component->size * array->length : (int)sizeof(jobject) * array->length;
+        } else if (isInstance(ctx, o, &class_java_nio_ByteBuffer)) {
+            auto buffer = (java_nio_ByteBuffer *) o;
+            if (buffer->F_isOwner && buffer->parent.F_address)
+                usage[cls] += buffer->parent.F_capacity;
+        }
+    }
+    printf("GC collected %i objects after %i allocations and %i bytes (%i bytes and %i objects total)\n", (int)collectedObjects.size(), (int)allocationsSinceCollection, (int)heapUsage - (int)lastCollectionHeapUsage, (int)heapUsage, (int)objectsSet->size());
+    for (auto &pair : usage)
+        usageMap.emplace(pair.second, pair.first);
+    int loggedUsages = 0;
+    for (auto &pair : usageMap | std::views::reverse) {
+        printf("%i objects (%i bytes) of %s\n", counts[pair.second], pair.first, (char *)pair.second->nativeName);
+        if (++loggedUsages >= 10)
+            break;
+    }
+    printf("\n");
+
+    usage.clear();
+    counts.clear();
+    usageMap.clear();
+    for (jobject o : collectedObjects) {
+        auto cls = (jclass)o->clazz;
+        counts[cls]++;
+        usage[cls] += cls->size;
+        if (cls->arrayDimensions > 0) {
+            auto array = (jarray)o;
+            auto component = (jclass)cls->componentClass;
+            usage[cls] += cls->size + component->primitive ? component->size * array->length : (int)sizeof(jobject) * array->length;
+        } else if (isInstance(ctx, o, &class_java_nio_ByteBuffer)) {
+            auto buffer = (java_nio_ByteBuffer *) o;
+            if (buffer->F_isOwner && buffer->parent.F_address)
+                usage[cls] += buffer->parent.F_capacity;
+        }
+    }
+    printf("Collection Stats:\n");
+    for (auto &pair : usage)
+        usageMap.emplace(pair.second, pair.first);
+    loggedUsages = 0;
+    for (auto &pair : usageMap | std::views::reverse) {
+        printf("%i objects (%i bytes) of %s\n", counts[pair.second], pair.first, (char *)pair.second->nativeName);
+        if (++loggedUsages >= 10)
+            break;
+    }
+    printf("\n");
+#endif
 
     allocationsSinceCollection = 0;
 
@@ -469,31 +656,20 @@ void runGC(jcontext ctx) {
         suspendVM = false;
     }
 
-    // Finalize collected objects
-    for (auto obj : collected) {
-        obj->gcMark = GC_MARK_COLLECTED;
-        tryCatch(frameRef, [&]{
-            ((finalizer_ptr)((void **)obj->vtable)[VTABLE_java_lang_Object_finalize])(ctx, obj);
-        }, &class_java_lang_Throwable, [](jobject ignored){});
-    }
+#if false // Todo: Use macro
+    auto finishTime = std::chrono::system_clock::now();
 
-    // Delete finalized objects
-    for (auto obj : collected) {
-        // Todo: "Object resurrection" is ignored in the unlikely event that a strong reference is made in a finalizer...
-        // Todo: Maybe storing objects separately until the next collection before actually deleting them would work
-
-        if (((jclass) obj->clazz)->arrayDimensions > 0)
-            disposeArray(ctx, (jarray) obj);
-
-        heapUsage -= ((jclass) obj->clazz)->size + (int64_t) sizeof(ObjectMonitor);
-
-        delete (ObjectMonitor *) obj->monitor;
-
-        memset(obj, 0, sizeof(java_lang_Object)); // Erase collected objects to make memory bugs easier to catch
-        obj->gcMark = GC_MARK_COLLECTED; // Set collected flag again
-
-        delete[] (char *) obj;
-    }
+    printf("\nGC Timings:\n");
+    printf("Block Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(copyTime - blockTime).count());
+    printf("Copy Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(nonCollectableTime - copyTime).count());
+    printf("Non-Collectable Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(markClassesTime - nonCollectableTime).count());
+    printf("Classes Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(markStaticFieldsTime - markClassesTime).count());
+    printf("Fields Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(markStackTime - markStaticFieldsTime).count());
+    printf("Stack Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(markDeepTime - markStackTime).count());
+    printf("Deep Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(collectTime - markDeepTime).count());
+    printf("Collect Time: %i\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(finishTime - collectTime).count());
+    printf("Total Time: %i\n\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(finishTime - blockTime).count());
+#endif
 
     lastCollectionHeapUsage = heapUsage;
 
@@ -562,12 +738,18 @@ jmp_buf *pushExceptionFrame(jframe frame, jclass type) {
 
 /// Pops an exception frame then returns and clears the current exception. Does not throw exceptions.
 jobject popExceptionFrame(jframe frame) {
-    if (frame->exceptionFrames.empty()) 
-        return nullptr; // Todo: Should this be possible to happen, or do jumps into a try-catch region need to be guarded? Seen in ktx-assets-async AssetStorage.load
     frame->exceptionFrames.pop_back();
     auto exception = frame->exception;
     frame->exception = nullptr;
     return exception;
+}
+
+void popExceptionFrames(jframe frame, int count) {
+    if (frame->exceptionFrames.size() < count)
+        throw std::runtime_error("No exception frame to pop");
+    for (int i = 0; i < count; i++) {
+        frame->exceptionFrames.pop_back();
+    }
 }
 
 /// Throws an exception. This function does not return.

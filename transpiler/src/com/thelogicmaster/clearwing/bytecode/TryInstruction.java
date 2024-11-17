@@ -2,6 +2,7 @@ package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
 import com.thelogicmaster.clearwing.StackEntry;
+import com.thelogicmaster.clearwing.TranspilerConfig;
 import com.thelogicmaster.clearwing.Utils;
 import org.objectweb.asm.Label;
 
@@ -37,7 +38,7 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         builder.append(LABEL_PREFIX).append(label).append(": if (setjmp(*pushExceptionFrame(frameRef, &class_")
                 .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) {\n\t\tsp = stack; PUSH_OBJECT(popExceptionFrame(frameRef)); ");
         appendGoto(builder, handlerBypass, handler, originalHandler, exceptionPops);
@@ -81,7 +82,7 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
 
     @Override
     public void resolveIO(List<StackEntry> stack) {
-        setBasicInputs();
+        setInputs();
         setBasicOutputs();
     }
 
@@ -123,7 +124,7 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
         }
 
         @Override
-        public void appendUnoptimized(StringBuilder builder) {
+        public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
             builder.append("\tpopExceptionFrame(frameRef);\n");
         }
         
@@ -133,7 +134,7 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
 
         @Override
         public void resolveIO(List<StackEntry> stack) {
-            setBasicInputs();
+            setInputs();
             setBasicOutputs();
         }
     }

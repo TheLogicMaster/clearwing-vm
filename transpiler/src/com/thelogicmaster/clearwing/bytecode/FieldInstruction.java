@@ -97,7 +97,7 @@ public class FieldInstruction extends Instruction {
 //    }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         if (realOwnerClass == null)
             throw new TranspilerException("Failed to find owner class for: " + name + " needed for " + method.getName());
         
@@ -123,51 +123,44 @@ public class FieldInstruction extends Instruction {
     }
 
     @Override
-    public void resolveIO(List<StackEntry> stack) {
-        if (opcode == Opcodes.GETFIELD)
-            setInputs(ownerType);
-        else if (opcode == Opcodes.PUTFIELD)
-            setInputs(ownerType, type);
-        else if (opcode == Opcodes.PUTSTATIC)
-            setInputs(type);
-        else
-            setBasicInputs();
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+        if (realOwnerClass == null)
+            throw new TranspilerException("Failed to find owner class for: " + name + " needed for " + method.getName());
+        
+        if (isStatic) // Todo: Skip on same class for clinit
+            builder.append("\tclinit_").append(qualifiedOwner).append("(ctx);\n");
 
-        if (opcode == Opcodes.GETFIELD || opcode == Opcodes.GETSTATIC)
-            setOutputs(type);
-        else
-            setBasicOutputs();
-    }
-
-    private String getFieldReference(List<StackEntry> operands) {
-        return operands.get(0).getTypedTemporary(ownerType) + "->" + name;
-    }
-
-    private String getValueOperand(StackEntry entry) {
-        return type.isPrimitive() ? entry.toString() : entry.getTypedTemporary(type);
+        switch (opcode) {
+            case Opcodes.GETSTATIC -> outputs.get(0).buildAssignment(builder).append("(")
+                    .append(type.getBasicType().getArithmeticType()).append(")").append(realName).append(";\n");
+            case Opcodes.PUTSTATIC ->
+                    builder.append("\t").append(realName).append(" = ").append(inputs.get(0).arg()).append(";\n");
+            case Opcodes.GETFIELD -> outputs.get(0).buildAssignment(builder).append("(")
+                    .append(type.getBasicType().getArithmeticType()).append(")").append("((")
+                    .append(realOwnerClass.getQualifiedName()).append(" *) NULL_CHECK(")
+                    .append(inputs.get(0).arg()).append("))->").append(name).append(";\n");
+            case Opcodes.PUTFIELD -> builder.append("\t((").append(realOwnerClass.getQualifiedName())
+                    .append(" *) NULL_CHECK(").append(inputs.get(0).arg()).append("))->").append(name)
+                    .append(" = ").append(type.isPrimitive() ? "" : "(jref) ").append(inputs.get(1).arg()).append(";\n");
+            default -> throw new TranspilerException("Invalid opcode");
+        }
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-//        if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC)
-//            builder.append("\t\t").append(qualifiedOwner).append("::clinit();\n");
-//
-//        if ((opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD))
-//            builder.append("\t\tvm::nullCheck(").append(operands.get(0)).append(".get());\n");
-//
-//        switch (opcode) {
-//            case Opcodes.GETSTATIC ->
-//                builder.append("\t\tauto temp").append(temporaries).append(" = ").append(type.isPrimitive() ? type.getArithmeticType() : "object_cast<java::lang::Object>")
-//                        .append("(").append(qualifiedOwner).append("::").append(name).append(weak ? ".lock()" : "").append(");\n");
-//            case Opcodes.PUTSTATIC ->
-//                builder.append("\t\t").append(qualifiedOwner).append("::").append(name).append(" = ").append(getValueOperand(operands.get(0))).append(";\n");
-//            case Opcodes.GETFIELD ->
-//                    builder.append("\t\tauto temp").append(temporaries).append(" = ").append(type.isPrimitive() ? type.getArithmeticType() : "object_cast<java::lang::Object>")
-//                            .append("(").append(getFieldReference(operands)).append(weak ? ".lock()" : "").append(");\n");
-//            case Opcodes.PUTFIELD ->
-//                builder.append("\t\t").append(getFieldReference(operands)).append(" = ").append(getValueOperand(operands.get(1))).append(";\n");
-//            default -> throw new TranspilerException("Invalid opcode");
-//        }
+    public void resolveIO(List<StackEntry> stack) {
+        if (opcode == Opcodes.GETFIELD)
+            setInputsFromStack(stack, 1);
+        else if (opcode == Opcodes.PUTFIELD)
+            setInputsFromStack(stack, 2);
+        else if (opcode == Opcodes.PUTSTATIC)
+            setInputsFromStack(stack, 1);
+        else
+            setInputs();
+
+        if (opcode == Opcodes.GETFIELD || opcode == Opcodes.GETSTATIC)
+            setBasicOutputs(type.getBasicType());
+        else
+            setBasicOutputs();
     }
 
     @Override

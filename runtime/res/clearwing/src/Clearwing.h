@@ -211,7 +211,7 @@ void acquireCriticalLock();
 void releaseCriticalLock();
 void safepointSuspend(jcontext ctx);
 
-jframe pushStackFrame(jcontext ctx, int size, const jtype *stack, const char *method, jobject monitor);
+jframe pushStackFrame(jcontext ctx, int size, volatile jtype *stack, const char *method, jobject monitor);
 void popStackFrame(jcontext ctx);
 jmp_buf *pushExceptionFrame(jframe frame, jclass type);
 jobject popExceptionFrame(jframe frame);
@@ -223,6 +223,7 @@ void interruptedCheck(jcontext ctx);
 void adjustHeapUsage(int64_t amount);
 
 jobject nullCheck(jcontext ctx, jobject object);
+jobject checkCast(jcontext ctx, jclass type, jobject object);
 NORETURN void throwException(jcontext ctx, jobject exception);
 NORETURN void throwDivisionByZero(jcontext ctx);
 NORETURN void throwClassCast(jcontext ctx);
@@ -248,7 +249,7 @@ jfloat unboxFloat(jcontext ctx, jobject boxed);
 jdouble unboxDouble(jcontext ctx, jobject boxed);
 jbool unboxBoolean(jcontext ctx, jobject boxed);
 
-void instMultiANewArray(jcontext ctx, volatile jtype * volatile &sp, jclass type, int dimensions);
+void instMultiANewArray(jcontext ctx, volatile jtype * &sp, jclass type, int dimensions);
 jint floatCompare(jfloat value1, jfloat value2, jint nanValue);
 jint doubleCompare(jdouble value1, jdouble value2, jint nanValue);
 jint longCompare(jlong value1, jlong value2);
@@ -294,11 +295,11 @@ jint longCompare(jlong value1, jlong value2);
 #define CONSTRUCT_AND_THROW(clazz, constructor, ...) \
     throwException(ctx, CONSTRUCT_OBJECT(clazz, constructor __VA_OPT__(,) __VA_ARGS__))
 
-#define INVOKE_VIRTUAL(func, index, obj, ...) \
-    ((func) ((void **) NULL_CHECK(obj)->vtable)[index])(ctx, obj __VA_OPT__(,) __VA_ARGS__)
+#define INVOKE_VIRTUAL(func, obj, ...) \
+    ((func_##func) ((void **) NULL_CHECK(obj)->vtable)[VTABLE_##func])(ctx, obj __VA_OPT__(,) __VA_ARGS__)
 
-#define INVOKE_INTERFACE(func, clazz, index, obj, ...) \
-    ((func) resolveInterfaceMethod(ctx, clazz, index, obj))(ctx, obj __VA_OPT__(,) __VA_ARGS__)
+#define INVOKE_INTERFACE(clazz, func, obj, ...) \
+    ((func_##clazz##_##func) resolveInterfaceMethod(ctx, &class_##clazz, INDEX_##clazz##_##func, obj))(ctx, obj __VA_OPT__(,) __VA_ARGS__)
 
 // When calling this, all objects must be safely stored, either on a stack frame, a class/object field, or have the mark value set to one of the special constants
 #define SAFEPOINT() \
@@ -308,8 +309,17 @@ jint longCompare(jlong value1, jlong value2);
 #define NULL_CHECK(object) \
     (({ if (!object) throwNullPointer(ctx); }), object)
 
-#define ARRAY_ACCESS(obj, type, index) \
+#define CHECK_CAST(type, object) \
+    (({ if (object && !isInstance(ctx, object, type)) throwClassCast(ctx); }), object)
+
+#define ARRAY_ACCESS(type, obj, index) \
     (({ if (index >= ((jarray) NULL_CHECK(obj))->length) throwIndexOutOfBounds(ctx); }), ((type *) ((jarray) obj)->data)[index])
+
+#ifdef USE_LINE_NUMBERS
+#define LINE_NUMBER(line) frameRef->lineNumber = line
+#else
+#define LINE_NUMBER(line) SEMICOLON_RECEPTOR
+#endif
 
 #define POP_N(count) \
     sp -= count
@@ -322,10 +332,10 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_AALOAD() \
     sp--; \
-    sp[-1].o = ARRAY_ACCESS(sp[-1].o, jobject, sp[0].i)
+    sp[-1].o = ARRAY_ACCESS(jobject, sp[-1].o, sp[0].i)
 
 #define INST_AASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jobject, sp[-2].i) = sp[-1].o; \
+    ARRAY_ACCESS(jobject, sp[-3].o, sp[-2].i) = sp[-1].o; \
     sp -= 3
 
 #define INST_ACONST_NULL() \
@@ -348,10 +358,10 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_BALOAD() \
     sp--; \
-    sp[-1].i = ARRAY_ACCESS(sp[-1].o, jbyte, sp[0].i)
+    sp[-1].i = ARRAY_ACCESS(jbyte, sp[-1].o, sp[0].i)
 
 #define INST_BASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jbyte, sp[-2].i) = sp[-1].i; \
+    ARRAY_ACCESS(jbyte, sp[-3].o, sp[-2].i) = sp[-1].i; \
     sp -= 3
 
 #define INST_BIPUSH(value) \
@@ -359,17 +369,17 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_CALOAD() \
     sp--; \
-    sp[-1].i = ARRAY_ACCESS(sp[-1].o, jchar, sp[0].i)
+    sp[-1].i = ARRAY_ACCESS(jchar, sp[-1].o, sp[0].i)
 
 #define INST_CASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jchar, sp[-2].i) = sp[-1].i; \
+    ARRAY_ACCESS(jchar, sp[-3].o, sp[-2].i) = sp[-1].i; \
     sp -= 3
 
 #define INST_CHECKCAST(type) \
     if (sp[-1].o && !isInstance(ctx, sp[-1].o, type)) throwClassCast(ctx)
 
 #define INST_FASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jfloat, sp[-2].i) = sp[-1].f; \
+    ARRAY_ACCESS(jfloat, sp[-3].o, sp[-2].i) = sp[-1].f; \
     sp -= 3
 
 #define INST_D2F() \
@@ -387,10 +397,10 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_DALOAD() \
     sp--; \
-    sp[-1].d = ARRAY_ACCESS(sp[-1].o, jdouble, sp[0].i)
+    sp[-1].d = ARRAY_ACCESS(jdouble, sp[-1].o, sp[0].i)
 
 #define INST_DASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jdouble, sp[-2].i) = sp[-1].d; \
+    ARRAY_ACCESS(jdouble, sp[-3].o, sp[-2].i) = sp[-1].d; \
     sp -= 3
 
 #define INST_DCMPG() \
@@ -520,7 +530,7 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_FALOAD() \
     sp--; \
-    sp[-1].f = ARRAY_ACCESS(sp[-1].o, jfloat, sp[0].i)
+    sp[-1].f = ARRAY_ACCESS(jfloat, sp[-1].o, sp[0].i)
 
 #define INST_FCMPG() \
     sp--; \
@@ -582,14 +592,14 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_IALOAD() \
     sp--; \
-    sp[-1].i = ARRAY_ACCESS(sp[-1].o, jint, sp[0].i)
+    sp[-1].i = ARRAY_ACCESS(jint, sp[-1].o, sp[0].i)
 
 #define INST_IAND() \
     sp--; \
     sp[-1].i = sp[-1].i & sp[0].i
 
 #define INST_IASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jint, sp[-2].i) = sp[-1].i; \
+    ARRAY_ACCESS(jint, sp[-3].o, sp[-2].i) = sp[-1].i; \
     sp -= 3
 
 #define INST_ICONST(value) \
@@ -663,14 +673,14 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_LALOAD() \
     sp--; \
-    sp[-1].l = ARRAY_ACCESS(sp[-1].o, jlong, sp[0].i)
+    sp[-1].l = ARRAY_ACCESS(jlong, sp[-1].o, sp[0].i)
 
 #define INST_LAND() \
     sp--; \
     sp[-1].l = sp[-1].l & sp[0].l
 
 #define INST_LASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jlong, sp[-2].i) = sp[-1].l; \
+    ARRAY_ACCESS(jlong, sp[-3].o, sp[-2].i) = sp[-1].l; \
     sp -= 3
 
 #define INST_LCMP() \
@@ -752,10 +762,10 @@ jint longCompare(jlong value1, jlong value2);
 
 #define INST_SALOAD() \
     sp--; \
-    sp[-1].i = ARRAY_ACCESS(sp[-1].o, jshort, sp[0].i)
+    sp[-1].i = ARRAY_ACCESS(jshort, sp[-1].o, sp[0].i)
 
 #define INST_SASTORE() \
-    ARRAY_ACCESS(sp[-3].o, jshort, sp[-2].i) = sp[-1].i; \
+    ARRAY_ACCESS(jshort, sp[-3].o, sp[-2].i) = sp[-1].i; \
     sp -= 3
 
 #define INST_SIPUSH(value) \
@@ -966,7 +976,7 @@ struct ExceptionFrame {
 
 struct StackFrame {
     int size{}; // Size of frame data (Number of jlong/StackEntry words)
-    const jtype *frame{}; // Pointer to frame data
+    volatile jtype *frame{}; // Pointer to frame data
     const char *method{}; // Qualified method name
     jobject monitor{}; // The monitor only for synchronized methods, if used
     std::vector<ExceptionFrame> exceptionFrames; // Stack of current exception frames in the method

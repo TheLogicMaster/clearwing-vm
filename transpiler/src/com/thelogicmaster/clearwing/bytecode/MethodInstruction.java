@@ -72,7 +72,7 @@ public class MethodInstruction extends Instruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         if (resolvedMethod == null)
             throw new TranspilerException("Method not resolved: " + owner + "." + originalName + " " + signature.getDesc() + " for " + method);
         if (signature.getParamTypes().length > 0 || opcode != Opcodes.INVOKESTATIC)
@@ -105,60 +105,50 @@ public class MethodInstruction extends Instruction {
             builder.append("\tsp++;\n");
     }
 
-    private String getOwnerReference(List<StackEntry> operands) {
-        if (opcode == Opcodes.INVOKEINTERFACE)
-            for (BytecodeMethod m: BytecodeClass.OBJECT_METHODS)
-                if (m.getSignature().equals(signature))
-                    return "temp" + operands.get(0).getTemporary() + "->";
-        return operands.get(0).getTypedTemporary(ownerType) + "->";
-    }
-
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-        if (opcode != Opcodes.INVOKESTATIC)
-            builder.append("\t\tvm::nullCheck(").append(operands.get(0)).append(".get());\n");
-        builder.append("\t\t");
-        if (!signature.getReturnType().isVoid()) {
-            builder.append("auto temp").append(temporaries).append(" = ");
-            builder.append(signature.getReturnType().isPrimitive() ? signature.getReturnType().getArithmeticType() : "object_cast<java::lang::Object>").append("(");
-        }
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+        if (resolvedMethod == null)
+            throw new TranspilerException("Method not resolved: " + owner + "." + originalName + " " + signature.getDesc() + " for " + method);
+        
+        if (!signature.getReturnType().isVoid())
+            outputs.get(0).buildAssignment(builder).append("(")
+                    .append(signature.getReturnType().getBasicType().getArithmeticType()).append(")");
+        else
+            builder.append("\t");
+
         switch (opcode) {
-            case Opcodes.INVOKEVIRTUAL, Opcodes.INVOKEINTERFACE -> builder.append(getOwnerReference(operands)).append(name);
-            case Opcodes.INVOKESPECIAL ->
-                    builder.append(getOwnerReference(operands)).append(qualifiedOwner).append("::").append(name);
-            case Opcodes.INVOKESTATIC -> builder.append(qualifiedOwner).append("::").append(name);
+            case Opcodes.INVOKEVIRTUAL ->
+                    builder.append("((func_").append(name.substring(2)).append(") ((void **) nullCheck(ctx, ").append(inputs.get(0).arg())
+                            .append(")->vtable)[VTABLE_").append(name.substring(2)).append("])");
+            case Opcodes.INVOKEINTERFACE ->
+                    builder.append("((func_").append(resolvedMethod.getName().substring(2)).append(") resolveInterfaceMethod(ctx, &class_")
+                            .append(resolvedMethod.getOwner().getQualifiedName()).append(", INDEX_").append(resolvedMethod.getName().substring(2))
+                            .append(", ").append(inputs.get(0).arg()).append("))");
+            case Opcodes.INVOKESPECIAL, Opcodes.INVOKESTATIC -> builder.append(resolvedMethod.getName());
             default -> throw new TranspilerException("Invalid opcode");
         }
-        builder.append("(");
+        builder.append("(ctx");
+        if (opcode != Opcodes.INVOKESTATIC)
+            builder.append(", ").append(inputs.get(0).arg());
         int paramOffset = opcode == Opcodes.INVOKESTATIC ? 0 : 1;
-        boolean first = true;
         for (int i = 0; i < signature.getParamTypes().length; i++) {
-            JavaType type = signature.getParamTypes()[i];
-            if (!first)
-                builder.append(", ");
-            if (type.isPrimitive())
-                builder.append(type.getCppType()).append("(").append(operands.get(paramOffset + i)).append(")");
-            else
-                builder.append(operands.get(paramOffset + i).getTypedTemporary(type));
-            first = false;
+            builder.append(", ");
+            inputs.get(paramOffset + i).buildArg(builder);
         }
-        if (!signature.getReturnType().isVoid())
-            builder.append(")");
         builder.append(");\n");
     }
 
     @Override
     public void resolveIO(List<StackEntry> stack) {
-        setBasicInputs();
+        int argCount = 0;
         if (opcode != Opcodes.INVOKESTATIC)
-            inputs.add(ownerType);
-        inputs.addAll(Arrays.asList(signature.getParamTypes()));
-        if (opcode != Opcodes.INVOKESTATIC)
-            inputs.set(0, ownerType);
+            argCount++;
+        argCount += signature.getParamTypes().length;
+        setInputsFromStack(stack, argCount);
         if (signature.getReturnType().isVoid())
             setBasicOutputs();
         else
-            setOutputs(signature.getReturnType());
+            setBasicOutputs(signature.getReturnType().getBasicType());
     }
 
     @Override

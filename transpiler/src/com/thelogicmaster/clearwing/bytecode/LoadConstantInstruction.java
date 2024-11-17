@@ -5,7 +5,6 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -44,13 +43,13 @@ public class LoadConstantInstruction extends Instruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         builder.append("\t(sp++)->").append(type.getStackName()).append(" = ").append(getExpression()).append(";\n");
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-        builder.append("\t\tauto temp").append(temporaries).append(" = ").append(getExpression()).append(";\n");
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+        outputs.get(0).buildAssignment(builder).append(getExpression()).append(";\n");
     }
 
     @Override

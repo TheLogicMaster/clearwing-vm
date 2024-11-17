@@ -1,13 +1,9 @@
 package com.thelogicmaster.clearwing.bytecode;
 
-import com.thelogicmaster.clearwing.BytecodeMethod;
-import com.thelogicmaster.clearwing.StackEntry;
-import com.thelogicmaster.clearwing.TranspilerException;
-import com.thelogicmaster.clearwing.TypeVariants;
+import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,20 +36,20 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
     }
 
     // Todo: Ensure future stack optimizations don't break object comparisons (Only compare jobject base types)
-    private void appendCompareOptimized(StringBuilder builder, TypeVariants type, String operation, List<StackEntry> operands) {
-        builder.append("\t\tif (").append(operands.get(0)).append(type == TypeVariants.OBJECT ? ".get() " : " ").append(operation);
-        builder.append(" ").append(operands.get(1)).append(type == TypeVariants.OBJECT ? ".get()) " : ") ");
+    private void appendCompareOptimized(StringBuilder builder, TypeVariants type, String operation) {
+        builder.append("\tif (").append(inputs.get(0).arg()).append(" ").append(operation);
+        builder.append(" ").append(inputs.get(1).arg()).append(") ");
         appendGoto(builder, bypass, label, originalLabel, exceptionPops);
     }
 
-    private void appendCompareZeroOptimized(StringBuilder builder, TypeVariants type, String operation, List<StackEntry> operands) {
-        builder.append("\t\tif (").append(operands.get(0)).append(" ").append(operation);
+    private void appendCompareZeroOptimized(StringBuilder builder, TypeVariants type, String operation) {
+        builder.append("\tif (").append(inputs.get(0).arg()).append(" ").append(operation);
         builder.append(type == TypeVariants.OBJECT ? " nullptr" : " 0").append(") ");
         appendGoto(builder, bypass, label, originalLabel, exceptionPops);
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
             case Opcodes.IFEQ -> appendCompareZero(builder, TypeVariants.INT, "==");
             case Opcodes.IFNE -> appendCompareZero(builder, TypeVariants.INT, "!=");
@@ -81,30 +77,31 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
-            case Opcodes.IFEQ -> appendCompareZeroOptimized(builder, TypeVariants.INT, "==", operands);
-            case Opcodes.IFNE -> appendCompareZeroOptimized(builder, TypeVariants.INT, "!=", operands);
-            case Opcodes.IFLT -> appendCompareZeroOptimized(builder, TypeVariants.INT, "<", operands);
-            case Opcodes.IFGE -> appendCompareZeroOptimized(builder, TypeVariants.INT, ">=", operands);
-            case Opcodes.IFGT -> appendCompareZeroOptimized(builder, TypeVariants.INT, ">", operands);
-            case Opcodes.IFLE -> appendCompareZeroOptimized(builder, TypeVariants.INT, "<=", operands);
-            case Opcodes.IFNULL -> appendCompareZeroOptimized(builder, TypeVariants.OBJECT, "==", operands);
-            case Opcodes.IFNONNULL -> appendCompareZeroOptimized(builder, TypeVariants.OBJECT, "!=", operands);
-            case Opcodes.IF_ICMPEQ -> appendCompareOptimized(builder, TypeVariants.INT, "==", operands);
-            case Opcodes.IF_ICMPNE -> appendCompareOptimized(builder, TypeVariants.INT, "!=", operands);
-            case Opcodes.IF_ICMPLT -> appendCompareOptimized(builder, TypeVariants.INT, "<", operands);
-            case Opcodes.IF_ICMPGE -> appendCompareOptimized(builder, TypeVariants.INT, ">=", operands);
-            case Opcodes.IF_ICMPGT -> appendCompareOptimized(builder, TypeVariants.INT, ">", operands);
-            case Opcodes.IF_ICMPLE -> appendCompareOptimized(builder, TypeVariants.INT, "<=", operands);
-            case Opcodes.IF_ACMPEQ -> appendCompareOptimized(builder, TypeVariants.OBJECT, "==", operands);
-            case Opcodes.IF_ACMPNE -> appendCompareOptimized(builder, TypeVariants.OBJECT, "!=", operands);
+            case Opcodes.IFEQ -> appendCompareZeroOptimized(builder, TypeVariants.INT, "==");
+            case Opcodes.IFNE -> appendCompareZeroOptimized(builder, TypeVariants.INT, "!=");
+            case Opcodes.IFLT -> appendCompareZeroOptimized(builder, TypeVariants.INT, "<");
+            case Opcodes.IFGE -> appendCompareZeroOptimized(builder, TypeVariants.INT, ">=");
+            case Opcodes.IFGT -> appendCompareZeroOptimized(builder, TypeVariants.INT, ">");
+            case Opcodes.IFLE -> appendCompareZeroOptimized(builder, TypeVariants.INT, "<=");
+            case Opcodes.IFNULL -> appendCompareZeroOptimized(builder, TypeVariants.OBJECT, "==");
+            case Opcodes.IFNONNULL -> appendCompareZeroOptimized(builder, TypeVariants.OBJECT, "!=");
+            case Opcodes.IF_ICMPEQ -> appendCompareOptimized(builder, TypeVariants.INT, "==");
+            case Opcodes.IF_ICMPNE -> appendCompareOptimized(builder, TypeVariants.INT, "!=");
+            case Opcodes.IF_ICMPLT -> appendCompareOptimized(builder, TypeVariants.INT, "<");
+            case Opcodes.IF_ICMPGE -> appendCompareOptimized(builder, TypeVariants.INT, ">=");
+            case Opcodes.IF_ICMPGT -> appendCompareOptimized(builder, TypeVariants.INT, ">");
+            case Opcodes.IF_ICMPLE -> appendCompareOptimized(builder, TypeVariants.INT, "<=");
+            case Opcodes.IF_ACMPEQ -> appendCompareOptimized(builder, TypeVariants.OBJECT, "==");
+            case Opcodes.IF_ACMPNE -> appendCompareOptimized(builder, TypeVariants.OBJECT, "!=");
             case Opcodes.GOTO -> {
-                builder.append("\t\t");
+                builder.append("\t");
                 appendGoto(builder, bypass, label, originalLabel, exceptionPops);
             }
             default -> throw new TranspilerException("Invalid opcode");
         }
+        builder.append("\n");
     }
 
     @Override
@@ -116,7 +113,7 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
             case Opcodes.IF_ICMPEQ, Opcodes.IF_ICMPNE, Opcodes.IF_ICMPLT, Opcodes.IF_ICMPGE, Opcodes.IF_ICMPGT, Opcodes.IF_ICMPLE, Opcodes.IF_ACMPEQ, Opcodes.IF_ACMPNE -> {
                 setInputsFromStack(stack, 2);
             }
-            case Opcodes.GOTO -> setBasicInputs();
+            case Opcodes.GOTO -> setInputs();
             default -> throw new TranspilerException("Invalid opcode");
         }
         if (opcode != Opcodes.GOTO)

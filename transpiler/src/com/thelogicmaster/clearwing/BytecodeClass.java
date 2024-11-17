@@ -411,9 +411,9 @@ public class BytecodeClass {
 				builder.append("\tNULL_CHECK(self);\n");
 
 			// Todo: Omit frame for `generated` InvokeDynamic methods, potentially
-			builder.append("\tjtype frame[").append(method.getStackSize() + method.getLocalCount()).append("];\n"); // Todo: Does this have to be volatile, or is `sp` sufficient
+			builder.append("\tvolatile jtype frame[").append(method.getStackSize() + method.getLocalCount()).append("];\n"); // Todo: Does this have to be volatile, or is `sp` sufficient
 			builder.append("\tauto stack = &frame[").append(method.getLocalCount()).append("];\n");
-			builder.append("\tvolatile jtype * volatile sp = stack;\n"); // Todo: Volatile because of exceptions, possibly remove when no setjmp are used
+			builder.append("\tvolatile jtype *sp = stack;\n"); // Todo: Volatile because of exceptions, possibly remove when no setjmp are used
 			builder.append("\tauto frameRef = pushStackFrame(ctx, ").append(method.getStackSize() + method.getLocalCount())
 					.append(", frame, \"").append(name).append(":").append(method.getOriginalName()).append("\", ");
 			if (!method.isSynchronized())
@@ -445,7 +445,7 @@ public class BytecodeClass {
 			}
 
 			for (Instruction instruction : method.getInstructions())
-				instruction.appendUnoptimized(builder);
+				instruction.appendUnoptimized(builder, config);
 
 			builder.append("\n\tpopStackFrame(ctx);\n"); // Todo: This can probably be removed
 			builder.append("}\n\n");

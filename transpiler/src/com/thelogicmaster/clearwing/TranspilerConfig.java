@@ -19,6 +19,7 @@ public class TranspilerConfig {
     private boolean stackCookies = true; // Enable Java stack cookies (Only needed for debugging VM)
     private boolean valueChecks = false; // Enable type/NPE checks at runtime, has substantial performance overhead
     private boolean platformOverride = false; // Enable custom platform implementation for env vars and such
+    private boolean optimizations = true; // Enable stack optimizations
 
     public TranspilerConfig() {
     }
@@ -124,5 +125,13 @@ public class TranspilerConfig {
 
     public void setPlatformOverride(boolean platformOverride) {
         this.platformOverride = platformOverride;
+    }
+
+    public boolean useOptimizations() {
+        return optimizations;
+    }
+
+    public void setOptimizations(boolean optimizations) {
+        this.optimizations = optimizations;
     }
 }

@@ -1,7 +1,6 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.*;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.Printer;
 
 import java.util.*;
@@ -15,9 +14,10 @@ public abstract class Instruction {
 
 	protected final int opcode;
 	protected final BytecodeMethod method;
-	protected List<JavaType> inputs;
-	protected List<JavaType> outputs;
-	private boolean markedForRemoval;
+	protected List<StackEntry> inputs;
+	protected List<StackEntry> outputs;
+	protected int stackDepth = -1;
+	protected int instructionIndex = -1;
 
 	public Instruction (BytecodeMethod method, int opcode) {
 		this.method = method;
@@ -43,15 +43,22 @@ public abstract class Instruction {
 	/**
 	 * Append the raw instruction to the method output
 	 */
-	public abstract void appendUnoptimized(StringBuilder builder);
+	public abstract void appendUnoptimized(StringBuilder builder, TranspilerConfig config);
 
 	/**
 	 * Append optimized instruction (Either as an expression, or full statements, depending on the outputs)
 	 */
-	public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
+	public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
 		throw new TranspilerException("Instruction isn't optimizable: " + this);
 	}
 
+	/**
+	 * Whether the instruction purely exists to route stack values
+	 */
+	public boolean isRoutingInstruction() {
+		return false;
+	}
+	
 	/**
 	 * Whether the instruction can be inlined into another (In general, no side effects on stack and such)
 	 */
@@ -60,89 +67,65 @@ public abstract class Instruction {
 	}
 
 	/**
-	 * Append as an inline expression (Todo: API)
+	 * Append as an inline expression
 	 */
 	public void appendInlined(StringBuilder builder) {
-
+		throw new TranspilerException("Instruction isn't inlinable: " + this);
 	}
 
-	/**
-	 * Append instruction with parameters inlined (Todo: API)
-	 */
-	public void appendWithInlining(StringBuilder builder) {
-
+	public void setStackDepth(int depth) {
+		if (stackDepth >= 0 && stackDepth != depth)
+			throw new TranspilerException("Inconsistent stack depth");
+		stackDepth = depth;
 	}
-
-	/**
-	 * Indicate that this instruction has been optimized out and should be removed after optimization is done
-	 */
-	public final void markForRemoval() {
-		markedForRemoval = true;
+	
+	public int getStackDepth() {
+		return stackDepth;
 	}
-
-	/**
-	 * Whether this instruction can be removed due to being optimized out
-	 */
-	public final boolean isMarkedForRemoval() {
-		return markedForRemoval;
+	
+	public void setInstructionIndex(int index) {
+		instructionIndex = index;
 	}
-
-	/**
-	 * Adjust the operand stack after an instruction, returns the number of new temporaries
-	 */
-	public int adjustStack(List<StackEntry> operands, int temporaries) {
-		operands.clear();
-		if (outputs == null)
-			return 0;
-		for (JavaType output : outputs)
-			operands.add(new StackEntry(output, temporaries++));
-		return outputs.size();
-	}
-
+	
 	/**
 	 * Populate inputs and outputs
 	 */
 	public abstract void resolveIO(List<StackEntry> stack);
 
-	protected void setInputsFromStack(List<StackEntry> stack, int args) {
+	protected boolean setInputsFromStack(List<StackEntry> stack, int args) {
 		if (stack.size() < args)
-			return;
+			return false;
 		inputs = new ArrayList<>();
 		for (int i = stack.size() - args; i < stack.size(); i++)
-			inputs.add(stack.get(i).getType());
+			inputs.add(stack.get(i));
+		return true;
 	}
-
-	protected void setBasicInputs(TypeVariants ... types) {
-		inputs = new ArrayList<>();
-		for (TypeVariants type : types)
-			inputs.add(new JavaType(type));
-	}
-
-	protected void setInputs(JavaType ... types) {
+	
+	protected void setInputs(StackEntry ... types) {
 		inputs = Arrays.asList(types);
 	}
 
 	protected void setBasicOutputs(TypeVariants ... types) {
 		outputs = new ArrayList<>();
 		for (TypeVariants type : types)
-			outputs.add(new JavaType(type));
+			outputs.add(new StackEntry(new JavaType(type), this));
 	}
 
-	protected void setOutputs(JavaType ... types) {
+	protected void setOutputs(StackEntry ... types) {
 		outputs = Arrays.asList(types);
 	}
 
 	/**
 	 * Get the input types (Null means unspecified)
 	 */
-	public final List<JavaType> getInputs() {
+	public final List<StackEntry> getInputs() {
 		return inputs;
 	}
 
 	/**
 	 * Get the output types (Null means unspecified)
 	 */
-	public final List<JavaType> getOutputs() {
+	public final List<StackEntry> getOutputs() {
 		return outputs;
 	}
 

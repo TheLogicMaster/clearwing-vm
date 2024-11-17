@@ -1,10 +1,8 @@
 package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.*;
-import javassist.bytecode.Opcode;
 import org.objectweb.asm.Opcodes;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -25,7 +23,7 @@ public class TypeInstruction extends Instruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
             case Opcodes.NEW -> {
                 builder.append("\tclinit_").append(qualifiedType).append("(ctx);\n");
@@ -39,22 +37,18 @@ public class TypeInstruction extends Instruction {
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
             case Opcodes.NEW -> {
-                builder.append("\t\t").append(qualifiedType).append("::clinit();\n");
-                builder.append("\t\tauto temp").append(temporaries).append(" = make_shared<").append(qualifiedType).append(">();\n");
+                builder.append("\tclinit_").append(qualifiedType).append("(ctx);\n");
+                outputs.get(0).buildAssignment(builder).append("gcAlloc(ctx, &class_").append(qualifiedType).append(");\n");;
             }
-            case Opcodes.ANEWARRAY ->
-                builder.append("\t\tauto temp").append(temporaries).append(" = vm::newArray(").append(javaType.generateClassFetch())
-                    .append(", ").append(operands.get(0)).append(");\n");
-            case Opcodes.CHECKCAST ->
-                builder.append("\t\tif (").append(operands.get(0)).append(" and !")
-                    .append(javaType.generateClassFetch()).append("->M_isInstance_R_boolean(").append(operands.get(0))
-                    .append(")) vm::throwNew<java::lang::ClassCastException>();\n");
-            case Opcodes.INSTANCEOF ->
-                builder.append("\t\tauto temp").append(temporaries).append(" = ")
-                        .append(javaType.generateClassFetch()).append("->M_isInstance_R_boolean(").append(operands.get(0)).append(");\n");
+            case Opcodes.ANEWARRAY -> outputs.get(0).buildAssignment(builder).append("(jobject)createArray(ctx, ")
+                    .append(javaType.generateClassFetch()).append(", ").append(inputs.get(0).arg()).append(");\n");
+            case Opcodes.CHECKCAST -> outputs.get(0).buildAssignment(builder).append("checkCast(ctx, ")
+                    .append(javaType.generateClassFetch()).append(", ").append(inputs.get(0).arg()).append(");\n");
+            case Opcodes.INSTANCEOF -> outputs.get(0).buildAssignment(builder).append("isInstance(ctx, ")
+                    .append(inputs.get(0).arg()).append(", ").append(javaType.generateClassFetch()).append(");\n");
             default -> throw new TranspilerException("Invalid opcode: " + opcode);
         }
     }
@@ -63,30 +57,23 @@ public class TypeInstruction extends Instruction {
     public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
             case Opcodes.NEW -> {
-                setBasicInputs();
+                setInputs();
                 setBasicOutputs(TypeVariants.OBJECT);
             }
             case Opcodes.ANEWARRAY -> {
-                setBasicInputs(TypeVariants.INT);
+                setInputsFromStack(stack, 1);
                 setBasicOutputs(TypeVariants.OBJECT);
             }
             case Opcodes.CHECKCAST -> {
-                setBasicInputs(TypeVariants.OBJECT);
-                setBasicOutputs(TypeVariants.OBJECT);
+                setInputsFromStack(stack, 1);
+                setOutputs(inputs.get(0).copy(this));
             }
             case Opcodes.INSTANCEOF -> {
-                setBasicInputs(TypeVariants.OBJECT);
+                setInputsFromStack(stack, 1);
                 setBasicOutputs(TypeVariants.BOOLEAN);
             }
             default -> throw new TranspilerException("Invalid opcode: " + opcode);
         }
-    }
-
-    @Override
-    public int adjustStack(List<StackEntry> operands, int temporaries) {
-        if (opcode == Opcode.CHECKCAST)
-            return 0;
-        return super.adjustStack(operands, temporaries);
     }
 
     @Override

@@ -2,9 +2,9 @@ package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
 import com.thelogicmaster.clearwing.StackEntry;
+import com.thelogicmaster.clearwing.TranspilerConfig;
 import org.objectweb.asm.Label;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,18 +22,18 @@ public class LineNumberInstruction extends Instruction {
 	}
 
 	@Override
-	public void appendUnoptimized (StringBuilder builder) {
-		builder.append("\tframeRef->lineNumber = ").append(line).append(";\n");
+	public void appendUnoptimized (StringBuilder builder, TranspilerConfig config) {
+		builder.append("\tLINE_NUMBER(").append(line).append(");\n");
 	}
 
 	@Override
-	public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-		builder.append("\t\tvm::setLineNumber(").append(line).append(");\n");
+	public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+		appendUnoptimized(builder, config);
 	}
 
 	@Override
 	public void resolveIO(List<StackEntry> stack) {
-		setBasicInputs();
+		setInputs();
 		setBasicOutputs();
 	}
 

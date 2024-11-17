@@ -2,6 +2,7 @@ package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
 import com.thelogicmaster.clearwing.StackEntry;
+import com.thelogicmaster.clearwing.TranspilerConfig;
 import org.objectweb.asm.Label;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class LabelInstruction extends Instruction {
 	}
 
 	@Override
-	public void appendUnoptimized (StringBuilder builder) {
+	public void appendUnoptimized (StringBuilder builder, TranspilerConfig config) {
 		builder.append(LABEL_PREFIX).append(label).append(":;\n");
 	}
 
@@ -33,7 +34,7 @@ public class LabelInstruction extends Instruction {
 
 	@Override
 	public void resolveIO(List<StackEntry> stack) {
-		setBasicInputs();
+		setInputs();
 		setBasicOutputs();
 	}
 }

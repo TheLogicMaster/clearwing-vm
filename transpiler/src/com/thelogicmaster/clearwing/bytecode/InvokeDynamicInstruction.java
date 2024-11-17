@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.util.*;
 
+// Todo: Rename to InvokeLambda or something
 public class InvokeDynamicInstruction extends Instruction {
 
     private final Handle handle;
@@ -24,8 +25,8 @@ public class InvokeDynamicInstruction extends Instruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
-        // Todo: Cache proxies without args
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
+        // Todo: Cache proxies without args 
         builder.append("\t{ /* InvokeDynamic */\n");
         builder.append("\t\tclinit_").append(qualifiedProxyClassName).append("(ctx);\n");
         builder.append("\t\tauto proxy").append(" = (").append(qualifiedProxyClassName).append(" *) gcAlloc(ctx, &class_").append(qualifiedProxyClassName).append(");\n");
@@ -36,17 +37,21 @@ public class InvokeDynamicInstruction extends Instruction {
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-//        builder.append("\t\t").append(qualifiedProxyClassName).append("::clinit();\n");
-//        builder.append("\t\tauto temp").append(temporaries).append(" = make_shared<").append(qualifiedProxyClassName).append(">();\n");
-//        for (int i = 0; i < proxyFields.length; i++)
-//            builder.append("\t\ttemp").append(temporaries).append("->F_field").append(i).append(" = ")
-//                    .append(proxyFields[i].isPrimitive() ? operands.get(i) : operands.get(i).getTypedTemporary(proxyFields[i])).append(";\n");
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+        // Todo: Cache proxies without args 
+        builder.append("\t{ /* InvokeDynamic */\n");
+        builder.append("\t\tclinit_").append(qualifiedProxyClassName).append("(ctx);\n");
+        builder.append("\t\tauto proxy").append(" = (").append(qualifiedProxyClassName).append(" *) gcAlloc(ctx, &class_").append(qualifiedProxyClassName).append(");\n");
+        for (int i = proxyFields.length - 1; i >= 0; i--)
+            builder.append("\t\tproxy->F_field").append(i).append(" = ").append(proxyFields[i].isPrimitive() ? "" : "(jref) ").append(inputs.get(i).arg()).append(";\n");
+        builder.append("\t");
+        outputs.get(0).buildAssignment(builder).append("(jobject) proxy;\n");
+        builder.append("\t}\n");
     }
 
     @Override
     public void resolveIO(List<StackEntry> stack) {
-        setInputs(proxyFields);
+        setInputsFromStack(stack, proxyFields.length);
         setBasicOutputs(TypeVariants.OBJECT);
     }
 
@@ -106,7 +111,7 @@ public class InvokeDynamicInstruction extends Instruction {
         }
 
         @Override
-        public void appendUnoptimized(StringBuilder builder) {
+        public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
             boolean isConstructor = handle.getName().equals("<init>");
             boolean thisParam = !isConstructor && !isStatic && !isSpecial && targetSignature.getParamTypes().length < proxyMethodSignature.getParamTypes().length;
             

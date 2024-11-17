@@ -27,7 +27,6 @@ public class BytecodeMethod {
 	private int stackSize;
 	private int localCount;
 	private int tryCatchBypasses;
-	private final HashMap<Integer, TypeVariants> knownLocals = new HashMap<>();
 	private final HashMap<Label, Integer> labelIds = new HashMap<>();
 	private int labelCount;
 	private boolean intrinsic;
@@ -241,14 +240,6 @@ public class BytecodeMethod {
 
 	public List<Instruction> getInstructions () {
 		return instructions;
-	}
-
-	public Map<Integer, TypeVariants> getKnownLocals() {
-		return knownLocals;
-	}
-
-	public boolean isLocalKnown(int local) {
-		return knownLocals.get(local) != null;
 	}
 
 	public void setStackSize(int stackSize, int localCount) {

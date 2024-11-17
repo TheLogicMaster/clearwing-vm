@@ -2,10 +2,10 @@ package com.thelogicmaster.clearwing.bytecode;
 
 import com.thelogicmaster.clearwing.BytecodeMethod;
 import com.thelogicmaster.clearwing.StackEntry;
+import com.thelogicmaster.clearwing.TranspilerConfig;
 import com.thelogicmaster.clearwing.TypeVariants;
 import org.objectweb.asm.Opcodes;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,24 +23,18 @@ public class IncrementInstruction extends Instruction implements LocalInstructio
 	}
 
 	@Override
-	public void appendUnoptimized (StringBuilder builder) {
-		if (getMethod().isLocalKnown(local))
-			builder.append("\tlocal").append(local).append("++;\n");
-		else
-			appendStandardInstruction(builder, "iinc", "" + local, "" + amount);
+	public void appendUnoptimized (StringBuilder builder, TranspilerConfig config) {
+		appendStandardInstruction(builder, "iinc", "" + local, "" + amount);
 	}
 
 	@Override
-	public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-//		if (getMethod().isLocalKnown(local))
-//			builder.append("\t\tlocal").append(local).append(" += ").append(amount).append(";\n");
-//		else
-//			builder.append("\t\tget<jint>(local").append(local).append(") += ").append(amount).append(";\n");
+	public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+		appendUnoptimized(builder, config);
 	}
 
 	@Override
 	public void resolveIO(List<StackEntry> stack) {
-		setBasicInputs();
+		setInputs();
 		setBasicOutputs();
 	}
 

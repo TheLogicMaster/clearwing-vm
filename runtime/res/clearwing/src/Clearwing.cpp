@@ -141,7 +141,7 @@ jclass classForName(const char *name) {
     }
 }
 
-void instMultiANewArray(jcontext ctx, volatile jtype * volatile &sp, jclass type, int dimensionCount) {
+void instMultiANewArray(jcontext ctx, volatile jtype *&sp, jclass type, int dimensionCount) {
     std::vector<int> dimensions;
     for (int i = 0; i < dimensionCount; i++)
         dimensions.push_back((int)(--sp)->i);
@@ -705,7 +705,7 @@ void safepointSuspend(jcontext ctx) {
 }
 
 /// Pushes and returns a new stack frame. The `method` and `monitor` parameters are optional. Throws exceptions.
-jframe pushStackFrame(jcontext ctx, int size, const jtype *stack, const char *method, jobject monitor) {
+jframe pushStackFrame(jcontext ctx, int size, volatile jtype *stack, const char *method, jobject monitor) {
     SAFEPOINT(); // This is safe because parameters are the responsibility of the caller
     if (ctx->stackDepth + 1 >= MAX_STACK_DEPTH)
         constructAndThrow<&class_java_lang_StackOverflowError, init_java_lang_StackOverflowError>(ctx); // Todo: This causes a native stack overflow at preset...
@@ -855,6 +855,10 @@ void interruptedCheck(jcontext ctx) {
 /// Checks if an object is null. Throws exceptions.
 jobject nullCheck(jcontext ctx, jobject object) {
     return NULL_CHECK(object);
+}
+
+jobject checkCast(jcontext ctx, jclass type, jobject object) {
+    return CHECK_CAST(type, object);
 }
 
 jobject boxByte(jcontext ctx, jbyte value) {

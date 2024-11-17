@@ -1,13 +1,8 @@
 package com.thelogicmaster.clearwing.bytecode;
 
-import com.thelogicmaster.clearwing.BytecodeMethod;
-import com.thelogicmaster.clearwing.JavaType;
-import com.thelogicmaster.clearwing.StackEntry;
-import com.thelogicmaster.clearwing.TypeVariants;
+import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.Opcodes;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -25,28 +20,26 @@ public class MultiArrayInstruction extends Instruction {
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         appendStandardInstruction(builder, "multianewarray", type.generateComponentClassFetch(), "" + dimensions);
     }
 
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
-        builder.append("\t\tauto temp").append(temporaries).append(" = vm::newMultiArray(").append(type.generateComponentClassFetch()).append(", {");
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
+        outputs.get(0).buildAssignment(builder).append("(jobject)createMultiArray(ctx, ").append(type.generateComponentClassFetch()).append(", {");
         boolean first = true;
         for (int i = 0; i < dimensions; i++) {
             if (!first)
                 builder.append(", ");
             first = false;
-            builder.append(operands.get(i));
+            builder.append(inputs.get(i).arg());
         }
         builder.append("});\n");
     }
 
     @Override
     public void resolveIO(List<StackEntry> stack) {
-        setBasicInputs();
-        for (int i = 0; i < dimensions; i++)
-            inputs.add(new JavaType(TypeVariants.INT));
+        setInputsFromStack(stack, dimensions);
         setBasicOutputs(TypeVariants.OBJECT);
     }
 

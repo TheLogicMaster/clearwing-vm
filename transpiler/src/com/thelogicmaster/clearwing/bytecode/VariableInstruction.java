@@ -1,12 +1,8 @@
 package com.thelogicmaster.clearwing.bytecode;
 
-import com.thelogicmaster.clearwing.BytecodeMethod;
-import com.thelogicmaster.clearwing.StackEntry;
-import com.thelogicmaster.clearwing.TranspilerException;
-import com.thelogicmaster.clearwing.TypeVariants;
+import com.thelogicmaster.clearwing.*;
 import org.objectweb.asm.Opcodes;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,17 +19,11 @@ public class VariableInstruction extends Instruction implements LocalInstruction
 
     private void appendLoadStore(StringBuilder builder, int baseOpcode, String suffix) {
         String name = (TypeVariants.values()[TypeVariants.INT.ordinal() + opcode - baseOpcode].name().toLowerCase().charAt(0) + "").replace("o", "a") + suffix;
-        if (getMethod().isLocalKnown(local)) {
-            if (opcode <= Opcodes.ALOAD)
-                builder.append("\tvm::push(sp, ").append("local").append(local).append(");\n");
-            else
-                builder.append("\tlocal").append(local).append(" = vm::pop<").append(getLocalType().getArithmeticType()).append(">(sp);\n");
-        } else
-            appendStandardInstruction(builder, name, "" + local);
+        appendStandardInstruction(builder, name, "" + local);
     }
 
     @Override
-    public void appendUnoptimized(StringBuilder builder) {
+    public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
             case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD -> appendLoadStore(builder, Opcodes.ILOAD, "load");
             case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> appendLoadStore(builder, Opcodes.ISTORE, "store");
@@ -41,24 +31,15 @@ public class VariableInstruction extends Instruction implements LocalInstruction
         }
     }
 
-    private void appendOptimizedLoad(StringBuilder builder, String type, int temporaries) {
-        builder.append("\t\tauto temp").append(temporaries);
-        if (getMethod().isLocalKnown(local))
-            builder.append(" = ").append("local").append(local).append(";\n");
-        else
-          builder.append(" = get<").append(type).append(">(local").append(local).append(");\n");
-    }
-
     @Override
-    public void appendOptimized(StringBuilder builder, List<StackEntry> operands, int temporaries) {
+    public void appendOptimized(StringBuilder builder, TranspilerConfig config) {
         switch (opcode) {
-            case Opcodes.ILOAD -> appendOptimizedLoad(builder, "jint", temporaries);
-            case Opcodes.LLOAD -> appendOptimizedLoad(builder, "jlong", temporaries);
-            case Opcodes.FLOAD -> appendOptimizedLoad(builder, "jfloat", temporaries);
-            case Opcodes.DLOAD -> appendOptimizedLoad(builder, "jdouble", temporaries);
-            case Opcodes.ALOAD -> appendOptimizedLoad(builder, "jobject", temporaries);
+            case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD ->
+                    outputs.get(0).buildAssignment(builder).append("frame[").append(local).append("].")
+                            .append(getLocalType().getStackName()).append(";\n");
             case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE ->
-                builder.append("\t\tlocal").append(local).append(" = ").append(operands.get(0)).append(";\n");
+                    builder.append("\tframe[").append(local).append("].").append(getLocalType().getStackName())
+                            .append(" = ").append(inputs.get(0).arg()).append(";\n");
             default -> throw new TranspilerException("Invalid opcode");
         }
     }
@@ -66,8 +47,8 @@ public class VariableInstruction extends Instruction implements LocalInstruction
     @Override
     public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
-            case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> setBasicInputs(getLocalType());
-            default -> setBasicInputs();
+            case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> setInputsFromStack(stack, 1);
+            default -> setInputs();
         }
         switch (opcode) {
             case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD -> setBasicOutputs(getLocalType());

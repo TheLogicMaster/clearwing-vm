@@ -350,82 +350,42 @@ public class Parser extends ClassVisitor {
 
             insertTryCatchBlocks();
             resolveInstructionIO();
-            // Todo: Inline instructions from bottom to top
-//            trimLabels();
+            trimLabels();
             handleTryCatchOuterJumps();
             insertTryCatchBypasses();
-//            optimizeInstructions();
-//            discoverLocals();
-//            groupInstructions();
-
-//            trimStack();
-        }
-
-        /**
-         * Determine the type for locals where possible
-         */
-        private void discoverLocals() {
-            List<Instruction> instructions = method.getInstructions();
-            Map<Integer, TypeVariants> knownLocals = method.getKnownLocals();
-
-            for (Instruction instruction: instructions) {
-                if (!(instruction instanceof LocalInstruction))
-                    continue;
-                LocalInstruction local = (LocalInstruction)instruction;
-                int index = local.getLocal();
-                TypeVariants type = local.getLocalType().getArithmeticVariant();
-                if ((knownLocals.containsKey(index) && type != knownLocals.get(index)) || (type.isWide() && knownLocals.containsKey(index + 1))) {
-                    if (index > 0 && knownLocals.get(index - 1) != null && knownLocals.get(index - 1).isWide())
-                        knownLocals.put(index - 1, null);
-                    knownLocals.put(index, null);
-                    if (type.isWide())
-                        knownLocals.put(index + 1, null);
-                    continue;
-                }
-                knownLocals.put(index, type);
-            }
-
-            JavaType[] params = method.getSignature().getParamTypes();
-            for (int i = 0; i < params.length; i++) {
-                int index = i + (method.isStatic() ? 0 : 1);
-                if (knownLocals.get(index) != null && knownLocals.get(index) != params[i].getBasicType()) {
-                    if (index > 0 && knownLocals.get(index - 1) != null && knownLocals.get(index - 1).isWide())
-                        knownLocals.put(index - 1, null);
-                    knownLocals.put(index, null);
-                    if (params[i].getBasicType().isWide())
-                        knownLocals.put(index + 1, null);
-                }
-            }
+            
+            if (config.useOptimizations())
+                groupInstructions();
         }
 
         public void resolveInstructionIO() {
             resolveInstructionIO(0, new ArrayList<>());
-            for (int i = 0; i < method.getInstructions().size(); i++)
-                if (method.getInstructions().get(i).getInputs() == null && !(method.getInstructions().get(i) instanceof LabelInstruction))
-                    throw new TranspilerException("Failed to resolve instruction I/O: " + method.getInstructions().get(i));
 //            for (Instruction instruction : method.getInstructions())
 //                if (instruction.getInputs() == null && !(instruction instanceof LabelInstruction))
 //                    throw new TranspilerException("Failed to resolve instruction I/O: " + instruction);
+            for (int i = 0; i < method.getInstructions().size(); i++)
+                if (method.getInstructions().get(i).getInputs() == null && !(method.getInstructions().get(i) instanceof LabelInstruction))
+                    throw new TranspilerException("Failed to resolve instruction I/O: " + method.getInstructions().get(i));
         }
 
         private void resolveInstructionIO(int offset, List<StackEntry> stack) {
             List<Instruction> instructions = method.getInstructions();
 
-            // Todo: Ensure types are using arithmetic variants with pushed onto the stack, if it becomes an issue
             while (offset < instructions.size()) {
                 Instruction instruction = instructions.get(offset);
                 if (instruction.getInputs() != null)
                     return;
+                instruction.setStackDepth(stack.size());
+                instruction.setInstructionIndex(offset);
                 instruction.resolveIO(stack);
-
-                // Todo: Store instruction dependencies for use when determining inline-ability
-
+                for (StackEntry input : instruction.getInputs())
+                    input.addConsumer(instruction);
+                
                 if (instruction.getInputs() != null && !stack.isEmpty())
                     stack.subList(Math.max(0, stack.size() - instruction.getInputs().size()), stack.size()).clear();
 
                 if (instruction.getOutputs() != null)
-                    for (JavaType type : instruction.getOutputs())
-                        stack.add(new StackEntry(type, instruction));
+                    stack.addAll(instruction.getOutputs());
 
                 if (instruction instanceof TryInstruction) {
                     resolveInstructionIO(method.findLabelInstruction(((TryInstruction) instruction).getHandler()),
@@ -444,168 +404,35 @@ public class Parser extends ClassVisitor {
             }
         }
 
-//        /**
-//         * Calculate instruction I/O where known and perform optimizations
-//         */
-//        private void optimizeInstructions() {
-//            List<Instruction> instructions = method.getInstructions();
-//
-//            // Calculate instruction I/O where types are known
-//            ArrayList<StackEntry> stack = new ArrayList<>();
-//            for (Instruction instruction : instructions) {
-//                instruction.resolveIO(stack);
-//                if (instruction.getInputs() != null && !stack.isEmpty())
-//                    stack.subList(Math.max(0, stack.size() - instruction.getInputs().size()), stack.size()).clear();
-//                if (instruction.getOutputs() == null)
-//                    stack.clear();
-//                else {
-//                    for (int i = 0; i < stack.size(); i++)
-//                        if (stack.get(i).getSource().isMarkedForRemoval())
-//                            stack.remove(i--);
-//                    for (TypeVariants type : instruction.getOutputs())
-//                        stack.add(new StackEntry(type, instruction));
-//                }
-//            }
-//
-//            // Remove optimized out instructions and cast checks if configured
-//            for (int i = 0; i < instructions.size(); i++)
-//                if (instructions.get(i).isMarkedForRemoval() || (!config.hasValueChecks() && instructions.get(i).getOpcode() == Opcodes.CHECKCAST))
-//                    instructions.remove(i--);
-//        }
-
         /**
          * Group optimizable instructions into InstructionGroup objects to convert stack accesses into local variables
          */
         private void groupInstructions() {
             List<Instruction> instructions = method.getInstructions();
 
-            // Extract instructions into groups
             for (int i = 0; i < instructions.size(); i++) {
-                if (instructions.get(i).getInputs() == null || instructions.get(i).getOutputs() == null)
+                Instruction first = instructions.get(i);
+                if (first.getOutputs() == null || first instanceof LabelInstruction || first instanceof JumpingInstruction 
+                        || first instanceof TryInstruction.CatchInstruction)
                     continue;
 
                 int last = i;
-                while (last + 1 < instructions.size() && instructions.get(last + 1).getInputs() != null) {
+                while (last + 1 < instructions.size()) {
+                    Instruction instruction = instructions.get(last + 1);
+                    if (instruction instanceof LabelInstruction || instruction instanceof TryInstruction || instruction instanceof TryInstruction.CatchInstruction) break;
                     last++;
-                    if (instructions.get(last).getOutputs() == null)
+                    if (instruction.getOutputs() == null || instruction instanceof JumpingInstruction)
                         break;
                 }
+                if (last < i + 2) // Todo: Minimum number in group? Ignore labels...
+                    continue;
+                
                 List<Instruction> groupInstructions = instructions.subList(i, last + 1);
                 InstructionGroup group = new InstructionGroup(method, new ArrayList<>(groupInstructions));
                 groupInstructions.clear();
                 groupInstructions.add(group);
             }
         }
-
-//        private int findStackMaxDepthJump(int label, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
-//            int branch = labels.get(label);
-//            if (branches.contains(branch))
-//                return 0;
-//            branches.add(branch);
-//            int depth = findStackMaxDepth(branch, new ArrayList<>(stack), branches, labels);
-//            if (depth < 0)
-//                return -1;
-//            return depth;
-//        }
-
-//        private int findStackMaxDepth(int index, List<StackEntry> stack, Set<Integer> branches, Map<Integer, Integer> labels) {
-//            List<Instruction> instructions = method.getInstructions();
-//            int max = stack.size();
-//            for (int i = index; i < instructions.size(); i++) {
-//                Instruction instruction = instructions.get(i);
-//                if (instruction instanceof TryInstruction.CatchInstruction) {
-//                    ArrayList<StackEntry> newStack = new ArrayList<>();
-//                    newStack.add(new StackEntry(new JavaType(TypeVariants.OBJECT), null));
-//                    int branch = labels.get(((TryInstruction.CatchInstruction) instruction).getJumpLabels().get(0));
-//                    if (branches.contains(branch))
-//                        return max;
-//                    branches.add(branch);
-//                    int depth = findStackMaxDepth(branch, newStack, branches, labels);
-//                    max = Math.max(max, depth);
-//                    if (depth < 0)
-//                        return -1;
-//                } else if (instruction instanceof JumpingInstruction) {
-//                    for (int label : ((JumpingInstruction) instruction).getJumpLabels()) {
-//                        if (stack.size() < instruction.getInputs().size())
-//                            return -1;
-//                        if (instruction.getInputs().size() > 0)
-//                            stack.subList(stack.size() - instruction.getInputs().size(), stack.size()).clear();
-//                        int depth = findStackMaxDepthJump(label, stack, branches, labels);
-//                        if (depth < 0)
-//                            return -1;
-//                        max = Math.max(max, depth);
-//                    }
-//                    if (!(instruction instanceof JumpInstruction) || instruction.getOpcode() == Opcodes.GOTO)
-//                        return max;
-//                } else if (instruction instanceof SuperCallInstruction || instruction instanceof InvokeDynamicInstruction.Proxy)
-//                    return 0;
-//                else if (instruction instanceof LineNumberInstruction || instruction instanceof LabelInstruction || instruction instanceof TryInstruction)
-//                    continue;
-//                else if (instruction instanceof ZeroOperandInstruction) {
-//                    switch (instruction.getOpcode()) {
-//                        case Opcodes.DUP, Opcodes.DUP_X1, Opcodes.DUP_X2, Opcodes.DUP2, Opcodes.DUP2_X1, Opcodes.DUP2_X2, Opcodes.SWAP -> {
-//                            instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
-//                            max = Math.max(max, stack.size());
-//                        }
-//                        default -> {
-//                            return -1;
-//                        }
-//                    }
-//                } else if (instruction.getInputs() != null && instruction.getOutputs() != null) {
-//                    if (stack.size() < instruction.getInputs().size())
-//                        return -1;
-//                    instruction.adjustStack(stack.subList(stack.size() - instruction.getInputs().size(), stack.size()), 0);
-//                    max = Math.max(max, stack.size());
-//                    if (instruction instanceof InstructionGroup) {
-//                        InstructionGroup group = (InstructionGroup) instruction;
-//                        Instruction lastInstruction = group.getLastInstruction();
-//                        switch (lastInstruction.getOpcode()) {
-//                            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN, Opcodes.ATHROW -> {
-//                                return max;
-//                            }
-//                        }
-//                        if (!(lastInstruction instanceof JumpingInstruction))
-//                            continue;
-//                        for (int label: ((JumpingInstruction) lastInstruction).getJumpLabels()) {
-//                            int depth = findStackMaxDepthJump(label, stack, branches, labels);
-//                            if (depth < 0)
-//                                return -1;
-//                            max = Math.max(max, depth);
-//                        }
-//                        if (!(lastInstruction instanceof JumpInstruction) || lastInstruction.getOpcode() == Opcodes.GOTO)
-//                            return max;
-//                    }
-//                } else {
-//                    System.out.println("Warning: Failed to trim stack for instruction: " + instruction);
-//                    return -1;
-//                }
-//            }
-//            return max;
-//        }
-
-        /**
-         * Trim max stack size after optimizations
-         */
-//        private void trimStack() {
-//            try {
-//                HashMap<Integer, Integer> labels = new HashMap<>();
-//                for (int i = 0; i < method.getInstructions().size(); i++)
-//                    if (method.getInstructions().get(i) instanceof LabelInstruction)
-//                        labels.put(((LabelInstruction) method.getInstructions().get(i)).getLabel(), i);
-//                int depth = findStackMaxDepth(0, new ArrayList<>(), new HashSet<>(), labels);
-//                if (depth < 0) {
-//                    System.out.println("Warning: Failed to trim stack for: " + method);
-//                    return;
-//                }
-//                if (depth > method.getStackSize())
-//                    System.out.println("Somehow increased stack size for: " + method);
-//                else
-//                    System.out.println("Trimmed " + (method.getStackSize() - depth) + " from " + method);
-//                method.setStackSize(depth, method.getLocalCount());
-//            } catch (Exception e) {
-//                System.err.println("Caught exception while trimming stack for " + method + ": " + e);
-//            }
-//        }
 
         /**
          * Remove unneeded labels to not block optimizations
@@ -652,34 +479,6 @@ public class Parser extends ClassVisitor {
                 instructions.add(index + 1, tryCatch.getCatchInstruction());
             }
         }
-
-        /**
-         * Bypasses a try-catch jump if needed and returns the new jump label
-         */
-//        private int bypassTryCatchJump(int jumpIndex, int jumpLabel) {
-//            List<Instruction> instructions = method.getInstructions();
-//
-//            int jumpLabelIndex = method.findLabelInstruction(jumpLabel);
-//
-//            for (int i = 0; i < instructions.size(); i++) {
-//                if (!(instructions.get(i) instanceof TryInstruction tryInstruction))
-//                    continue;
-//
-//                int scopeEnd = method.findInstruction(i, instructions.size(), true, instr -> tryInstruction.getCatchInstruction() == instr);
-//
-//                if (jumpLabelIndex < i || jumpLabelIndex > scopeEnd || (jumpIndex >= i && jumpIndex < scopeEnd))
-//                    continue;
-//
-//                int target = bypassTryCatchJump(i, jumpLabel);
-//                TryInstruction.Bypass bypass = tryInstruction.getBypass(target, jumpLabel);
-//                if (instructions.get(jumpIndex) instanceof JumpingInstruction)
-//                    ((JumpingInstruction) instructions.get(jumpIndex)).setJumpBypass(bypass.getIndex(), jumpLabel, tryInstruction.getLabel());
-//
-//                return tryInstruction.getLabel();
-//            }
-//
-//            return jumpLabel;
-//        }
         
         private void insertTryCatchBypasses() {
             List<Instruction> instructions = method.getInstructions();

@@ -360,12 +360,9 @@ public class Parser extends ClassVisitor {
 
         public void resolveInstructionIO() {
             resolveInstructionIO(0, new ArrayList<>());
-//            for (Instruction instruction : method.getInstructions())
-//                if (instruction.getInputs() == null && !(instruction instanceof LabelInstruction))
-//                    throw new TranspilerException("Failed to resolve instruction I/O: " + instruction);
-            for (int i = 0; i < method.getInstructions().size(); i++)
-                if (method.getInstructions().get(i).getInputs() == null && !(method.getInstructions().get(i) instanceof LabelInstruction))
-                    throw new TranspilerException("Failed to resolve instruction I/O: " + method.getInstructions().get(i));
+            for (Instruction instruction : method.getInstructions())
+                if (instruction.getInputs() == null && !(instruction instanceof LabelInstruction))
+                    throw new TranspilerException("Failed to resolve instruction I/O: " + instruction);
         }
 
         private void resolveInstructionIO(int offset, List<StackEntry> stack) {

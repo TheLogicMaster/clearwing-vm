@@ -16,7 +16,6 @@ public class TranspilerConfig {
     private boolean projectFiles = true; // Whether to generate basic project files like the CMake config
     private String mainClass; // An optional "main class" that contains the entrypoint main function
     private boolean lineNumbers = true; // Enable stack trace line numbers (Requires stack traces, disable for a slight performance increase)
-    private boolean stackCookies = true; // Enable Java stack cookies (Only needed for debugging VM)
     private boolean valueChecks = false; // Enable type/NPE checks at runtime, has substantial performance overhead
     private boolean platformOverride = false; // Enable custom platform implementation for env vars and such
     private boolean optimizations = true; // Enable stack optimizations
@@ -35,7 +34,6 @@ public class TranspilerConfig {
         mainClass = json.optString("mainClass");
         lineNumbers = json.optBoolean("useLineNumbers", true);
         valueChecks = json.optBoolean("useValueChecks", true);
-        stackCookies = json.optBoolean("useStackCookies", false);
         platformOverride = json.optBoolean("platformOverride", false);
     }
 
@@ -101,14 +99,6 @@ public class TranspilerConfig {
 
     public void setLineNumbers(boolean lineNumbers) {
         this.lineNumbers = lineNumbers;
-    }
-
-    public boolean hasStackCookies() {
-        return stackCookies;
-    }
-
-    public void setStackCookies(boolean stackCookies) {
-        this.stackCookies = stackCookies;
     }
 
     public boolean hasValueChecks() {

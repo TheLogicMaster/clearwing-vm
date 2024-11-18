@@ -18,7 +18,6 @@ public class FieldInstruction extends Instruction {
     private final JavaType type;
     private final JavaType ownerType;
     private final boolean isStatic;
-    private boolean weak;
     private BytecodeClass ownerClass;
     private BytecodeClass realOwnerClass;
     private String realName;
@@ -71,30 +70,7 @@ public class FieldInstruction extends Instruction {
             System.err.println("Failed to locate field owner for: " + owner + "." + originalName);
         else
             realName = Utils.sanitizeField(realOwnerClass.getQualifiedName(), originalName, isStatic);
-
-//        if (!classMap.containsKey(owner))
-//            return;
-//        BytecodeClass clazz = classMap.get(owner);
-//        while (clazz != null && !clazz.getName().equals("java/lang/Object")) {
-//            for (BytecodeField field: clazz.getFields())
-//                if (field.getOriginalName().equals(originalName)) {
-//                    weak = field.isWeak();
-//                    return;
-//                }
-//            clazz = classMap.get(clazz.getSuperName());
-//        }
     }
-
-//    private String locateRealOwner() {
-//        BytecodeClass clazz = ownerClass;
-//        while (clazz != null) {
-//            for (BytecodeField field : clazz.getFields())
-//                if (field.getOriginalName().equals(originalName))
-//                    return clazz.getQualifiedName();
-//            clazz = clazz.getSuperClass();
-//        }
-//        throw new TranspilerException("Failed to locate field owner");
-//    }
 
     @Override
     public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
@@ -147,6 +123,18 @@ public class FieldInstruction extends Instruction {
     }
 
     @Override
+    public void appendInlined(StringBuilder builder) {
+        switch (opcode) {
+            case Opcodes.GETSTATIC -> builder.append("clinit_").append(qualifiedOwner).append("(ctx), (")
+                    .append(type.getArithmeticType()).append(")").append(realName);
+            case Opcodes.GETFIELD -> builder.append("(").append(type.getBasicType().getArithmeticType()).append(")")
+                    .append("((").append(realOwnerClass.getQualifiedName()).append(" *) NULL_CHECK(")
+                    .append(inputs.get(0).arg()).append("))->").append(name);
+            default -> throw new TranspilerException("Not inlinable");
+        }
+    }
+
+    @Override
     public void resolveIO(List<StackEntry> stack) {
         if (opcode == Opcodes.GETFIELD)
             setInputsFromStack(stack, 1);
@@ -161,6 +149,11 @@ public class FieldInstruction extends Instruction {
             setBasicOutputs(type.getBasicType());
         else
             setBasicOutputs();
+    }
+
+    @Override
+    public boolean inlineable() {
+        return (opcode == Opcodes.GETFIELD || opcode == Opcodes.GETSTATIC) && type.isPrimitive();
     }
 
     @Override

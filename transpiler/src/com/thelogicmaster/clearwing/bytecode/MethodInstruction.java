@@ -81,6 +81,7 @@ public class MethodInstruction extends Instruction {
         if (!signature.getReturnType().isVoid())
             builder.append("sp->").append(signature.getReturnType().getBasicType().getStackName()).append(" = (").append(signature.getReturnType().getBasicType().getArithmeticType()).append(")");
 
+        // Todo: Use invocation macros
         switch (opcode) {
             case Opcodes.INVOKEVIRTUAL ->
                 builder.append("((func_").append(name.substring(2)).append(") ((void **) nullCheck(ctx, sp[0].o)->vtable)[VTABLE_").append(name.substring(2)).append("])");
@@ -116,6 +117,7 @@ public class MethodInstruction extends Instruction {
         else
             builder.append("\t");
 
+        // Todo: Use invocation macros
         switch (opcode) {
             case Opcodes.INVOKEVIRTUAL ->
                     builder.append("((func_").append(name.substring(2)).append(") ((void **) nullCheck(ctx, ").append(inputs.get(0).arg())

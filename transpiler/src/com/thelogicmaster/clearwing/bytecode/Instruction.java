@@ -18,6 +18,7 @@ public abstract class Instruction {
 	protected List<StackEntry> outputs;
 	protected int stackDepth = -1;
 	protected int instructionIndex = -1;
+	private boolean inlined;
 
 	public Instruction (BytecodeMethod method, int opcode) {
 		this.method = method;
@@ -66,6 +67,17 @@ public abstract class Instruction {
 		return false;
 	}
 
+	public void inline() {
+		if (!inlineable() || outputs.size() != 1)
+			throw new TranspilerException("Instruction isn't inlineable: " + this);
+		inlined = true;
+		outputs.get(0).makeInlined();
+	}
+	
+	public boolean isInlined() {
+		return inlined;
+	}
+	
 	/**
 	 * Append as an inline expression
 	 */

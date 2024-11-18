@@ -306,14 +306,29 @@ jint longCompare(jlong value1, jlong value2);
     if (suspendVM)\
         safepointSuspend(ctx)
 
+#ifdef USE_VALUE_CHECKS
 #define NULL_CHECK(object) \
     (({ if (!object) throwNullPointer(ctx); }), object)
+#else
+#define NULL_CHECK(object) \
+    (object)
+#endif
 
+#ifdef USE_VALUE_CHECKS
 #define CHECK_CAST(type, object) \
     (({ if (object && !isInstance(ctx, object, type)) throwClassCast(ctx); }), object)
+#else
+#define CHECK_CAST(type, object) \
+    (object)
+#endif
 
+#ifdef USE_VALUE_CHECKS
 #define ARRAY_ACCESS(type, obj, index) \
     (({ if (index >= ((jarray) NULL_CHECK(obj))->length) throwIndexOutOfBounds(ctx); }), ((type *) ((jarray) obj)->data)[index])
+#else
+#define ARRAY_ACCESS(type, obj, index) \
+    (((type *) ((jarray) obj)->data)[index])
+#endif
 
 #ifdef USE_LINE_NUMBERS
 #define LINE_NUMBER(line) frameRef->lineNumber = line

@@ -8,9 +8,9 @@ public class StackEntry {
 
     private final JavaType type;
     private final Instruction source;
-    private final StackEntry original;
     private final ArrayList<Instruction> consumers = new ArrayList<>();
 
+    private StackEntry original;
     private OperandType opType;
     private int index;
 
@@ -36,10 +36,18 @@ public class StackEntry {
 
     public void makeInlined() {
         opType = OperandType.Inlined;
+        original = null;
     }
     
     public StackEntry copy(Instruction source) {
         return new StackEntry(type, source, this);
+    }
+
+    public StackEntry copyOriginal(Instruction source) {
+        StackEntry copy = new StackEntry(type, source);
+        copy.opType = opType;
+        copy.index = index;
+        return copy;
     }
     
     public JavaType getType() {
@@ -75,7 +83,7 @@ public class StackEntry {
     }
     
     public StringBuilder buildArg(StringBuilder builder) {
-        if (original != null) {
+        if (opType != OperandType.Inlined && original != null) {
             original.buildArg(builder);
             return builder;
         }

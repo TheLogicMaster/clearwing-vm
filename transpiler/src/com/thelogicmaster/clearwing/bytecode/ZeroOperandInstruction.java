@@ -207,6 +207,96 @@ public class ZeroOperandInstruction extends Instruction {
         }
     }
 
+    @Override
+    public void appendInlined(StringBuilder builder) {
+        TypeVariants type;
+        switch (opcode) {
+            case Opcodes.ICONST_M1, Opcodes.ICONST_0, Opcodes.ICONST_1, Opcodes.ICONST_2, Opcodes.ICONST_3, Opcodes.ICONST_4, Opcodes.ICONST_5 ->
+                    builder.append("jint(").append(getOpcodeConst(Opcodes.ICONST_0)).append(")");
+            case Opcodes.LCONST_0, Opcodes.LCONST_1 ->
+                    builder.append("jlong(").append(getOpcodeConst(Opcodes.LCONST_0)).append(")");
+            case Opcodes.FCONST_0, Opcodes.FCONST_1, Opcodes.FCONST_2 ->
+                    builder.append("jfloat(").append(getOpcodeConst(Opcodes.FCONST_0)).append(")");
+            case Opcodes.DCONST_0, Opcodes.DCONST_1 ->
+                    builder.append("jdouble(").append(getOpcodeConst(Opcodes.DCONST_0)).append(")");
+            case Opcodes.ACONST_NULL -> builder.append("jobject(nullptr)");
+            case Opcodes.IALOAD, Opcodes.LALOAD, Opcodes.FALOAD, Opcodes.DALOAD, Opcodes.AALOAD, Opcodes.BALOAD, Opcodes.CALOAD, Opcodes.SALOAD -> {
+                type = opcodeType(Opcodes.IALOAD);
+                builder.append("(").append(type.getArithmeticType()).append(")ARRAY_ACCESS(")
+                        .append(type.getCppType()).append(", ").append(inputs.get(0).arg()).append(", ")
+                        .append(inputs.get(1).arg()).append(")");
+            }
+            case Opcodes.IADD, Opcodes.LADD, Opcodes.FADD, Opcodes.DADD ->
+                    builder.append(inputs.get(0).arg()).append(" + ").append(inputs.get(1).arg());
+            case Opcodes.ISUB, Opcodes.LSUB, Opcodes.FSUB, Opcodes.DSUB ->
+                    builder.append(inputs.get(0).arg()).append(" - ").append(inputs.get(1).arg());
+            case Opcodes.IMUL, Opcodes.LMUL, Opcodes.FMUL, Opcodes.DMUL ->
+                    builder.append(inputs.get(0).arg()).append(" * ").append(inputs.get(1).arg());
+            case Opcodes.IDIV, Opcodes.LDIV, Opcodes.FDIV, Opcodes.DDIV ->
+                    builder.append(inputs.get(0).arg()).append(" / ").append(inputs.get(1).arg());
+            case Opcodes.IREM, Opcodes.LREM ->
+                    builder.append(inputs.get(0).arg()).append(" % ").append(inputs.get(1).arg());
+            case Opcodes.FREM ->
+                    builder.append("fmodf(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(")");
+            case Opcodes.DREM ->
+                    builder.append("fmod(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(")");
+            case Opcodes.INEG, Opcodes.LNEG, Opcodes.FNEG, Opcodes.DNEG ->
+                    builder.append("-").append(inputs.get(0).arg());
+            case Opcodes.ISHL, Opcodes.LSHL ->
+                    builder.append(inputs.get(0).arg()).append(" << ").append(inputs.get(1).arg());
+            case Opcodes.ISHR, Opcodes.LSHR ->
+                    builder.append(inputs.get(0).arg()).append(" >> ").append(inputs.get(1).arg());
+            case Opcodes.IUSHR ->
+                    builder.append("bit_cast<jint>(bit_cast<uint32_t>(").append(inputs.get(0).arg())
+                            .append(") >> ").append(inputs.get(1).arg()).append(")");
+            case Opcodes.LUSHR ->
+                    builder.append("bit_cast<jlong>(bit_cast<uint64_t>(").append(inputs.get(0).arg())
+                            .append(") >> ").append(inputs.get(1).arg()).append(")");
+            case Opcodes.IAND, Opcodes.LAND ->
+                    builder.append(inputs.get(0).arg()).append(" & ").append(inputs.get(1).arg());
+            case Opcodes.IOR, Opcodes.LOR ->
+                    builder.append(inputs.get(0).arg()).append(" | ").append(inputs.get(1).arg());
+            case Opcodes.IXOR, Opcodes.LXOR ->
+                    builder.append(inputs.get(0).arg()).append(" ^ ").append(inputs.get(1).arg());
+            case Opcodes.I2L, Opcodes.F2L, Opcodes.D2L ->
+                    builder.append("jlong(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.I2F, Opcodes.L2F, Opcodes.D2F ->
+                    builder.append("jfloat(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.I2D, Opcodes.L2D, Opcodes.F2D ->
+                    builder.append("jdouble(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.L2I, Opcodes.F2I, Opcodes.D2I ->
+                    builder.append("jint(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.I2B -> builder.append("jbyte(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.I2C -> builder.append("jchar(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.I2S -> builder.append("jshort(").append(inputs.get(0).arg()).append(")");
+            case Opcodes.LCMP ->
+                    builder.append("longCompare(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(")");
+            case Opcodes.FCMPL ->
+                    builder.append("floatCompare(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(", -1)");
+            case Opcodes.FCMPG ->
+                    builder.append("floatCompare(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(", 1)");
+            case Opcodes.DCMPL ->
+                    builder.append("doubleCompare(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(", -1)");
+            case Opcodes.DCMPG ->
+                    builder.append("doubleCompare(").append(inputs.get(0).arg()).append(", ").append(inputs.get(1).arg()).append(", 1)");
+            case Opcodes.ARRAYLENGTH ->
+                    builder.append("((jarray) nullCheck(ctx, ").append(inputs.get(0).arg()).append("))->length");
+            default -> throw new TranspilerException("Not inlinable");
+        }
+    }
+
+    @Override
+    public boolean inlineable() {
+        return switch (opcode) {
+            case Opcodes.NOP, Opcodes.IASTORE, Opcodes.LASTORE, Opcodes.FASTORE, Opcodes.DASTORE, Opcodes.AASTORE, 
+                 Opcodes.BASTORE, Opcodes.CASTORE, Opcodes.SASTORE, Opcodes.POP, Opcodes.POP2, Opcodes.DUP, 
+                 Opcodes.DUP_X1, Opcodes.DUP_X2, Opcodes.DUP2, Opcodes.DUP2_X1, Opcodes.DUP2_X2, Opcodes.SWAP, 
+                 Opcodes.ATHROW, Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, 
+                 Opcodes.RETURN, Opcodes.MONITORENTER, Opcodes.MONITOREXIT -> false;
+            default -> true;
+        };
+    }
+
     private TypeVariants opcodeType(int baseOpcode) {
         return switch (opcode - baseOpcode) {
             case 0 -> TypeVariants.INT;

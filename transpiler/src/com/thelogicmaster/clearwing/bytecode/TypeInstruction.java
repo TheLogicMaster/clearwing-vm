@@ -54,6 +54,22 @@ public class TypeInstruction extends Instruction {
     }
 
     @Override
+    public boolean inlineable() {
+        return opcode == Opcodes.CHECKCAST || opcode == Opcodes.INSTANCEOF;
+    }
+
+    @Override
+    public void appendInlined(StringBuilder builder) {
+        switch (opcode) {
+            case Opcodes.CHECKCAST -> builder.append("checkCast(ctx, ")
+                    .append(javaType.generateClassFetch()).append(", ").append(inputs.get(0).arg()).append(")");
+            case Opcodes.INSTANCEOF -> builder.append("isInstance(ctx, ")
+                    .append(inputs.get(0).arg()).append(", ").append(javaType.generateClassFetch()).append(")");
+            default -> throw new TranspilerException("Not inlinable: " + opcode);
+        }
+    }
+
+    @Override
     public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
             case Opcodes.NEW -> {
@@ -66,7 +82,7 @@ public class TypeInstruction extends Instruction {
             }
             case Opcodes.CHECKCAST -> {
                 setInputsFromStack(stack, 1);
-                setOutputs(inputs.get(0).copy(this));
+                setOutputs(inputs.get(0).copyOriginal(this));
             }
             case Opcodes.INSTANCEOF -> {
                 setInputsFromStack(stack, 1);

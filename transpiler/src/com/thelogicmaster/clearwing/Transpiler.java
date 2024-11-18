@@ -389,12 +389,10 @@ public class Transpiler {
 
 		// Write config header
 		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(new File(outputDir.getPath(), "src/Config.h")))) {
-			writer.write("" +
-					"#pragma once\n\n" +
-					"#define USE_LINE_NUMBERS " + config.hasLineNumbers() + "\n" +
-					"#define USE_STACK_COOKIES " + config.hasStackCookies() + "\n" +
-					"#define USE_VALUE_CHECKS " + config.hasValueChecks() + "\n" +
-					"#define USE_PLATFORM_OVERRIDE " + config.hasPlatformOverride() + "\n"
+			writer.write("#pragma once\n\n" +
+					"#ifndef USE_LINE_NUMBERS\n#define USE_LINE_NUMBERS " + config.hasLineNumbers() + "\n#endif\n\n" +
+					"#ifndef USE_VALUE_CHECKS\n#define USE_VALUE_CHECKS " + config.hasValueChecks() + "\n#endif\n\n" +
+					"#ifndef USE_PLATFORM_OVERRIDE\n#define USE_PLATFORM_OVERRIDE " + config.hasPlatformOverride() + "\n#endif\n\n"
 			);
 		}
 

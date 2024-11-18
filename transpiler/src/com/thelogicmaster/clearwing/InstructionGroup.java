@@ -59,21 +59,28 @@ public class InstructionGroup extends Instruction {
 
     private int inlineCheck(int index) {
         Instruction candidate = instructions.get(index);
-        if (!candidate.inlineable() || candidate.getOutputs().size() != 1) 
+        if (candidate.isInlined() || !candidate.inlineable()) 
             return -1;
         StackEntry output = candidate.getOutputs().get(0);
         if (output.getConsumers().size() != 1)
             return -1;
         Instruction consumer = output.getConsumers().get(0);
-        if (!instructions.contains(consumer))
+        if (consumer.isRoutingInstruction())
             return -1;
-        for (int i = index; i < instructions.size(); i++) {
+        for (int i = index + 1; i < instructions.size(); i++) {
             Instruction instruction = instructions.get(i);
             int result = inlineCheck(i);
             if (instruction == consumer)
                 return result < 0 ? i : result;
             else if (result < 0)
                 return -1;
+            else {
+                for (; i < result; i++) {
+                    if (instructions.get(i) == consumer)
+                        return result;
+                }
+                i--;
+            }
         }
         return -1;
     }
@@ -104,13 +111,36 @@ public class InstructionGroup extends Instruction {
         
         Instruction lastInstruction = instructions.get(instructions.size() - 1);
         boolean specialLast = lastInstruction.getOutputs() == null || lastInstruction instanceof JumpingInstruction;
+
+        ArrayList<StackEntry> deferredInputs = null;
         
         for (int i = 0; i < instructions.size(); i++) {
             Instruction instruction = instructions.get(i);
             if (specialLast && instruction == lastInstruction)
                 break;
 
-            for (StackEntry input : instruction.getInputs()) {
+            int inlineIndex = inlineCheck(i);
+            if (inlineIndex >= 0) {
+                deferredInputs = new ArrayList<>();
+                for (int j = i; j < inlineIndex; j++) {
+                    Instruction inlined = instructions.get(j);
+                    inlined.inline();
+                    deferredInputs.addAll(inlined.getInputs());
+                }
+                i = inlineIndex - 1;
+                continue;
+            }
+            
+            List<StackEntry> inputs;
+            if (deferredInputs != null) {
+                inputs = deferredInputs;
+                inputs.addAll(instruction.getInputs());
+            } else
+                inputs = instruction.getInputs();
+            
+            for (StackEntry input : inputs) {
+                if (input.getOperandType() == OperandType.Inlined)
+                    continue;
                 StackEntry originalInput = input.getOriginal();
                 if (originalInput.getOperandType() != OperandType.Stack)
                     continue;
@@ -122,7 +152,9 @@ public class InstructionGroup extends Instruction {
             }
             
             for (StackEntry output : instruction.getOutputs()) {
-                StackEntry originalOutput = output.getOriginal();
+                StackEntry originalOutput = output.getOperandType() == OperandType.Inlined ? output : output.getOriginal();
+                if (originalOutput.getOperandType() == OperandType.Inlined)
+                    continue;
                 int index = stack.indexOf(originalOutput);
                 if (index >= 0) {
                     stackUsages[index]++;
@@ -144,10 +176,10 @@ public class InstructionGroup extends Instruction {
                 }
             }
             
-            if (!instruction.isRoutingInstruction())
+            if (!instruction.isRoutingInstruction() && !instruction.isInlined())
                 instruction.appendOptimized(builder, config);
             
-            for (StackEntry input : instruction.getInputs()) {
+            for (StackEntry input : inputs) {
                 StackEntry originalInput = input.getOriginal();
                 if (originalInput.getOperandType() != OperandType.Stack)
                     continue;
@@ -155,6 +187,8 @@ public class InstructionGroup extends Instruction {
                 if (index >= 0 && stackUsages[index] <= 0)
                     stack.set(index, null);
             }
+            
+            deferredInputs = null;
         }
         
         for (int i = 0; i < outputs.size(); i++) {
@@ -186,10 +220,11 @@ public class InstructionGroup extends Instruction {
             builder.append("\tsp += ").append(outputs.size()).append(";\n");
         
         if (specialLast) {
-            for (StackEntry input : lastInstruction.getInputs()) {
-                if (input.getOperandType() != OperandType.Stack)
-                    continue;
-                input.makeStack(input.getIndex() - outputs.size());
+            for (Instruction instruction : instructions) {
+                for (StackEntry input : instruction.getInputs()) {
+                    if (input.getOperandType() == OperandType.Stack)
+                        input.makeStack(input.getIndex() - outputs.size());
+                }
             }
             
             if (lastInstruction.getOutputs() != null) {
@@ -204,22 +239,6 @@ public class InstructionGroup extends Instruction {
         
         builder.append("\t}\n");
     }
-
-//            int inlineOffset = inlineCheck(i);
-//            if (inlineOffset >= 0) {
-//                Instruction container = instructions.get(inlineOffset);
-//                StackEntry dest = null;
-//                if (!container.getOutputs().isEmpty()) {
-//                    StackEntry output = container.getOutputs().get(0);
-//                    if (output.getBasicType() == TypeVariants.OBJECT) {
-//                        dest = new StackEntry(output.getType(), );
-//                    } else {
-//                        dest = new StackEntry(output.getType(), );
-//                    }
-//                }
-//                container.appendOptimized(builder, config, container.getInputs(), dest);
-//                i = inlineOffset;
-//            }
     
     @Override
     public void resolveIO(List<StackEntry> stack) {

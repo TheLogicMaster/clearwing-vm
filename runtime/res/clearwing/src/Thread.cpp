@@ -25,6 +25,12 @@ void threadEntrypoint(jcontext ctx, jthread thread) {
             invokeVirtual<func_java_lang_Thread_run, VTABLE_java_lang_Thread_run>(ctx, (jobject)thread);
     }, &class_java_lang_Throwable, [&](jobject ex){
         // Todo: Default handlers
+        tryCatch(frameRef, [&] {
+            auto throwable = (java_lang_Throwable *)ex;
+            if (throwable->F_message)
+                printf("Uncaught Exception: %s\n", stringToNative(ctx, (jstring)throwable->F_message));
+            INVOKE_VIRTUAL(java_lang_Throwable_printStackTrace, ex);
+        }, &class_java_lang_Throwable, [&](jobject) {});
     });
 
     popStackFrame(ctx);

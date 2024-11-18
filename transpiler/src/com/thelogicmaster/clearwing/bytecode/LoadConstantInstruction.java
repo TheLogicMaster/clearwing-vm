@@ -53,6 +53,16 @@ public class LoadConstantInstruction extends Instruction {
     }
 
     @Override
+    public void appendInlined(StringBuilder builder) {
+        builder.append(getExpression());
+    }
+
+    @Override
+    public boolean inlineable() {
+        return true;
+    }
+
+    @Override
     public void resolveIO(List<StackEntry> stack) {
         setInputs();
         setBasicOutputs(type);

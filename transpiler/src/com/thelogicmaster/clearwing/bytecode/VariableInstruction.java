@@ -45,6 +45,23 @@ public class VariableInstruction extends Instruction implements LocalInstruction
     }
 
     @Override
+    public void appendInlined(StringBuilder builder) {
+        switch (opcode) {
+            case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD ->
+                    builder.append("frame[").append(local).append("].").append(getLocalType().getStackName());
+            default -> throw new TranspilerException("Not inlinable");
+        }
+    }
+
+    @Override
+    public boolean inlineable() {
+        return switch (opcode) {
+            case Opcodes.ILOAD, Opcodes.LLOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.ALOAD -> true;
+            default -> false;
+        };
+    }
+
+    @Override
     public void resolveIO(List<StackEntry> stack) {
         switch (opcode) {
             case Opcodes.ISTORE, Opcodes.LSTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.ASTORE -> setInputsFromStack(stack, 1);

@@ -3,6 +3,7 @@
 #include "java/lang/IllegalArgumentException.h"
 
 #include <cstring>
+#include <sys/time.h>
 
 extern "C" {
 

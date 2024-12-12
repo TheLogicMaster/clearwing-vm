@@ -40,6 +40,7 @@
 #include <cstdarg>
 #include <ranges>
 #include <chrono>
+#include <thread>
 
 static_assert(sizeof(Class) == sizeof(java_lang_Class)); // Loosely ensure generated Class structure matches native representation
 static_assert(std::alignment_of<java_lang_Object>() == std::alignment_of<jlong>()); // Embedding Object in type struct should not add padding
@@ -51,7 +52,7 @@ static std::mutex objectsLock;
 static jthread collectionThread;
 static std::map<std::string, jclass> *classes;
 static std::recursive_mutex criticalLock;
-static std::mutex registryMutex;
+static std::mutex *registryMutex;
 static std::vector<jcontext> threadContexts;
 static std::vector<jobject> deepMarkedObjects;
 
@@ -117,7 +118,9 @@ void runVM(main_ptr entrypoint) {
 bool registerClass(jclass clazz) {
     extern void *vtable_java_lang_Class[];
 
-    registryMutex.lock();
+    if (!registryMutex)
+        registryMutex = new std::mutex;
+    registryMutex->lock();
     if (!classes)
         classes = new std::map<std::string, jclass>;
     (*classes)[(const char *) (intptr_t) clazz->nativeName] = clazz;
@@ -128,7 +131,7 @@ bool registerClass(jclass clazz) {
             .monitor = (intptr_t) new ObjectMonitor,
     };
     clazz->instanceOfCache = (intptr_t) new std::set<jclass>();
-    registryMutex.unlock();
+    registryMutex->unlock();
     return true;
 }
 
@@ -491,7 +494,7 @@ static void collectionThreadFunc(jcontext ctx) {
             collected.clear();
         }
 
-        usleep(1000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         SAFEPOINT();
     }
@@ -854,11 +857,22 @@ void interruptedCheck(jcontext ctx) {
 
 /// Checks if an object is null. Throws exceptions.
 jobject nullCheck(jcontext ctx, jobject object) {
-    return NULL_CHECK(object);
+    if (!object)
+        throwNullPointer(ctx);
+    return object;
 }
 
 jobject checkCast(jcontext ctx, jclass type, jobject object) {
-    return CHECK_CAST(type, object);
+    if (object && !isInstance(ctx, object, type))
+        throwClassCast(ctx);
+    return object;
+}
+
+jarray arrayBoundsCheck(jcontext ctx, jarray array, int index) {
+    nullCheck(ctx, (jobject)array);
+    if (index >= array->length)
+        throwIndexOutOfBounds(ctx);
+    return array;
 }
 
 jobject boxByte(jcontext ctx, jbyte value) {

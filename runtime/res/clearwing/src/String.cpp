@@ -4,6 +4,7 @@
 #include <locale>
 #include <codecvt>
 #include <cstring>
+#include <string>
 
 extern "C" {
 

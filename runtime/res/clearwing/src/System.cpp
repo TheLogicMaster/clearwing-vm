@@ -3,7 +3,7 @@
 #include "java/lang/IllegalArgumentException.h"
 
 #include <cstring>
-#include <sys/time.h>
+#include <chrono>
 
 extern "C" {
 
@@ -26,9 +26,7 @@ void SM_java_lang_System_arraycopy_java_lang_Object_int_java_lang_Object_int_int
 }
 
 jlong SM_java_lang_System_currentTimeMillis_R_long(jcontext ctx) {
-    struct timeval time{};
-    gettimeofday(&time, nullptr);
-    return (((jlong)time.tv_sec) * 1000) + (time.tv_usec / 1000);
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 void SM_java_lang_System_exit0_int(jcontext ctx, jint code) {

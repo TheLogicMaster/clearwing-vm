@@ -224,6 +224,7 @@ void adjustHeapUsage(int64_t amount);
 
 jobject nullCheck(jcontext ctx, jobject object);
 jobject checkCast(jcontext ctx, jclass type, jobject object);
+jarray arrayBoundsCheck(jcontext ctx, jarray array, int index);
 NORETURN void throwException(jcontext ctx, jobject exception);
 NORETURN void throwDivisionByZero(jcontext ctx);
 NORETURN void throwClassCast(jcontext ctx);
@@ -306,25 +307,28 @@ jint longCompare(jlong value1, jlong value2);
     if (suspendVM)\
         safepointSuspend(ctx)
 
+// Todo: Find better inline method that's C compatible or move to C++ section
 #ifdef USE_VALUE_CHECKS
 #define NULL_CHECK(object) \
-    (({ if (!object) throwNullPointer(ctx); }), object)
+    ((std::remove_reference_t<decltype(object)>)(nullCheck(ctx, (jobject)object)))
 #else
 #define NULL_CHECK(object) \
     (object)
 #endif
 
+// Todo: Find better inline method that's C compatible or move to C++ section
 #ifdef USE_VALUE_CHECKS
 #define CHECK_CAST(type, object) \
-    (({ if (object && !isInstance(ctx, object, type)) throwClassCast(ctx); }), object)
+    checkCast(ctx, object)
 #else
 #define CHECK_CAST(type, object) \
     (object)
 #endif
 
+// Todo: Find better inline method that's C compatible or move to C++ section
 #ifdef USE_VALUE_CHECKS
 #define ARRAY_ACCESS(type, obj, index) \
-    (({ if (index >= ((jarray) NULL_CHECK(obj))->length) throwIndexOutOfBounds(ctx); }), ((type *) ((jarray) obj)->data)[index])
+    (((type *) arrayBoundsCheck(ctx, (jarray) obj, index)->data)[index])
 #else
 #define ARRAY_ACCESS(type, obj, index) \
     (((type *) ((jarray) obj)->data)[index])

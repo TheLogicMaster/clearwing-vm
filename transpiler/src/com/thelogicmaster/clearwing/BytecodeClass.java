@@ -410,12 +410,15 @@ public class BytecodeClass {
 			else if (!method.isStatic())
 				builder.append("\tNULL_CHECK(self);\n");
 
-			// Todo: Omit frame for `generated` InvokeDynamic methods, potentially
-			builder.append("\tvolatile jtype frame[").append(method.getStackSize() + method.getLocalCount()).append("];\n"); // Todo: Does this have to be volatile, or is `sp` sufficient
-			builder.append("\tauto stack = &frame[").append(method.getLocalCount()).append("];\n");
-			builder.append("\tvolatile jtype *sp = stack;\n"); // Todo: Volatile because of exceptions, possibly remove when no setjmp are used
-			builder.append("\tauto frameRef = pushStackFrame(ctx, ").append(method.getStackSize() + method.getLocalCount())
-					.append(", frame, \"").append(name).append(":").append(method.getOriginalName()).append("\", ");
+			int stackSize = method.getStackSize() + method.getLocalCount();
+			if (stackSize > 0) {
+				builder.append("\tvolatile jtype frame[").append(stackSize).append("];\n");
+				builder.append("\tauto stack = &frame[").append(method.getLocalCount()).append("];\n");
+				builder.append("\tvolatile jtype *sp = stack;\n");
+			}
+			builder.append("\tauto frameRef = pushStackFrame(ctx, ").append(stackSize).append(", ")
+					.append(stackSize > 0 ? "frame" : "nullptr").append(", \"").append(name).append(":")
+					.append(method.getOriginalName()).append("\", ");
 			if (!method.isSynchronized())
 				builder.append("nullptr");
 			else if (method.isStatic())
@@ -529,53 +532,65 @@ public class BytecodeClass {
 
 		// Todo: Not needed for non-annotation interfaces
 		// Vtable
-		builder.append("void *vtable_").append(qualifiedName).append("[] {\n");
-		for (BytecodeMethod method : vtable) {
-			boolean isNull = method.isAbstract() && !method.getOwner().isAnnotationImpl();
-			builder.append("\t(void *) ").append(isNull ? "nullptr" : Utils.sanitizeMethod(method.getOwner().qualifiedName, method.getSignature(), false)).append(",\n");
+		if (!vtable.isEmpty()) {
+			builder.append("void *vtable_").append(qualifiedName).append("[] {\n");
+			for (BytecodeMethod method : vtable) {
+				boolean isNull = method.isAbstract() && !method.getOwner().isAnnotationImpl();
+				builder.append("\t(void *) ").append(isNull ? "nullptr" : Utils.sanitizeMethod(method.getOwner().qualifiedName, method.getSignature(), false)).append(",\n");
+			}
+			builder.append("};\n\n");
 		}
-		builder.append("};\n\n");
 
-		builder.append("static VtableEntry vtableEntries[] {\n");
-		for (BytecodeMethod method : vtable)
-			builder.append("\t{ \"").append(method.getOriginalName()).append("\", \"").append(method.getDesc()).append("\" },\n");
-		builder.append("};\n\n");
+		if (!vtable.isEmpty()) {
+			builder.append("static VtableEntry vtableEntries[] {\n");
+			for (BytecodeMethod method : vtable)
+				builder.append("\t{ \"").append(method.getOriginalName()).append("\", \"").append(method.getDesc()).append("\" },\n");
+			builder.append("};\n\n");
+		}
 
 		// Interfaces list
-		builder.append("static jclass interfaces").append("[] { ");
-		for (String interfaceName : interfaces)
-			builder.append("&class_").append(Utils.getQualifiedClassName(interfaceName)).append(", ");
-		builder.append("};\n\n");
+		if (interfaces.length > 0) {
+			builder.append("static jclass interfaces").append("[] { ");
+			for (String interfaceName : interfaces)
+				builder.append("&class_").append(Utils.getQualifiedClassName(interfaceName)).append(", ");
+			builder.append("};\n\n");
+		}
 
 		// Inner class list
-		builder.append("static jclass innerClasses").append("[] {\n");
-		for (String innerName : innerClassNames)
-			builder.append("\t&class_").append(Utils.getQualifiedClassName(innerName)).append(",\n");
-		builder.append("};\n\n");
+		if (!innerClassNames.isEmpty()) {
+			builder.append("static jclass innerClasses").append("[] {\n");
+			for (String innerName : innerClassNames)
+				builder.append("\t&class_").append(Utils.getQualifiedClassName(innerName)).append(",\n");
+			builder.append("};\n\n");
+		}
 
 		// Field metadata
-		builder.append("static FieldMetadata fields").append("[] {\n");
-		for (BytecodeField field : fields) {
-			builder.append("\t{ \"").append(field.getOriginalName()).append("\", ").append(field.getType().generateClassFetch());
-			if (field.isStatic())
-				builder.append(", (intptr_t) &").append(field.getName());
-			else
-				builder.append(", offsetof(").append(qualifiedName).append(", ").append(field.getName()).append(")");
-			builder.append(", \"").append(field.getSignature() == null ? "" : field.getSignature()).append("\", ").append(field.getAccess()).append(" },\n");
+		if (!fields.isEmpty()) {
+			builder.append("static FieldMetadata fields").append("[] {\n");
+			for (BytecodeField field : fields) {
+				builder.append("\t{ \"").append(field.getOriginalName()).append("\", ").append(field.getType().generateClassFetch());
+				if (field.isStatic())
+					builder.append(", (intptr_t) &").append(field.getName());
+				else
+					builder.append(", offsetof(").append(qualifiedName).append(", ").append(field.getName()).append(")");
+				builder.append(", \"").append(field.getSignature() == null ? "" : field.getSignature()).append("\", ").append(field.getAccess()).append(" },\n");
+			}
+			builder.append("};\n\n");
 		}
-		builder.append("};\n\n");
 
 		// Method metadata
-		builder.append("static MethodMetadata methods").append("[] {\n");
-		for (BytecodeMethod method : methods) {
-			builder.append("\t{ \"").append(method.getOriginalName()).append("\"");
-			if (method.isStatic() || method.isConstructor())
-				builder.append(", (intptr_t) ").append(method.getName());
-			else
-				builder.append(isInterface() ? ", INDEX_" : ", VTABLE_").append(method.getName().substring(2));
-			builder.append(", \"").append(method.getDesc()).append("\", ").append(method.getAccess()).append(" },\n");
+		if (!methods.isEmpty()) {
+			builder.append("static MethodMetadata methods").append("[] {\n");
+			for (BytecodeMethod method : methods) {
+				builder.append("\t{ \"").append(method.getOriginalName()).append("\"");
+				if (method.isStatic() || method.isConstructor())
+					builder.append(", (intptr_t) ").append(method.getName());
+				else
+					builder.append(isInterface() ? ", INDEX_" : ", VTABLE_").append(method.getName().substring(2));
+				builder.append(", \"").append(method.getDesc()).append("\", ").append(method.getAccess()).append(" },\n");
+			}
+			builder.append("};\n\n");
 		}
-		builder.append("};\n\n");
 
 		// Class
 		builder.append("Class class_").append(qualifiedName).append("{\n");
@@ -591,16 +606,16 @@ public class BytecodeClass {
 		builder.append("\t\t.componentClass = (intptr_t) nullptr,\n");
 		builder.append("\t\t.outerClass = (intptr_t) ").append(outerClassName == null ? "nullptr" : "&class_" + Utils.getQualifiedClassName(outerClassName)).append(",\n");
 		builder.append("\t\t.innerClassCount = ").append(innerClassNames.size()).append(",\n");
-		builder.append("\t\t.nativeInnerClasses = (intptr_t) innerClasses").append(",\n");
+		builder.append("\t\t.nativeInnerClasses = (intptr_t) ").append(innerClassNames.isEmpty() ? "nullptr" : "innerClasses").append(",\n");
 		builder.append("\t\t.access = ").append(access).append(",\n");
 		builder.append("\t\t.interfaceCount = ").append(interfaces.length).append(",\n");
-		builder.append("\t\t.nativeInterfaces = (intptr_t) interfaces").append(",\n");
+		builder.append("\t\t.nativeInterfaces = (intptr_t) ").append(interfaces.length == 0 ? "nullptr" : "interfaces").append(",\n");
 		builder.append("\t\t.fieldCount = ").append(fields.size()).append(",\n");
-		builder.append("\t\t.nativeFields = (intptr_t) fields").append(",\n");
+		builder.append("\t\t.nativeFields = (intptr_t) ").append(fields.isEmpty() ? "nullptr" : "fields").append(",\n");
 		builder.append("\t\t.methodCount = ").append(methods.size()).append(",\n");
-		builder.append("\t\t.nativeMethods = (intptr_t) methods").append(",\n");
+		builder.append("\t\t.nativeMethods = (intptr_t) ").append(methods.isEmpty() ? "nullptr" : "methods").append(",\n");
 		builder.append("\t\t.vtableSize = ").append(vtable.size()).append(",\n");
-		builder.append("\t\t.vtableEntries = (intptr_t) vtableEntries").append(",\n");
+		builder.append("\t\t.vtableEntries = (intptr_t) ").append(vtable.isEmpty() ? "nullptr" : "vtableEntries").append(",\n");
 		builder.append("\t\t.anonymous = ").append(isAnonymous()).append(",\n");
 		builder.append("\t\t.synthetic = ").append(isSynthetic()).append(",\n");
 		builder.append("};\n");

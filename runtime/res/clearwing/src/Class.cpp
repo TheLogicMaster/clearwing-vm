@@ -6,6 +6,7 @@
 #include "java/lang/annotation/Annotation.h"
 
 #include <cstring>
+#include <algorithm>
 
 extern "C" {
 

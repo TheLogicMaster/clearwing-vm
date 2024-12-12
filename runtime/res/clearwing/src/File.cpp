@@ -7,6 +7,10 @@
 #include <fstream>
 #include <filesystem>
 
+#if defined(__WIN32__) || defined(__WINRT__)
+#include <Windows.h>
+#endif
+
 namespace fs = std::filesystem;
 
 extern "C" {
@@ -81,10 +85,12 @@ jobject M_java_io_File_list_R_Array1_java_lang_String(jcontext ctx, jobject self
 
 jobject SM_java_io_File_listRoots_R_Array1_java_io_File(jcontext ctx) {
     std::vector<std::string> collected;
-#if defined(__WIN32__) || defined(__WINRT__)
+#if defined(__WINRT__)
+    collected.emplace_back("C:\\");
+#elif defined(__WIN32__)
     char buffer[512];
     int len = (int)GetLogicalDriveStrings(sizeof(buffer), buffer);
-    if (len > buffer)
+    if (len > sizeof(buffer))
         collected.emplace_back("C:\\");
     else {
         char *ptr = buffer;

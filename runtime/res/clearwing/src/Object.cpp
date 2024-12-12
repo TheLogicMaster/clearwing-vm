@@ -5,6 +5,7 @@
 #include "java/lang/CloneNotSupportedException.h"
 
 #include <cstring>
+#include <string>
 
 extern "C" {
 

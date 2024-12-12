@@ -1,6 +1,8 @@
 #include "java/lang/Throwable.h"
 #include "java/lang/Thread.h"
 
+#include <string>
+
 extern "C" {
 
 void M_java_lang_Throwable_fillInStack(jcontext ctx, jobject self) {

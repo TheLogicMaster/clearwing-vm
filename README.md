@@ -46,6 +46,7 @@ flowchart LR
 - C++ 20
 - ZLib
 - ZZip
+- LibFFI
 - CMake (If using default project files)
 
 ## Usage

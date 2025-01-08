@@ -46,15 +46,19 @@ public class File {
 		if (child == null)
 			throw new NullPointerException();
 		if (parent == null || parent.path.isEmpty())
-			path = child;
+			path = normalizePath(child);
 		else
-			path = (parent.path + separator + child).replace("//", "/");
+			path = normalizePath(parent.path + separator + child);
 	}
 
 	public File (String pathname) {
 		if (pathname == null)
 			throw new NullPointerException();
-		this.path = pathname;
+		this.path = normalizePath(pathname);
+	}
+	
+	private String normalizePath(String path) {
+		return path.length() < 2 || !path.endsWith(separator) ? path : path.substring(0, path.length() - 1);
 	}
 
 	public File (URI uri) {
@@ -62,7 +66,7 @@ public class File {
 	}
 
 	public File (String parent, String child) {
-		this(parent.isEmpty() ? child : (parent + separator + child).replace("//", "/"));
+		this(parent.isEmpty() ? child : (parent + separator + child).replace(separator + separator, separator));
 	}
 
 	public boolean canExecute () {

@@ -102,7 +102,8 @@ jobject M_java_lang_String_replace_java_lang_CharSequence_java_lang_CharSequence
     NULL_CHECK(self);
 
     jtype frame[2];
-    pushStackFrame(ctx, 2, frame, "java/lang/String:replace", nullptr);
+    FrameInfo frameInfo { "java/lang/String:replace", 2 };
+    pushStackFrame(ctx, &frameInfo, frame);
     frame[0].o = invokeInterface<func_java_lang_CharSequence_toString_R_java_lang_String, &class_java_lang_CharSequence, INDEX_java_lang_CharSequence_toString_R_java_lang_String>(ctx, targetSeq);
     frame[1].o = invokeInterface<func_java_lang_CharSequence_toString_R_java_lang_String, &class_java_lang_CharSequence, INDEX_java_lang_CharSequence_toString_R_java_lang_String>(ctx, replaceSeq);
     std::string target = stringToNative(ctx, (jstring) frame[0].o);

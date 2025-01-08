@@ -40,7 +40,6 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 		labelBypasses = new int[labels.length];
 		Arrays.fill(labelBypasses, -1);
 		exceptionPops = new int[labels.length];
-		Arrays.fill(exceptionPops, 0);
 	}
 
 	private void appendSwitch(StringBuilder builder, String value) {
@@ -109,25 +108,20 @@ public class SwitchInstruction extends Instruction implements JumpingInstruction
 	}
 
 	@Override
-	public void setJumpExceptionPops(int label, int pops) {
-		if (label == defaultLabel) {
+	public void setJumpExceptionPops(int index, int pops) {
+		if (index == labels.length)
 			defaultLabelBypass = pops;
-			return;
-		}
-		for (int i = 0; i < labels.length; i++)
-			if (label == labels[i]) {
-				exceptionPops[i] = pops;
-				break;
-			}
+		else
+			exceptionPops[index] = pops;
 	}
 
 	@Override
 	public List<Integer> getJumpLabels() {
 		ArrayList<Integer> jumpLabels = new ArrayList<>();
-		if (defaultLabel != -1)
-			jumpLabels.add(defaultLabel);
 		for (int label: labels)
 			jumpLabels.add(label);
+		if (defaultLabel != -1)
+			jumpLabels.add(defaultLabel);
 		return jumpLabels;
 	}
 }

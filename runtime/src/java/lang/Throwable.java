@@ -85,7 +85,10 @@ public class Throwable{
         this.message = message;
         this.cause = cause;
     }
-    
+
+    protected Throwable(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        this(message, cause);
+    }
 
     /**
      * Returns the error message string of this Throwable object.

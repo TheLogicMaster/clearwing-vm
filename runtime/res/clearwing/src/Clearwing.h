@@ -99,6 +99,11 @@ typedef struct MethodMetadata {
     int access;
 } MethodMetadata;
 
+typedef struct FrameInfo {
+    const char *method; // Qualified method name
+    int size; // Size of frame data (Number of jlong/StackEntry words)
+} FrameInfo;
+
 typedef struct java_lang_Object {
     jref clazz;
     jint gcMark;
@@ -194,6 +199,7 @@ void runGC(jcontext ctx);
 void markDeepObject(jobject obj);
 jcontext createContext();
 void destroyContext(jcontext ctx);
+void exitVM(jcontext ctx, int result);
 
 jclass getArrayClass(jclass componentType, int dimensions);
 jarray createArray(jcontext ctx, jclass type, int length);
@@ -211,27 +217,27 @@ void acquireCriticalLock();
 void releaseCriticalLock();
 void safepointSuspend(jcontext ctx);
 
-jframe pushStackFrame(jcontext ctx, int size, volatile jtype *stack, const char *method, jobject monitor);
-void popStackFrame(jcontext ctx);
 jmp_buf *pushExceptionFrame(jframe frame, jclass type);
 jobject popExceptionFrame(jframe frame);
 void popExceptionFrames(jframe frame, int count);
+jobject clearCurrentException(jframe frame);
+
 void monitorEnter(jcontext ctx, jobject object);
 void monitorExit(jcontext ctx, jobject object);
 void monitorOwnerCheck(jcontext ctx, jobject object);
 void interruptedCheck(jcontext ctx);
+int64_t getHeapUsage();
 void adjustHeapUsage(int64_t amount);
 
-jobject nullCheck(jcontext ctx, jobject object);
-jobject checkCast(jcontext ctx, jclass type, jobject object);
-jarray arrayBoundsCheck(jcontext ctx, jarray array, int index);
 NORETURN void throwException(jcontext ctx, jobject exception);
 NORETURN void throwDivisionByZero(jcontext ctx);
 NORETURN void throwClassCast(jcontext ctx);
 NORETURN void throwNullPointer(jcontext ctx);
+NORETURN void throwStackOverflow(jcontext ctx);
 NORETURN void throwIndexOutOfBounds(jcontext ctx);
 NORETURN void throwIllegalArgument(jcontext ctx);
 NORETURN void throwIOException(jcontext ctx, const char *message);
+NORETURN void throwRuntimeException(jcontext ctx, const char *message);
 
 jobject boxByte(jcontext ctx, jbyte value);
 jobject boxCharacter(jcontext ctx, jchar value);
@@ -306,39 +312,6 @@ jint longCompare(jlong value1, jlong value2);
 #define SAFEPOINT() \
     if (suspendVM)\
         safepointSuspend(ctx)
-
-// Todo: Find better inline method that's C compatible or move to C++ section
-#ifdef USE_VALUE_CHECKS
-#define NULL_CHECK(object) \
-    ((std::remove_reference_t<decltype(object)>)(nullCheck(ctx, (jobject)object)))
-#else
-#define NULL_CHECK(object) \
-    (object)
-#endif
-
-// Todo: Find better inline method that's C compatible or move to C++ section
-#ifdef USE_VALUE_CHECKS
-#define CHECK_CAST(type, object) \
-    checkCast(ctx, object)
-#else
-#define CHECK_CAST(type, object) \
-    (object)
-#endif
-
-// Todo: Find better inline method that's C compatible or move to C++ section
-#ifdef USE_VALUE_CHECKS
-#define ARRAY_ACCESS(type, obj, index) \
-    (((type *) arrayBoundsCheck(ctx, (jarray) obj, index)->data)[index])
-#else
-#define ARRAY_ACCESS(type, obj, index) \
-    (((type *) ((jarray) obj)->data)[index])
-#endif
-
-#ifdef USE_LINE_NUMBERS
-#define LINE_NUMBER(line) frameRef->lineNumber = line
-#else
-#define LINE_NUMBER(line) SEMICOLON_RECEPTOR
-#endif
 
 #define POP_N(count) \
     sp -= count
@@ -832,6 +805,120 @@ jint longCompare(jlong value1, jlong value2);
 
 using std::bit_cast;
 
+#ifdef USE_VALUE_CHECKS
+#define NULL_CHECK(object) nullCheck(ctx, object)
+#else
+#define NULL_CHECK(object) (object)
+#endif
+
+#ifdef USE_VALUE_CHECKS
+#define CHECK_CAST(type, object) checkCast(ctx, object)
+#else
+#define CHECK_CAST(type, object) (object)
+#endif
+
+#ifdef USE_VALUE_CHECKS
+#define ARRAY_ACCESS(type, obj, index) (((type *) arrayBoundsCheck(ctx, (jarray) obj, index)->data)[index])
+#else
+#define ARRAY_ACCESS(type, obj, index) (((type *) ((jarray) obj)->data)[index])
+#endif
+
+#ifdef USE_LINE_NUMBERS
+#define LINE_NUMBER(line) frameRef->lineNumber = line
+#else
+#define LINE_NUMBER(line) SEMICOLON_RECEPTOR
+#endif
+
+class ExitException final : std::runtime_error {
+public:
+    ExitException() : std::runtime_error("Exiting") { }
+};
+
+struct ObjectMonitor {
+    std::recursive_mutex lock;
+    std::atomic_int32_t depth;
+    std::atomic<jcontext> owner;
+    std::condition_variable condition;
+    std::mutex conditionMutex;
+};
+
+struct ExceptionFrame {
+    jclass type;
+    jmp_buf landingPad;
+};
+
+struct StackFrame {
+    const FrameInfo *info{}; // Static information about frame
+    volatile jtype *frame{}; // Pointer to frame data
+    std::vector<ExceptionFrame> exceptionFrames; // Stack of current exception frames in the method
+    int exceptionFrameDepth{};
+    jobject monitor{}; // The monitor for synchronized methods
+    int lineNumber{}; // Current line number
+    jobject exception{}; // The currently thrown exception
+};
+
+struct Context {
+    jthread thread{};
+    std::thread *nativeThread; // Null for main thread
+    StackFrame frames[MAX_STACK_DEPTH];
+    int stackDepth{};
+    volatile bool suspended{}; // Considered at safepoint, must check for suspendVM flag when un-suspending
+    std::recursive_mutex lock; // Lock on changing the stack or blocking monitor
+    std::atomic<jobject> blockedBy; // Object monitor blocking the current thread, or null
+    bool dead{};
+};
+
+/// Checks if an object is null. Throws exceptions.
+template<typename T>
+T *nullCheck(jcontext ctx, T *object) {
+    if (!object)
+        throwNullPointer(ctx);
+    return object;
+}
+
+inline jobject checkCast(jcontext ctx, jclass type, jobject object) {
+    if (object && !isInstance(ctx, object, type))
+        throwClassCast(ctx);
+    return object;
+}
+
+inline jarray arrayBoundsCheck(jcontext ctx, jarray array, int index) {
+    nullCheck(ctx, (jobject)array);
+    if (index >= array->length)
+        throwIndexOutOfBounds(ctx);
+    return array;
+}
+
+inline jframe pushStackFrame(jcontext ctx, const FrameInfo *info, volatile jtype *frame, jobject monitor = nullptr) {
+    SAFEPOINT();
+    auto frameRef = &ctx->frames[ctx->stackDepth++];
+    if (frameRef->exceptionFrameDepth != 0) // Todo: Make debug assertion
+        throw std::runtime_error("Exception frame was not popped");
+    frameRef->frame = frame;
+    frameRef->info = info;
+    LINE_NUMBER(0);
+    if (ctx->stackDepth == MAX_STACK_DEPTH - 10)
+        throwStackOverflow(ctx);
+    if (monitor) {
+        frameRef->monitor = monitor;
+        monitorEnter(ctx, monitor);
+    }
+    return frameRef;
+}
+
+inline void popStackFrame(jcontext ctx, jobject monitor = nullptr) {
+    SAFEPOINT();
+    if (ctx->stackDepth == 0)
+        throw std::runtime_error("No stack frame to pop");
+    if (ctx->frames[ctx->stackDepth - 1].exceptionFrameDepth != 0) // Todo: Make debug assertion
+        throw std::runtime_error("Exception frame was not popped");
+    if (monitor) {
+        monitorExit(ctx, monitor);
+        ctx->frames[ctx->stackDepth - 1].monitor = nullptr;
+    }
+    ctx->stackDepth -= 1;
+}
+
 template <typename B>
 void lockGuard(jcontext ctx, std::mutex &mutex, const char *method, B block) {
     mutex.lock();
@@ -904,7 +991,8 @@ void tryFinally(jcontext ctx, const char *method, B block, F finally) requires s
 
 template <typename B, typename E>
 void tryCatch(jcontext ctx, const char *method, B block, jclass clazz, E except) requires std::invocable<B> and std::invocable<E, jobject> {
-    auto frameRef = pushStackFrame(ctx, 0, nullptr, method, nullptr);
+    FrameInfo frameInfo { method, 0 };
+    auto frameRef = pushStackFrame(ctx, &frameInfo, nullptr);
     tryCatch(frameRef, [&]{
         block();
     }, clazz, [&](jobject ex){
@@ -979,39 +1067,6 @@ jint floatingCompare(T t1, T t2, jint nanVal) {
         return -1;
     return 0;
 }
-
-struct ObjectMonitor {
-    std::recursive_mutex lock;
-    std::atomic_int32_t depth;
-    std::atomic<jcontext> owner;
-    std::condition_variable condition;
-    std::mutex conditionMutex;
-};
-
-struct ExceptionFrame {
-    jclass type;
-    jmp_buf landingPad;
-};
-
-struct StackFrame {
-    int size{}; // Size of frame data (Number of jlong/StackEntry words)
-    volatile jtype *frame{}; // Pointer to frame data
-    const char *method{}; // Qualified method name
-    jobject monitor{}; // The monitor only for synchronized methods, if used
-    std::vector<ExceptionFrame> exceptionFrames; // Stack of current exception frames in the method
-    int lineNumber{}; // Current line number
-    jobject exception{}; // The currently thrown exception
-};
-
-struct Context {
-    jthread thread{};
-    std::thread *nativeThread; // Null for main thread
-    StackFrame frames[MAX_STACK_DEPTH];
-    int stackDepth{};
-    std::atomic_bool suspended; // Considered at safepoint, must check for suspendVM flag when un-suspending
-    std::recursive_mutex lock; // Lock on changing the stack or blocking monitor
-    std::atomic<jobject> blockedBy; // Object monitor blocking the current thread, or null
-};
 
 #endif
 

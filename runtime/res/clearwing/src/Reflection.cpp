@@ -177,8 +177,8 @@ jobject M_java_lang_reflect_Method_invoke_java_lang_Object_Array1_java_lang_Obje
 
     jtype returnValue;
     ffi_status result;
-
-    auto frameRef = pushStackFrame(ctx, 0, nullptr, "java/lang/Method:invoke", nullptr);
+    FrameInfo frameInfo { "java/lang/Method:invoke", 0 };
+    auto frameRef = pushStackFrame(ctx, &frameInfo, nullptr);
     tryCatch(frameRef, [&]{
         void *func;
         if (isInterface)

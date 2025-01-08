@@ -302,42 +302,41 @@ public final class Character implements Comparable<Character>{
     }
 
     public static boolean isLetterOrDigit(char ch) {
-        return isLetter(ch) || isDigit(ch);
-//        return isLetterOrDigit((int) ch);
+        return isLetterOrDigit((int) ch);
     }
 
     public static boolean isLetterOrDigit(int codePoint) {
-        switch (getType(codePoint)) {
-            case UPPERCASE_LETTER:
-            case LOWERCASE_LETTER:
-            case TITLECASE_LETTER:
-            case MODIFIER_LETTER:
-            case OTHER_LETTER:
-            case DECIMAL_DIGIT_NUMBER:
-                return true;
-            default:
-                return false;
-        }
+        return isLetter(codePoint) || isDigit(codePoint);
+//        switch (getType(codePoint)) {
+//            case UPPERCASE_LETTER:
+//            case LOWERCASE_LETTER:
+//            case TITLECASE_LETTER:
+//            case MODIFIER_LETTER:
+//            case OTHER_LETTER:
+//            case DECIMAL_DIGIT_NUMBER:
+//                return true;
+//            default:
+//                return false;
+//        }
     }
     
     public static boolean isLetter(char ch) {
-        // Todo: Proper implementation
-        return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
-
-//        return isLetter((int) ch);
+        return isLetter((int) ch);
     }
 
     public static boolean isLetter(int codePoint) {
-        switch (getType(codePoint)) {
-            case UPPERCASE_LETTER:
-            case LOWERCASE_LETTER:
-            case TITLECASE_LETTER:
-            case MODIFIER_LETTER:
-            case OTHER_LETTER:
-                return true;
-            default:
-                return false;
-        }
+        // Todo: Proper implementation
+        return (codePoint >= 'a' && codePoint <= 'z') || (codePoint >= 'A' && codePoint <= 'Z');
+//        switch (getType(codePoint)) {
+//            case UPPERCASE_LETTER:
+//            case LOWERCASE_LETTER:
+//            case TITLECASE_LETTER:
+//            case MODIFIER_LETTER:
+//            case OTHER_LETTER:
+//                return true;
+//            default:
+//                return false;
+//        }
     }
 
     public static boolean isSpace(char ch) {
@@ -481,19 +480,7 @@ public final class Character implements Comparable<Character>{
     }
 
     public static boolean isJavaIdentifierStart(int codePoint) {
-        switch (getType(codePoint)) {
-            case UPPERCASE_LETTER:
-            case LOWERCASE_LETTER:
-            case TITLECASE_LETTER:
-            case MODIFIER_LETTER:
-            case OTHER_LETTER:
-            case LETTER_NUMBER:
-            case CONNECTOR_PUNCTUATION:
-            case CURRENCY_SYMBOL:
-                return true;
-            default:
-                return isIdentifierIgnorable(codePoint);
-        }
+        return isLetter(codePoint) || codePoint == '_' || codePoint == '$';
     }
     
     public static boolean isJavaIdentifierPart(char ch) {
@@ -501,22 +488,23 @@ public final class Character implements Comparable<Character>{
     }
 
     public static boolean isJavaIdentifierPart(int codePoint) {
-        switch (getType(codePoint)) {
-            case UPPERCASE_LETTER:
-            case LOWERCASE_LETTER:
-            case TITLECASE_LETTER:
-            case MODIFIER_LETTER:
-            case OTHER_LETTER:
-            case LETTER_NUMBER:
-            case DECIMAL_DIGIT_NUMBER:
-            case COMBINING_SPACING_MARK:
-            case NON_SPACING_MARK:
-            case CONNECTOR_PUNCTUATION:
-            case CURRENCY_SYMBOL:
-                return true;
-            default:
-                return isIdentifierIgnorable(codePoint);
-        }
+        return isLetter(codePoint) || isDigit(codePoint) || codePoint == '_' || codePoint == '$';
+//        switch (getType(codePoint)) {
+//            case UPPERCASE_LETTER:
+//            case LOWERCASE_LETTER:
+//            case TITLECASE_LETTER:
+//            case MODIFIER_LETTER:
+//            case OTHER_LETTER:
+//            case LETTER_NUMBER:
+//            case DECIMAL_DIGIT_NUMBER:
+//            case COMBINING_SPACING_MARK:
+//            case NON_SPACING_MARK:
+//            case CONNECTOR_PUNCTUATION:
+//            case CURRENCY_SYMBOL:
+//                return true;
+//            default:
+//                return isIdentifierIgnorable(codePoint);
+//        }
     }
 
     
@@ -537,10 +525,7 @@ public final class Character implements Comparable<Character>{
      * Determines if the specified character is a digit.
      */
     public static boolean isDigit(char ch){
-        // Todo: Proper implementation
-        return ch >= '0' && ch <= '9';
-
-//        return isDigit((int) ch);
+        return isDigit((int) ch);
     }
 
     /**
@@ -1503,23 +1488,36 @@ public final class Character implements Comparable<Character>{
     }
     
     public static int getType(int codePoint) {
+        // Todo
+        
+        if (isDigit(codePoint))
+            return DECIMAL_DIGIT_NUMBER;
+        if (codePoint >= 'a' && codePoint <= 'z')
+            return LOWERCASE_LETTER;
+        if (codePoint >= 'A' && codePoint <= 'Z')
+            return UPPERCASE_LETTER;
+        if (codePoint == ' ')
+            return SPACE_SEPARATOR;
+        if (codePoint >= 0x00 && codePoint <= 0x9F)
+            return CONTROL;
+        
         if (isBmpCodePoint(codePoint) && isSurrogate((char) codePoint)) {
             return SURROGATE;
         }
-        UnicodeHelper.Range[] classes = getClasses();
-        int l = 0;
-        int u = classes.length - 1;
-        while (l <= u) {
-            int i = (l + u) / 2;
-            UnicodeHelper.Range range = classes[i];
-            if (codePoint >= range.end) {
-                l = i + 1;
-            } else if (codePoint < range.start) {
-                u = i - 1;
-            } else {
-                return range.data[codePoint - range.start];
-            }
-        }
+//        UnicodeHelper.Range[] classes = getClasses();
+//        int l = 0;
+//        int u = classes.length - 1;
+//        while (l <= u) {
+//            int i = (l + u) / 2;
+//            UnicodeHelper.Range range = classes[i];
+//            if (codePoint >= range.end) {
+//                l = i + 1;
+//            } else if (codePoint < range.start) {
+//                u = i - 1;
+//            } else {
+//                return range.data[codePoint - range.start];
+//            }
+//        }
         return 0;
     }
     

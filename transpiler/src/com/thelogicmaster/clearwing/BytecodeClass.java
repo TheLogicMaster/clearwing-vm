@@ -416,9 +416,10 @@ public class BytecodeClass {
 				builder.append("\tauto stack = &frame[").append(method.getLocalCount()).append("];\n");
 				builder.append("\tvolatile jtype *sp = stack;\n");
 			}
-			builder.append("\tauto frameRef = pushStackFrame(ctx, ").append(stackSize).append(", ")
-					.append(stackSize > 0 ? "frame" : "nullptr").append(", \"").append(name).append(":")
-					.append(method.getOriginalName()).append("\", ");
+			builder.append("\tFrameInfo frameInfo { ").append("\"").append(name).append(":")
+					.append(method.getOriginalName()).append("\", ").append(stackSize).append(" };\n");
+			builder.append("\tauto frameRef = pushStackFrame(ctx, &frameInfo, ")
+					.append(stackSize > 0 ? "frame" : "nullptr").append(", ");
 			if (!method.isSynchronized())
 				builder.append("nullptr");
 			else if (method.isStatic())
@@ -530,7 +531,6 @@ public class BytecodeClass {
 			builder.append("}\n\n");
 		}
 
-		// Todo: Not needed for non-annotation interfaces
 		// Vtable
 		if (!vtable.isEmpty()) {
 			builder.append("void *vtable_").append(qualifiedName).append("[] {\n");

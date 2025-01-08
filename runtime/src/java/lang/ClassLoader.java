@@ -62,8 +62,16 @@ public abstract class ClassLoader extends Object {
         throw new UnsupportedOperationException();
     }
 
-    public Class<?> loadClass(String name) {
+    protected Class<?> loadClass(String className, boolean resolve) throws ClassNotFoundException {
         throw new UnsupportedOperationException();
+    }
+    
+    public Class<?> loadClass(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
     }
 
     public URL getResource(String name) {
@@ -72,5 +80,31 @@ public abstract class ClassLoader extends Object {
 
     public Enumeration<URL> getResources(String name) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    protected final Class<?> findLoadedClass(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException ex) {
+            return null;
+        }
+    }
+
+    protected Class<?> findClass(String className) throws ClassNotFoundException {
+        return Class.forName(className);
+    }
+
+    protected final Class<?> findSystemClass(String className) throws ClassNotFoundException {
+        return Class.forName(className);
+    }
+
+    protected final Class<?> defineClass(String className, byte[] classRep, int offset, int length) throws ClassFormatError {
+        throw new UnsupportedOperationException();
+    }
+
+    protected final void resolveClass(Class<?> c) {
+        if (c == null) {
+            throw new NullPointerException();
+        }
     }
 }

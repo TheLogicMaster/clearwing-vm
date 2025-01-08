@@ -51,7 +51,7 @@ public class Runtime {
     }
 
     public long maxMemory() {
-        return 0;
+        return maxMemoryImpl();
     }
 
     /**
@@ -80,6 +80,7 @@ public class Runtime {
 
     private static native long totalMemoryImpl();
     private static native long freeMemoryImpl();
+    private static native long maxMemoryImpl();
 
     public int availableProcessors() {
         return 1;

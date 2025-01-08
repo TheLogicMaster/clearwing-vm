@@ -356,6 +356,7 @@ public class Transpiler {
 		// Write transpiled output
 		File srcDir = new File(outputDir, "src");
 		File includeDir = srcDir;//new File(outputDir, "include");
+		boolean failed = false;
 		for (BytecodeClass clazz: required) {
 			File header = new File(includeDir, Utils.getClassFilename(clazz.getName()) + ".h");
 			Paths.get(header.getAbsolutePath()).getParent().toFile().mkdirs();
@@ -369,10 +370,17 @@ public class Transpiler {
 			Paths.get(cpp.getAbsolutePath()).getParent().toFile().mkdirs();
 			writer = new FileWriter(cpp);
 			builder = new StringBuilder();
-			clazz.generateCpp(builder, config, classMap);
+			try {
+				clazz.generateCpp(builder, config, classMap);
+			} catch (Exception e) {
+				System.err.println("ERR: " + e.getMessage());
+				failed = true;
+			}
 			writer.write(builder.toString());
 			writer.close();
 		}
+		if (failed)
+			throw new TranspilerException("Failed to transpile sources");
 
 		// Write main.cpp
 		if (mainClass != null)

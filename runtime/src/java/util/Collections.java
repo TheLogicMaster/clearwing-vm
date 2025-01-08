@@ -26,6 +26,30 @@ package java.util;
  */
 public class Collections {
 
+    private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>() {
+        @Override public boolean hasNext() {
+            return false;
+        }
+
+        @Override public Object next() {
+            throw new NoSuchElementException();
+        }
+
+        @Override public void remove() {
+            throw new IllegalStateException();
+        }
+    };
+
+    private static final Enumeration<?> EMPTY_ENUMERATION = new Enumeration<Object>() {
+        @Override public boolean hasMoreElements() {
+            return false;
+        }
+
+        @Override public Object nextElement() {
+            throw new NoSuchElementException();
+        }
+    };
+    
     private static final class CopiesList<E> extends AbstractList<E> {
         private final int n;
 
@@ -2434,6 +2458,14 @@ public class Collections {
         return EMPTY_MAP;
     }
 
+    public static <T> Enumeration<T> emptyEnumeration() {
+        return (Enumeration<T>) EMPTY_ENUMERATION;
+    }
+    
+    public static <T> Iterator<T> emptyIterator() {
+        return (Iterator<T>) EMPTY_ITERATOR;
+    }
+    
     /**
      * Returns a dynamically typesafe view of the specified collection. Trying
      * to insert an element of the wrong type into this collection throws a

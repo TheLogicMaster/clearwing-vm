@@ -6,11 +6,19 @@ public class ResourceBundle {
 		return new ResourceBundle();
 	}
 
+	public static ResourceBundle getBundle(String bundleName, Locale locale) {
+		return new ResourceBundle();
+	}
+
+	public static ResourceBundle getBundle(String bundleName) {
+		return new ResourceBundle();
+	}
+
 	public Enumeration<String> getKeys() {
 		return null;
 	}
 
 	public String getString(String key) {
-		throw new UnsupportedOperationException();
+		return key;
 	}
 }

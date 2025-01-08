@@ -10,32 +10,37 @@
 extern "C" {
 
 void threadEntrypoint(jcontext ctx, jthread thread) {
-    jtype frame[1];
-    auto frameRef = pushStackFrame(ctx, 1, frame, "java/lang/Thread:threadEntrypoint", nullptr);
+    try {
+        jtype frame[1];
+        FrameInfo frameInfo { "java/lang/Thread:threadEntrypoint", 1 };
+        auto frameRef = pushStackFrame(ctx, &frameInfo, frame);
 
-    thread->F_started = true;
-    thread->F_alive = true;
+        thread->F_started = true;
+        thread->F_alive = true;
 
-    tryCatch(frameRef, [&]{
-        if (thread->F_entrypoint) {
-            frame[0].o = (jobject) createArray(ctx, &class_java_lang_String, 0);
-            ((main_ptr) thread->F_entrypoint)(ctx, frame[0].o);
-        }
-        else
-            invokeVirtual<func_java_lang_Thread_run, VTABLE_java_lang_Thread_run>(ctx, (jobject)thread);
-    }, &class_java_lang_Throwable, [&](jobject ex){
-        // Todo: Default handlers
-        tryCatch(frameRef, [&] {
-            auto throwable = (java_lang_Throwable *)ex;
-            if (throwable->F_message)
-                printf("Uncaught Exception: %s\n", stringToNative(ctx, (jstring)throwable->F_message));
-            INVOKE_VIRTUAL(java_lang_Throwable_printStackTrace, ex);
-        }, &class_java_lang_Throwable, [&](jobject) {});
-    });
+        tryCatch(frameRef, [&]{
+            if (thread->F_entrypoint) {
+                frame[0].o = (jobject) createArray(ctx, &class_java_lang_String, 0);
+                ((main_ptr) thread->F_entrypoint)(ctx, frame[0].o);
+            }
+            else
+                invokeVirtual<func_java_lang_Thread_run, VTABLE_java_lang_Thread_run>(ctx, (jobject)thread);
+        }, &class_java_lang_Throwable, [&](jobject ex){
+            // Todo: Default handlers
+            tryCatch(frameRef, [&] {
+                auto throwable = (java_lang_Throwable *)ex;
+                if (throwable->F_message)
+                    printf("Uncaught Exception: %s\n", stringToNative(ctx, (jstring)throwable->F_message));
+                INVOKE_VIRTUAL(java_lang_Throwable_printStackTrace, ex);
+            }, &class_java_lang_Throwable, [&](jobject) {});
+        });
 
-    popStackFrame(ctx);
+        popStackFrame(ctx);
+    } catch (ExitException &) { }
 
     thread->F_alive = false;
+    ctx->suspended = true;
+    ctx->dead = true;
 
     unprotectObject((jobject)thread);
 }
@@ -89,14 +94,15 @@ void M_java_lang_Thread_finalize(jcontext ctx, jobject selfObj) {
 
 jobject M_java_lang_Thread_getStackTrace_R_Array1_java_lang_StackTraceElement(jcontext ctx, jobject self) {
     jtype frame[4];
-    auto frameRef = pushStackFrame(ctx, 1, frame, "java/lang/Thread:getStackTrace", nullptr);
+    FrameInfo frameInfo { "java/lang/Thread:getStackTrace", 1 };
+    auto frameRef = pushStackFrame(ctx, &frameInfo, frame);
 
     jarray trace = createArray(ctx, &class_java_lang_StackTraceElement, ctx->stackDepth);
     frame[0].o = (jobject)trace;
 
     for (int i = 0; i < ctx->stackDepth; i++) {
         auto stackFrame = &ctx->frames[i];
-        std::string_view method = stackFrame->method ? stackFrame->method : "";
+        std::string_view method = stackFrame->info->method ? stackFrame->info->method : "";
         auto separator = method.find(':');
         frame[1].o = (jobject)stringFromNative(ctx, separator != std::string_view::npos ? method.substr(0, separator) : "Unknown");
         frame[2].o = (jobject)stringFromNative(ctx, separator != std::string_view::npos ? method.substr(separator + 1) : "unknown");

@@ -8,7 +8,7 @@ public interface JumpingInstruction {
 
     void setJumpBypass(int bypass, int label, int bypassLabel);
 
-    void setJumpExceptionPops(int label, int pops);
+    void setJumpExceptionPops(int index, int pops);
     
     List<Integer> getJumpLabels();
 

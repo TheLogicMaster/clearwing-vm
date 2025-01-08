@@ -107,6 +107,9 @@ public class BytecodeMethod {
 	 * Allocates a new try-catch bypass and returns the index
 	 */
 	public int allocateTryCatchBypass() {
+		// Todo: This should reuse bypasses for the same destination.
+		// Todo: Could also use one bypass integer per try-catch to avoid extra checks
+		// Todo: Jumps into exception blocks could just push the needed frames before jumping
 		return tryCatchBypasses++;
 	}
 

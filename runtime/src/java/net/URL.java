@@ -35,6 +35,10 @@ public class URL {
     }
     
     public final InputStream openStream() throws IOException {
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    public URLConnection openConnection() {
+        throw new UnsupportedOperationException();
     }
 }

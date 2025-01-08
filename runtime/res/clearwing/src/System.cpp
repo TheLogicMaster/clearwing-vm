@@ -30,7 +30,7 @@ jlong SM_java_lang_System_currentTimeMillis_R_long(jcontext ctx) {
 }
 
 void SM_java_lang_System_exit0_int(jcontext ctx, jint code) {
-    exit(code); // Todo: Cleanup
+    exitVM(ctx, code);
 }
 
 void SM_java_lang_System_gc(jcontext ctx) {
@@ -50,6 +50,10 @@ jobject SM_java_lang_System_getProperty_java_lang_String_R_java_lang_String(jcon
     auto &entry = cache[key];
     entry = getSystemProperty(key);
     return entry ? (jobject) stringFromNative(ctx, entry) : nullptr;
+}
+
+jint SM_java_lang_System_identityHashCode_java_lang_Object_R_int(jcontext ctx, jobject obj) {
+    return M_java_lang_Object_hashCode_R_int(ctx, obj);
 }
 
 }

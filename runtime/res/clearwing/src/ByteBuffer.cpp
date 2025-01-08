@@ -20,7 +20,7 @@ static void throwBufferUnderflow(jcontext ctx) {
 
 jobject SM_java_nio_ByteBuffer_allocateDirect_int_R_java_nio_ByteBuffer(jcontext ctx, jint size) {
     auto buffer = gcAllocProtected(ctx, &class_java_nio_ByteBuffer);
-    auto data = new char[size];
+    auto data = new char[size]{};
     init_java_nio_ByteBuffer_long_int(ctx, buffer, (jlong) data, size);
     unprotectObject(buffer);
     adjustHeapUsage(size);

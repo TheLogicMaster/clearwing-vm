@@ -40,7 +40,7 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
     @Override
     public void appendUnoptimized(StringBuilder builder, TranspilerConfig config) {
         builder.append(LABEL_PREFIX).append(label).append(": if (setjmp(*pushExceptionFrame(frameRef, &class_")
-                .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) {\n\t\tsp = stack; PUSH_OBJECT(popExceptionFrame(frameRef)); ");
+                .append(qualifiedType == null ? "java_lang_Throwable" : qualifiedType).append("))) {\n\t\tsp = stack; PUSH_OBJECT(clearCurrentException(frameRef)); ");
         appendGoto(builder, handlerBypass, handler, originalHandler, exceptionPops);
         builder.append("\n\t}\n");
         
@@ -65,8 +65,8 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
     }
 
     @Override
-    public void setJumpExceptionPops(int label, int pops) {
-        exceptionPops = pops - 1;
+    public void setJumpExceptionPops(int index, int pops) {
+        exceptionPops = pops;
     }
 
     @Override
@@ -103,6 +103,10 @@ public class TryInstruction extends Instruction implements JumpingInstruction {
 
     public int getHandler() {
         return handler;
+    }
+    
+    public void setHandler(int handler) {
+        this.handler = handler;
     }
 
     public String getType() {

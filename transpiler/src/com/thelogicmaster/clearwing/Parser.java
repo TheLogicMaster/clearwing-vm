@@ -79,8 +79,6 @@ public class Parser extends ClassVisitor {
         return new FieldVisitor(Opcodes.ASM5) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-//                if (Utils.parseClassDescription(descriptor).equals("com/thelogicmaster/clearwing/Weak"))
-//                    field.markWeak();
                 if (!visible)
                     return null;
                 BytecodeAnnotation annotation = new BytecodeAnnotation(Utils.parseClassDescription(descriptor));
@@ -525,13 +523,14 @@ public class Parser extends ClassVisitor {
                 if (!(instructions.get(i) instanceof JumpingInstruction jump))
                     continue;
                 ArrayList<Integer> jumpStack = getTryStack(i);
-                for (int label : jump.getJumpLabels()) {
-                    int target = method.findLabelInstruction(label);
+                List<Integer> targetLabels = jump.getJumpLabels();
+                for (int j = 0; j < targetLabels.size(); j++) {
+                    int target = method.findLabelInstruction(targetLabels.get(j));
                     ArrayList<Integer> targetStack = getTryStack(target);
-                    for (int j = 0; j < jumpStack.size(); j++) {
-                        if (j < targetStack.size() && targetStack.get(j).equals(jumpStack.get(j)))
+                    for (int k = 0; k < jumpStack.size(); k++) {
+                        if (k < targetStack.size() && targetStack.get(k).equals(jumpStack.get(k)))
                             continue;
-                        jump.setJumpExceptionPops(label, jumpStack.size() - j);
+                        jump.setJumpExceptionPops(j, jumpStack.size() - k);
                         break;
                     }
                 }

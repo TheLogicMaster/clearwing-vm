@@ -135,8 +135,8 @@ static MethodMetadata methodMetadata[] {
         { "notify", 6, "()V", 0x400 },
         { "notifyAll", 7, "()V", 0x400 },
         { "wait", 8, "()V", 0x400 },
-        { "wait", 9, "(L)V", 0x400 },
-        { "wait", 10, "(LI)V", 0x400 },
+        { "wait", 9, "(J)V", 0x400 },
+        { "wait", 10, "(JI)V", 0x400 },
 };
 
 Class class_java_lang_Object {

@@ -58,12 +58,12 @@ void M_java_lang_Class_ensureInitialized(jcontext ctx, jobject selfObj) {
 
     auto methods = createArrayEternal(ctx, &class_java_lang_reflect_Method, (int) methodVector.size());
     self->methods = (intptr_t) methods;
-    for (int i = 0; i < methodVector.size(); i++)
+    for (int i = 0; i < (int)methodVector.size(); i++)
         ((jobject *) methods->data)[i] = methodVector[i];
 
     auto constructors = createArrayEternal(ctx, &class_java_lang_reflect_Constructor, (int) constructorVector.size());
     self->constructors = (intptr_t) constructors;
-    for (int i = 0; i < constructorVector.size(); i++)
+    for (int i = 0; i < (int)constructorVector.size(); i++)
         ((jobject *) constructors->data)[i] = constructorVector[i];
 
     if (self->annotationInitializer)

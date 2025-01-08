@@ -859,6 +859,10 @@ public class URI {
 
     }
 
+    public URI resolve(String relative) {
+        return resolve(create(relative));
+    }
+
     /**
      * Normalize a URI by removing any "./" segments, and "path/../" segments.
      *
@@ -970,5 +974,9 @@ public class URI {
             return false;
         }
         return true;
+    }
+
+    public URL toURL() throws MalformedURLException {
+        return null;
     }
 }

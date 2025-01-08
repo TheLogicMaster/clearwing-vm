@@ -7,6 +7,7 @@
 #include "java/lang/ArithmeticException.h"
 #include "java/lang/InterruptedException.h"
 #include "java/lang/NoSuchMethodError.h"
+#include "java/lang/RuntimeException.h"
 #include "java/lang/NullPointerException.h"
 #include "java/lang/IllegalMonitorStateException.h"
 #include "java/lang/IllegalArgumentException.h"
@@ -55,6 +56,7 @@ static std::recursive_mutex criticalLock;
 static std::mutex *registryMutex;
 static std::vector<jcontext> threadContexts;
 static std::vector<jobject> deepMarkedObjects;
+static volatile bool exiting;
 
 std::atomic_int64_t heapUsage;
 std::atomic_int64_t allocationsSinceCollection;
@@ -111,7 +113,30 @@ void runVM(main_ptr entrypoint) {
     thread->F_name = (intptr_t) stringFromNative(mainContext, "Main");
     threadEntrypoint(mainContext, thread);
 
-    // Todo: Call System.exit() or otherwise terminate and join all threads when main finishes
+    exitVM(mainContext, 0);
+}
+
+void exitVM(jcontext ctx, int result) {
+    if (exiting) return;
+    exiting = true;
+    ctx->dead = true;
+    ctx->suspended = true;
+    auto timeout = std::chrono::system_clock::now() + std::chrono::seconds(10);
+    while (std::chrono::system_clock::now() < timeout) {
+        suspendVM = true;
+        bool done = true;
+        for (auto threadContext : threadContexts) { // Todo: Should be locked for
+            if (threadContext->dead) continue;
+            done = false;
+            threadContext->lock.lock();
+            if (threadContext->blockedBy)
+                ((jmonitor) ((jobject) threadContext->blockedBy)->monitor)->condition.notify_all();
+            threadContext->lock.unlock();
+        }
+        if (done)
+            break;
+    }
+    exit(result);
 }
 
 /// Registers a class and populates its object fields. Does not throw exceptions.
@@ -130,7 +155,17 @@ bool registerClass(jclass clazz) {
             .vtable = (intptr_t) vtable_java_lang_Class,
             .monitor = (intptr_t) new ObjectMonitor,
     };
-    clazz->instanceOfCache = (intptr_t) new std::set<jclass>();
+    auto instanceCache = new std::set<jclass>;
+    std::function<void(jclass)> processClass;
+    processClass = [&](jclass cls) {
+        instanceCache->emplace(cls);
+        if (cls->parentClass)
+            processClass((jclass)cls->parentClass);
+        for (int i = 0; i < cls->interfaceCount; i++)
+            processClass(((jclass *)cls->nativeInterfaces)[i]);
+    };
+    processClass(clazz);
+    clazz->instanceOfCache = (intptr_t) instanceCache;
     registryMutex->unlock();
     return true;
 }
@@ -256,44 +291,15 @@ jstring concatStringsRecipe(jcontext ctx, const char *recipe, int argCount, ...)
     return result;
 }
 
-/// Returns whether a provided `type` is an instance of or inherits from `assignee`. Does not throw exceptions.
+/// Returns whether a provided `assignee` is an instance of or inherits from `type`. Does not throw exceptions.
 bool isAssignableFrom(jcontext ctx, jclass type, jclass assignee) {
-    static std::mutex lock;
-
-    if (assignee == type)
+    if (type == assignee || type == &class_java_lang_Object)
         return true;
 
-    auto cache = (std::set<jclass> *) type->instanceOfCache;
+    if (type->arrayDimensions > 0 and assignee->arrayDimensions > 0)
+        return isAssignableFrom(ctx, (jclass) type->componentClass, (jclass) assignee->componentClass);
 
-    {
-        std::lock_guard guard(lock);
-        if (cache->contains(assignee))
-            return true;
-    }
-
-    auto updateCache = [cache, type](){
-        std::lock_guard guard(lock);
-        cache->insert(type);
-    };
-
-    if (assignee->parentClass and isAssignableFrom(ctx, type, (jclass) assignee->parentClass)) {
-        updateCache();
-        return true;
-    }
-
-    if (type->arrayDimensions > 0 and assignee->arrayDimensions > 0 and isAssignableFrom(ctx, (jclass) type->componentClass, (jclass) assignee->componentClass)) {
-        updateCache();
-        return true;
-    }
-
-    auto interfaces = (jclass *) assignee->nativeInterfaces;
-    for (int i = 0; i < assignee->interfaceCount; i++)
-        if (isAssignableFrom(ctx, type, interfaces[i])) {
-            updateCache();
-            return true;
-        }
-
-    return false;
+    return ((std::set<jclass> *)assignee->instanceOfCache)->contains(type);
 }
 
 /// Checks whether an object is an instance or inherits from a given type. Does not throw exceptions.
@@ -340,7 +346,7 @@ void *resolveInterfaceMethod(jcontext ctx, jclass interface, int method, jobject
             offset = offsets[method];
         } else {
             auto &offsets = offsetsIt->second;
-            offset = offsets.size() <= method ? -1 : offsets[method];
+            offset = (int)offsets.size() <= method ? -1 : offsets[method];
         }
     }
 
@@ -459,45 +465,51 @@ void destroyContext(jcontext context) {
 static void collectionThreadFunc(jcontext ctx) {
     static std::vector<jobject> collected;
 
-    auto frameRef = pushStackFrame(ctx, 0, nullptr, "GC:collect", nullptr);
+    try {
+        FrameInfo frameInfo{ "GC:collect", 0 };
+        auto frameRef = pushStackFrame(ctx, &frameInfo, nullptr, nullptr);
 
-    while (true) { // Todo
-        objectsLock.lock();
-        if (!collectedObjects.empty()) {
-            collected = collectedObjects;
-            collectedObjects.clear();
-        }
-        objectsLock.unlock();
-
-        if (!collected.empty()) {
-            for (jobject obj : collected) {
-                tryCatch(frameRef, [&]{
-                    ((finalizer_ptr)((void **)obj->vtable)[VTABLE_java_lang_Object_finalize])(ctx, obj);
-                }, &class_java_lang_Throwable, [](jobject ignored){});
+        while (true) { // Todo
+            objectsLock.lock();
+            if (!collectedObjects.empty()) {
+                collected = collectedObjects;
+                collectedObjects.clear();
             }
+            objectsLock.unlock();
 
-            for (jobject obj : collected) {
-                objectsLock.lock();
-                objects->erase(obj);
-                objectsLock.unlock();
+            if (!collected.empty()) {
+                for (jobject obj : collected) {
+                    tryCatch(frameRef, [&]{
+                        ((finalizer_ptr)((void **)obj->vtable)[VTABLE_java_lang_Object_finalize])(ctx, obj);
+                    }, &class_java_lang_Throwable, [](jobject ignored){});
+                }
 
-                heapUsage -= ((jclass) obj->clazz)->size + (int64_t) sizeof(ObjectMonitor);
+                for (jobject obj : collected) {
+                    objectsLock.lock();
+                    objects->erase(obj);
+                    objectsLock.unlock();
 
-                delete (ObjectMonitor *) obj->monitor;
+                    heapUsage -= ((jclass) obj->clazz)->size + (int64_t) sizeof(ObjectMonitor);
 
-                memset(obj, 0, sizeof(java_lang_Object)); // Erase collected objects to make memory bugs easier to catch
-                obj->gcMark = GC_MARK_COLLECTED; // Set collected flag again
+                    delete (ObjectMonitor *) obj->monitor;
 
-                delete[] (char *) obj;
+                    memset(obj, 0, sizeof(java_lang_Object)); // Erase collected objects to make memory bugs easier to catch
+                    obj->gcMark = GC_MARK_COLLECTED; // Set collected flag again
+
+                    delete[] (char *) obj;
+                }
+
+                collected.clear();
             }
-
-            collected.clear();
-        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        SAFEPOINT();
-    }
+            SAFEPOINT();
+        }
+    } catch (ExitException &) { }
+
+    ctx->dead = true;
+    ctx->suspended = true;
 }
 
 /// Runs the garbage collector
@@ -508,7 +520,8 @@ void runGC(jcontext ctx) {
     if (running.exchange(true))
         return;
 
-    auto frameRef = pushStackFrame(ctx, 0, nullptr, "runGC", nullptr);
+    FrameInfo frameInfo { "runGC", 0 };
+    auto frameRef = pushStackFrame(ctx, &frameInfo, nullptr);
 
     auto blockTime = std::chrono::system_clock::now();
 
@@ -517,7 +530,8 @@ void runGC(jcontext ctx) {
         std::lock_guard lock(suspendMutex);
         suspendVM = true;
     }
-    while (true) { // Todo: Signalling to make this less CPU intensive while waiting
+    while (true) {
+        if (exiting) throw ExitException();
         bool blocked = false;
         acquireCriticalLock();
         for (auto threadContext : threadContexts) {
@@ -565,7 +579,7 @@ void runGC(jcontext ctx) {
     for (auto threadContext : threadContexts) {
         for (int i = 0; i < threadContext->stackDepth; i++) {
             const auto &frame = threadContext->frames[i];
-            for (int j = 0; j < frame.size; j++) {
+            for (int j = 0; j < (int)frame.info->size; j++) {
                 const auto obj = frame.frame[j].o;
                 if (objects->contains(obj))
                     ((gc_mark_ptr) ((jclass) obj->clazz)->markFunction)(obj, mark, 0);
@@ -678,11 +692,15 @@ void runGC(jcontext ctx) {
 
     running = false;
 
-    popStackFrame(ctx);
+    popStackFrame(ctx, nullptr);
 }
 
 void markDeepObject(jobject obj) {
     deepMarkedObjects.emplace_back(obj);
+}
+
+int64_t getHeapUsage() {
+    return heapUsage;
 }
 
 /// Adjust the heap usage stat by the given amount. Does not throw exceptions.
@@ -703,75 +721,59 @@ void releaseCriticalLock() {
 /// Suspends a thread while the VM is suspended. Does not throw exceptions.
 void safepointSuspend(jcontext ctx) {
     ctx->suspended = true;
-    while (suspendVM) {} // Todo: Don't busy-wait, use signalling
+    while (suspendVM) {
+        if (exiting)
+            throw ExitException();
+    }
     ctx->suspended = false;
-}
-
-/// Pushes and returns a new stack frame. The `method` and `monitor` parameters are optional. Throws exceptions.
-jframe pushStackFrame(jcontext ctx, int size, volatile jtype *stack, const char *method, jobject monitor) {
-    SAFEPOINT(); // This is safe because parameters are the responsibility of the caller
-    if (ctx->stackDepth + 1 >= MAX_STACK_DEPTH)
-        constructAndThrow<&class_java_lang_StackOverflowError, init_java_lang_StackOverflowError>(ctx); // Todo: This causes a native stack overflow at preset...
-    ctx->lock.lock();
-    auto frame = &ctx->frames[ctx->stackDepth++];
-    *frame = {size, stack, method, monitor};
-    ctx->lock.unlock();
-    if (frame->monitor)
-        monitorEnter(ctx, frame->monitor);
-    return frame;
-}
-
-/// Pops a stack frame. Does not throw exceptions.
-void popStackFrame(jcontext ctx) {
-    SAFEPOINT(); // Safepoint before popping the stack to preserve return value object references on the frame
-    if (ctx->stackDepth == 0)
-        throw std::runtime_error("No stack frame to pop");
-    auto frame = &ctx->frames[ctx->stackDepth - 1];
-    if (frame->monitor)
-        monitorExit(ctx, frame->monitor);
-    ctx->lock.lock();
-    ctx->stackDepth -= 1;
-    ctx->lock.unlock();
 }
 
 /// Pushes an exception frame onto the given stack frame. `type` can be null. Does not throw exceptions.
 jmp_buf *pushExceptionFrame(jframe frame, jclass type) {
-    return &frame->exceptionFrames.emplace_back<ExceptionFrame>({type}).landingPad;
+    if ((int)frame->exceptionFrames.size() < frame->exceptionFrameDepth + 1)
+        frame->exceptionFrames.resize(frame->exceptionFrameDepth + 1);
+    auto &exceptionFrame = frame->exceptionFrames[frame->exceptionFrameDepth++];
+    exceptionFrame.type = type;
+    return &exceptionFrame.landingPad;
 }
 
 /// Pops an exception frame then returns and clears the current exception. Does not throw exceptions.
 jobject popExceptionFrame(jframe frame) {
-    frame->exceptionFrames.pop_back();
-    auto exception = frame->exception;
-    frame->exception = nullptr;
-    return exception;
+    if (frame->exceptionFrameDepth == 0)
+        throw std::runtime_error("No exception frame to pop");
+    frame->exceptionFrameDepth--;
+    return clearCurrentException(frame);
 }
 
 void popExceptionFrames(jframe frame, int count) {
-    if (frame->exceptionFrames.size() < count)
+    if (frame->exceptionFrameDepth < count)
         throw std::runtime_error("No exception frame to pop");
-    for (int i = 0; i < count; i++) {
-        frame->exceptionFrames.pop_back();
-    }
+    frame->exceptionFrameDepth -= count;
+}
+
+jobject clearCurrentException(jframe frame) {
+    auto exception = frame->exception;
+    frame->exception = nullptr;
+    return exception;
 }
 
 /// Throws an exception. This function does not return.
 void throwException(jcontext ctx, jobject exception) {
     while (ctx->stackDepth > 0) {
         auto &frame = ctx->frames[ctx->stackDepth - 1];
-        while (!frame.exceptionFrames.empty()) {
-            auto &exceptionFrame = frame.exceptionFrames.back();
+        while (frame.exceptionFrameDepth > 0) {
+            auto &exceptionFrame = frame.exceptionFrames[frame.exceptionFrameDepth - 1];
             if (!exceptionFrame.type or isInstance(ctx, exception, exceptionFrame.type)) {
                 frame.exception = exception;
                 longjmp(exceptionFrame.landingPad, 1);
             }
-            frame.exceptionFrames.pop_back();
+            frame.exceptionFrameDepth--;
         }
-        if (frame.monitor)
+        if (frame.monitor) {
             monitorExit(ctx, frame.monitor); // Todo: Stack overflows if this throws an exception
-        ctx->lock.lock();
+            frame.monitor = nullptr;
+        }
         ctx->stackDepth -= 1;
-        ctx->lock.unlock();
     }
     // Todo: Include exception details
     throw std::runtime_error("Uncaught exception");
@@ -789,6 +791,10 @@ void throwNullPointer(jcontext ctx) {
     constructAndThrow<&class_java_lang_NullPointerException, init_java_lang_NullPointerException>(ctx);
 }
 
+void throwStackOverflow(jcontext ctx) {
+    constructAndThrow<&class_java_lang_StackOverflowError, init_java_lang_StackOverflowError>(ctx);
+}
+
 void throwIndexOutOfBounds(jcontext ctx) {
     constructAndThrow<&class_java_lang_IndexOutOfBoundsException, init_java_lang_IndexOutOfBoundsException>(ctx);
 }
@@ -800,8 +806,13 @@ void throwIllegalArgument(jcontext ctx) {
 void throwIOException(jcontext ctx, const char *message) {
     if (message)
         constructAndThrowMsg<&class_java_io_IOException, init_java_io_IOException_java_lang_String>(ctx, message);
-    else
-        constructAndThrow<&class_java_io_IOException, init_java_io_IOException>(ctx);
+    constructAndThrow<&class_java_io_IOException, init_java_io_IOException>(ctx);
+}
+
+NORETURN void throwRuntimeException(jcontext ctx, const char *message) {
+    if (message)
+        constructAndThrowMsg<&class_java_lang_RuntimeException, init_java_lang_RuntimeException_java_lang_String>(ctx, message);
+    constructAndThrow<&class_java_lang_RuntimeException, init_java_lang_RuntimeException>(ctx);
 }
 
 /// Lock on a monitor. Throws exceptions.
@@ -853,26 +864,6 @@ void interruptedCheck(jcontext ctx) {
         ctx->thread->F_interrupted = false;
         constructAndThrow<&class_java_lang_InterruptedException, init_java_lang_InterruptedException>(ctx);
     }
-}
-
-/// Checks if an object is null. Throws exceptions.
-jobject nullCheck(jcontext ctx, jobject object) {
-    if (!object)
-        throwNullPointer(ctx);
-    return object;
-}
-
-jobject checkCast(jcontext ctx, jclass type, jobject object) {
-    if (object && !isInstance(ctx, object, type))
-        throwClassCast(ctx);
-    return object;
-}
-
-jarray arrayBoundsCheck(jcontext ctx, jarray array, int index) {
-    nullCheck(ctx, (jobject)array);
-    if (index >= array->length)
-        throwIndexOutOfBounds(ctx);
-    return array;
 }
 
 jobject boxByte(jcontext ctx, jbyte value) {

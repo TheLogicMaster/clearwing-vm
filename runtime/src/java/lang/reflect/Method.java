@@ -40,9 +40,16 @@ public class Method {
             throw new ClassFormatError("Invalid method signature");
 
         try {
-            returnType = Class.forName(desc.charAt(offset + 1) == 'L' ? desc.substring(offset + 2, desc.length() - 1) : desc.substring(offset + 1));
+            int arrayDimensions = 0;
+            int retOffset = offset + 1;
+            while (desc.charAt(retOffset) == '[') {
+                arrayDimensions++;
+                retOffset++;
+            }
+            Class<?> type = Class.forName(desc.charAt(retOffset) == 'L' ? desc.substring(retOffset + 1, desc.length() - 1) : desc.substring(retOffset));
+            returnType = arrayDimensions == 0 ? type : NativeUtils.getArrayClass(type, arrayDimensions);
         } catch (ClassNotFoundException e) {
-            throw new ClassFormatError("Invalid method signature");
+            throw new ClassFormatError("Invalid method signature: " + desc);
         }
 
         String paramsDesc = desc.substring(1, offset);
@@ -59,11 +66,11 @@ public class Method {
                 case 'L': {
                     int end = paramsDesc.indexOf(';', paramOffset);
                     if (end == -1)
-                        throw new ClassFormatError("Invalid method signature");
+                        throw new ClassFormatError("Invalid method signature: " + desc);
                     try {
                         type = Class.forName(paramsDesc.substring(paramOffset, end));
                     } catch (ClassNotFoundException e) {
-                        throw new ClassFormatError("Invalid method signature");
+                        throw new ClassFormatError("Invalid method signature: " + desc);
                     }
                     paramOffset = end + 1;
                     break;
@@ -96,7 +103,7 @@ public class Method {
                     type = void.class;
                     break;
                 default:
-                    throw new ClassFormatError("Invalid method signature");
+                    throw new ClassFormatError("Invalid method signature: " + desc);
             }
             paramTypes.add(arrayDimensions == 0 ? type : NativeUtils.getArrayClass(type, arrayDimensions));
         }
@@ -155,5 +162,9 @@ public class Method {
     public Class<?> getReturnType() {
         ensureSignatureInitialized();
         return returnType;
+    }
+    
+    public boolean isDefault() {
+        return false;
     }
 }

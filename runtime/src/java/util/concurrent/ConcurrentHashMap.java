@@ -10,6 +10,22 @@ import java.util.Set;
  */
 public class ConcurrentHashMap<K,V> extends HashMap<K,V> implements ConcurrentMap<K,V> {
 
+    public ConcurrentHashMap() {
+    }
+
+    public ConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyLevel) {
+    }
+
+    public ConcurrentHashMap(int initialCapacity, float loadFactor) {
+    }
+
+    public ConcurrentHashMap(int initialCapacity) {
+    }
+
+    public ConcurrentHashMap(Map<? extends K, ? extends V> m) {
+        putAll(m);
+    }
+    
     @Override
     public synchronized boolean isEmpty () {
         return super.isEmpty();

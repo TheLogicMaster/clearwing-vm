@@ -127,7 +127,7 @@ public class JumpInstruction extends Instruction implements JumpingInstruction {
     }
 
     @Override
-    public void setJumpExceptionPops(int label, int pops) {
+    public void setJumpExceptionPops(int index, int pops) {
         exceptionPops = pops;
     }
 

@@ -77,11 +77,11 @@ jclass getArrayClass(jclass componentType, int dimensions) {
     std::lock_guard guard(mutex);
 
     auto it = arrayClasses.find(componentType);
-    if (it != arrayClasses.end() && it->second.size() >= dimensions)
+    if (it != arrayClasses.end() && (int)it->second.size() >= dimensions)
         return it->second[dimensions - 1];
 
     auto &vector = arrayClasses[componentType];
-    while (vector.size() < dimensions) {
+    while ((int)vector.size() < dimensions) {
         auto component = vector.empty() ? componentType : vector.back();
         auto componentNameLength = strlen((const char *) component->nativeName);
         auto name = new char[componentNameLength + 2]; // Not zero initialized, memcpy handles null terminator

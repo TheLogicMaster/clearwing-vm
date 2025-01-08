@@ -25,12 +25,12 @@ public class ZeroOperandInstruction extends Instruction {
 
     // Todo: Is this still needed with noreturn annotations?
     private void appendThrowReturn(StringBuilder builder) {
-        builder.append("return");
-        if (method.getSignature().getReturnType().getBasicType() == TypeVariants.OBJECT)
-            builder.append(" nullptr");
-        else if (!method.getSignature().getReturnType().isVoid())
-            builder.append(" 0");
-        builder.append(";\n");
+//        builder.append("return");
+//        if (method.getSignature().getReturnType().getBasicType() == TypeVariants.OBJECT)
+//            builder.append(" nullptr");
+//        else if (!method.getSignature().getReturnType().isVoid())
+//            builder.append(" 0");
+//        builder.append(";\n");
     }
 
     @Override
@@ -73,7 +73,12 @@ public class ZeroOperandInstruction extends Instruction {
                 appendStandardInstruction(builder, Objects.requireNonNull(getOpcodeName()));
                 break;
             case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN:
-                builder.append("\tpopStackFrame(ctx);\n");
+                if (!method.isSynchronized())
+                    builder.append("\tpopStackFrame(ctx);\n");
+                else if (method.isStatic())
+                    builder.append("\tpopStackFrame(ctx, (jobject) &class_").append(method.getOwner().getQualifiedName()).append(");\n");
+                else
+                    builder.append("\tpopStackFrame(ctx, self);\n");
                 appendStandardInstruction(builder, Objects.requireNonNull(getOpcodeName()));
                 break;
             case Opcodes.ATHROW:
@@ -193,13 +198,17 @@ public class ZeroOperandInstruction extends Instruction {
                 builder.append("\tthrowException(ctx, ").append(inputs.get(0).arg()).append(");");
                 appendThrowReturn(builder);
             }
-            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN -> {
-                builder.append("\tpopStackFrame(ctx);\n");
-                builder.append("\treturn ").append(inputs.get(0).arg()).append(";\n");
-            }
-            case Opcodes.RETURN -> {
-                builder.append("\tpopStackFrame(ctx);\n");
-                builder.append("\treturn;\n");
+            case Opcodes.IRETURN, Opcodes.LRETURN, Opcodes.FRETURN, Opcodes.DRETURN, Opcodes.ARETURN, Opcodes.RETURN -> {
+                if (!method.isSynchronized())
+                    builder.append("\tpopStackFrame(ctx);\n");
+                else if (method.isStatic())
+                    builder.append("\tpopStackFrame(ctx, (jobject) &class_").append(method.getOwner().getQualifiedName()).append(");\n");
+                else
+                    builder.append("\tpopStackFrame(ctx, self);\n");
+                if (opcode == Opcodes.RETURN)
+                    builder.append("\treturn;\n");
+                else
+                    builder.append("\treturn ").append(inputs.get(0).arg()).append(";\n");
             }
             case Opcodes.MONITORENTER -> builder.append("\tmonitorEnter(ctx, ").append(inputs.get(0).arg()).append(");\n");
             case Opcodes.MONITOREXIT -> builder.append("\tmonitorExit(ctx, ").append(inputs.get(0).arg()).append(");\n");

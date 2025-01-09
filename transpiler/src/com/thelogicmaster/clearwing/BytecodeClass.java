@@ -399,7 +399,7 @@ public class BytecodeClass {
 
 		// Methods
 		for (BytecodeMethod method : methods) {
-			if (method.isNative() || method.isAbstract())
+			if (method.isNative() || method.isAbstract() || method.isIntrinsic())
 				continue;
 
 			appendMethodDeclaration(builder, method);

@@ -29,7 +29,7 @@ flowchart LR
 
 ## Limitations
 - Limited runtime library
-- Not fully conformant with standard (Regex, string formatting, internal names)
+- Not fully conformant with standard (Regex, string formatting, internal names, Unicode support)
 - Has to be debugged as a large C++ codebase
 - Long initial compilation and linkage times
 
@@ -39,7 +39,7 @@ flowchart LR
 - Transpiler logging
 - Method trimming
 - Crash logs
-- Add additional safe-points in loops without function calls to prevent freezes on GC
+- Add additional safe-points in loops without function calls to prevent freezes on GC/exit
 - Debugger (Possibly by python GDB based debug server)
 
 ## Dependencies
@@ -152,7 +152,7 @@ constructed by the VM when registering object classes or creating classes for ar
 Garbage collection is done by the garbage collector at object allocation time based on the amount of memory and 
 number of objects allocated since the last collection. It is a simple algorithm, but should be sufficient, and
 macros are available to override the defaults if needed. All objects that aren't static class members, on a Java 
-thread's stack, marked as eternal, and are not referenced by another reachable object will be collected when the
+thread's stack, explicitly protected, and are not referenced by another reachable object will be collected when the
 GC is run. Before running, the thread running the GC waits for all other threads to be at a safe-point. This 
 normally happens during function calls, where threads check for thread suspension and wait for the GC to run. 
 Currently, a thread that is busy waiting or otherwise blocking without performing any function calls could lead to
@@ -161,7 +161,7 @@ as needed in loops without function calls. A thread in native code like `Thread.
 at a safe-point so long as it does not interact with VM objects or return to VM code until the GC is done. To avoid
 premature collection of objects, it is essential to ensure that all objects are stored on the stack before calling
 any functions, since it is the responsibility of the caller to protect arguments. That is the safest way for hand-writen
-native code, but objects can also be marked as eternal at allocation time to prevent collection until marked accordingly.
+native code, but objects can also be marked as protected at allocation time to prevent collection until marked accordingly.
 
 ### Exceptions
 Exception handling is done using longjmp/setjmp, which has implications as far as memory safety is concerned.

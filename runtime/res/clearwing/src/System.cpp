@@ -46,7 +46,7 @@ jobject SM_java_lang_System_getProperty_java_lang_String_R_java_lang_String(jcon
     std::lock_guard guard(lock);
     auto it = cache.find(key);
     if (it != cache.end())
-        return (jobject) stringFromNative(ctx, it->second);
+        return it->second ? (jobject) stringFromNative(ctx, it->second) : nullptr;
     auto &entry = cache[key];
     entry = getSystemProperty(key);
     return entry ? (jobject) stringFromNative(ctx, entry) : nullptr;

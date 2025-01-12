@@ -102,9 +102,16 @@ jobject SM_java_io_File_listRoots_R_Array1_java_io_File(jcontext ctx) {
 #else
     collected.emplace_back("/");
 #endif
-    auto array = createArray(ctx, &class_java_lang_String, (int)collected.size());
-    for (int i = 0; i < (int)collected.size(); i++)
-        ((jobject *)array->data)[i] = (jobject) stringFromNative(ctx, collected[i]);
+    auto array = createArrayProtected(ctx, &class_java_lang_String, (int)collected.size());
+    for (int i = 0; i < (int)collected.size(); i++) {
+        auto string = (jobject) stringFromNativeProtected(ctx, collected[i].c_str());
+        auto file = gcAllocProtected(ctx, &class_java_io_File);
+        init_java_io_File_java_lang_String(ctx, file, string);
+        ((jobject *)array->data)[i] = file;
+        unprotectObject(string);
+        unprotectObject(file);
+    }
+    unprotectObject((jobject)array);
     return (jobject) array;
 }
 

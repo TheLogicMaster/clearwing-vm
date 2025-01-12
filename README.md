@@ -41,6 +41,7 @@ flowchart LR
 - Crash logs
 - Add additional safe-points in loops without function calls to prevent freezes on GC/exit
 - Debugger (Possibly by python GDB based debug server)
+- Floating point to int conversion conformance (Undefined in C++, needs to round to zero with special cases for NaN and infinity)
 
 ## Dependencies
 - C++ 20

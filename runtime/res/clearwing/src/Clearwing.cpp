@@ -809,7 +809,7 @@ void throwIOException(jcontext ctx, const char *message) {
     constructAndThrow<&class_java_io_IOException, init_java_io_IOException>(ctx);
 }
 
-NORETURN void throwRuntimeException(jcontext ctx, const char *message) {
+void throwRuntimeException(jcontext ctx, const char *message) {
     if (message)
         constructAndThrowMsg<&class_java_lang_RuntimeException, init_java_lang_RuntimeException_java_lang_String>(ctx, message);
     constructAndThrow<&class_java_lang_RuntimeException, init_java_lang_RuntimeException>(ctx);

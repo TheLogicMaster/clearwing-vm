@@ -38,6 +38,7 @@ public class Transpiler {
 			"java/lang/ClassNotFoundException",
 			"java/lang/reflect/Constructor",
 			"java/lang/reflect/InvocationTargetException",
+			"java/lang/reflect/Proxy",
 			"java/text/DateFormat",
 			"java/lang/Double",
 			"java/lang/Enum",

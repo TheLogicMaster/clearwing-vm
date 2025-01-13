@@ -1,5 +1,5 @@
 allprojects {
-    version = "3.0.2"
+    version = "3.0.3"
     group = 'com.thelogicmaster.clearwing-vm'
 }
 

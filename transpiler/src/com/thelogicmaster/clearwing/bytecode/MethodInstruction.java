@@ -81,10 +81,22 @@ public class MethodInstruction extends Instruction {
         if (!signature.getReturnType().isVoid())
             builder.append("sp->").append(signature.getReturnType().getBasicType().getStackName()).append(" = (").append(signature.getReturnType().getBasicType().getArithmeticType()).append(")");
 
+        int actualOpcode = opcode;
+        String virtualName = name;
+        if (opcode == Opcodes.INVOKEINTERFACE) {
+            for (BytecodeMethod m : BytecodeClass.OBJECT_METHODS) {
+                if (m.getDesc().equals(desc) && m.getOriginalName().equals(originalName)) {
+                    actualOpcode = Opcodes.INVOKEVIRTUAL;
+                    virtualName = m.getName();
+                    break;
+                }
+            }
+        }
+
         // Todo: Use invocation macros
-        switch (opcode) {
+        switch (actualOpcode) {
             case Opcodes.INVOKEVIRTUAL ->
-                builder.append("((func_").append(name.substring(2)).append(") ((void **) nullCheck(ctx, sp[0].o)->vtable)[VTABLE_").append(name.substring(2)).append("])");
+                builder.append("((func_").append(virtualName.substring(2)).append(") ((void **) nullCheck(ctx, sp[0].o)->vtable)[VTABLE_").append(virtualName.substring(2)).append("])");
             case Opcodes.INVOKEINTERFACE ->
                 builder.append("((func_").append(resolvedMethod.getName().substring(2)).append(") resolveInterfaceMethod(ctx, &class_")
                         .append(resolvedMethod.getOwner().getQualifiedName()).append(", INDEX_").append(resolvedMethod.getName().substring(2)).append(", sp[0].o))");
@@ -92,9 +104,9 @@ public class MethodInstruction extends Instruction {
             default -> throw new TranspilerException("Invalid opcode");
         }
         builder.append("(ctx");
-        if (opcode != Opcodes.INVOKESTATIC)
+        if (actualOpcode != Opcodes.INVOKESTATIC)
             builder.append(", sp[0].o");
-        int paramOffset = opcode == Opcodes.INVOKESTATIC ? 0 : 1;
+        int paramOffset = actualOpcode == Opcodes.INVOKESTATIC ? 0 : 1;
         for (int i = 0; i < signature.getParamTypes().length; i++) {
             JavaType type = signature.getParamTypes()[i];
             builder.append(", ");
@@ -117,11 +129,23 @@ public class MethodInstruction extends Instruction {
         else
             builder.append("\t");
 
+        int actualOpcode = opcode;
+        String virtualName = name;
+        if (opcode == Opcodes.INVOKEINTERFACE) {
+            for (BytecodeMethod m : BytecodeClass.OBJECT_METHODS) {
+                if (m.getDesc().equals(desc) && m.getOriginalName().equals(originalName)) {
+                    actualOpcode = Opcodes.INVOKEVIRTUAL;
+                    virtualName = m.getName();
+                    break;
+                }
+            }
+        }
+
         // Todo: Use invocation macros
-        switch (opcode) {
+        switch (actualOpcode) {
             case Opcodes.INVOKEVIRTUAL ->
-                    builder.append("((func_").append(name.substring(2)).append(") ((void **) nullCheck(ctx, ").append(inputs.get(0).arg())
-                            .append(")->vtable)[VTABLE_").append(name.substring(2)).append("])");
+                    builder.append("((func_").append(virtualName.substring(2)).append(") ((void **) nullCheck(ctx, ").append(inputs.get(0).arg())
+                            .append(")->vtable)[VTABLE_").append(virtualName.substring(2)).append("])");
             case Opcodes.INVOKEINTERFACE ->
                     builder.append("((func_").append(resolvedMethod.getName().substring(2)).append(") resolveInterfaceMethod(ctx, &class_")
                             .append(resolvedMethod.getOwner().getQualifiedName()).append(", INDEX_").append(resolvedMethod.getName().substring(2))
@@ -130,9 +154,9 @@ public class MethodInstruction extends Instruction {
             default -> throw new TranspilerException("Invalid opcode");
         }
         builder.append("(ctx");
-        if (opcode != Opcodes.INVOKESTATIC)
+        if (actualOpcode != Opcodes.INVOKESTATIC)
             builder.append(", ").append(inputs.get(0).arg());
-        int paramOffset = opcode == Opcodes.INVOKESTATIC ? 0 : 1;
+        int paramOffset = actualOpcode == Opcodes.INVOKESTATIC ? 0 : 1;
         for (int i = 0; i < signature.getParamTypes().length; i++) {
             builder.append(", ");
             inputs.get(paramOffset + i).buildArg(builder);
